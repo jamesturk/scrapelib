@@ -43,6 +43,31 @@ class RobotExclusionError(ScrapeError):
         self.user_agent = user_agent
 
 
+class Headers(dict):
+    def __init__(self, d={}):
+        super(Headers, self).__init__()
+        for k, v in d.items():
+            self[k] = v
+
+    def __getitem__(self, key):
+        return super(Headers, self).__getitem__(key.lower())
+
+    def __setitem__(self, key, value):
+        super(Headers, self).__setitem__(key.lower(), value)
+
+    def __delitem__(self, key):
+        return super(Headers, self).__delitem__(key.lower())
+
+    def __contains__(self, key):
+        return super(Headers, self).__contains__(key.lower())
+
+    def __eq__(self, other):
+        for k, v in other.items():
+            if self[k] != v:
+                return False
+        return True
+
+
 class FakeResponse(object):
     """
     Adapts httplib2 response objects for use with cookielib.CookieJar
@@ -89,11 +114,7 @@ class Scraper(object):
         :param disable_compression: do not accept compressed content
         """
         self.user_agent = user_agent
-
-        if not callable(headers):
-            self.headers = headers.copy()
-        else:
-            self.headers = headers
+        self.headers = headers
 
         self.follow_robots = follow_robots
         if self.follow_robots:
@@ -155,18 +176,20 @@ class Scraper(object):
         else:
             headers = self.headers
 
-        if 'User-Agent' not in headers:
-            headers['User-Agent'] = self.user_agent
-
-        if self.disable_compression and 'Accept-Encoding' not in headers:
-            headers['Accept-Encoding'] = 'text/*'
-
         if self.accept_cookies:
             # CookieJar expects a urllib2.Request-like object
             req = urllib2.Request(url, headers=headers)
             self._cookie_jar.add_cookie_header(req)
             headers = req.headers
             headers.update(req.unredirected_hdrs)
+
+        headers = Headers(headers)
+
+        if 'User-Agent' not in headers:
+            headers['User-Agent'] = self.user_agent
+
+        if self.disable_compression and 'Accept-Encoding' not in headers:
+            headers['Accept-Encoding'] = 'text/*'
 
         return headers
 
@@ -185,7 +208,7 @@ class Scraper(object):
             parsed_url = urlparse.urlparse(url)
 
         headers = self._make_headers(url)
-        user_agent = headers['User-agent']
+        user_agent = headers['User-Agent']
 
         if parsed_url.scheme in ['http', 'https']:
             if self.follow_robots and not self._robot_allowed(user_agent,
