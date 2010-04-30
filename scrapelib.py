@@ -20,8 +20,18 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
+try:
+    import lxml.html
+    USE_LXML = True
+except ImportError:
+    USE_LXML = False
+
 
 class RobotExclusionError(Exception):
+    """
+    Raised when an attempt is made to access a page denied by
+    the host's robots.txt file.
+    """
 
     def __init__(self, message, url, user_agent):
         super(RobotExclusionError, self).__init__(message)
@@ -62,6 +72,18 @@ class Scraper(object):
                  error_dir=None,
                  accept_cookies=True,
                  disable_compression=False):
+        """
+        :param user_agent: the value to send as a User-Agent header on
+          HTTP requests
+        :param cache_dir: if not None, http caching will be enabled with
+          cached pages stored under the supplied path
+        :param requests_per_minute: maximum requests per minute (0 for
+          unlimited)
+        :param follow_robots: respect robots.txt files
+        :param error_dir: if not None,
+        :param accept_cookies: HTTP cookie support
+        :param disable_compression: do not accept compressed content
+        """
         self.user_agent = user_agent
 
         if not callable(headers):
@@ -81,7 +103,8 @@ class Scraper(object):
             self.throttled = False
 
         if cache_dir and not USE_HTTPLIB2:
-            print "httplib2 not available, caching will be disabled."
+            print "httplib2 not available, HTTP caching and compression" \
+                "will be disabled."
 
         if error_dir:
             self.save_errors = True
@@ -209,6 +232,25 @@ class Scraper(object):
         try:
             body = self.urlopen(url)
             yield body
+        except:
+            if self.save_errors:
+                self._save_error(url, body)
+            raise
+
+    @contextlib.contextmanager
+    def lxml_context(self, url):
+        """
+        Like :method:`urlopen_context`, except returns an lxml parsed
+        document.
+        """
+        if not USE_LXML:
+            raise Exception("lxml does not seem to be installed.")
+
+        body = None
+        try:
+            body = self.urlopen(url)
+            elem = lxml.html.fromstring(body)
+            yield elem
         except:
             if self.save_errors:
                 self._save_error(url, body)
