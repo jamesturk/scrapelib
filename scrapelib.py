@@ -1,8 +1,17 @@
+import os
+import sys
 import time
 import urllib2
 import urlparse
+import datetime
 import functools
+import contextlib
 import robotparser
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 try:
     import httplib2
@@ -24,7 +33,8 @@ class Scraper(object):
     def __init__(self, user_agent='scrapelib 0.1',
                  cache_dir=None, headers={},
                  requests_per_minute=60,
-                 follow_robots=True):
+                 follow_robots=True,
+                 error_dir=None):
         self.headers = headers
         self.user_agent = user_agent
 
@@ -41,6 +51,12 @@ class Scraper(object):
 
         if cache_dir and not USE_HTTPLIB2:
             print "httplib2 not available, caching will be disabled."
+
+        if error_dir:
+            self.save_errors = True
+            self.error_dir = error_dir
+        else:
+            self.save_errors = False
 
         if USE_HTTPLIB2:
             self._http = httplib2.Http(cache_dir)
@@ -99,3 +115,34 @@ class Scraper(object):
         req = urllib2.Request(url, headers=headers)
         resp = urllib2.urlopen(req)
         return resp.read()
+
+    def _save_error(self, url, body):
+        exception = sys.exc_info()[1]
+
+        out = {'exception': repr(exception),
+               'url': url,
+               'body': body,
+               'when': str(datetime.datetime.now())}
+
+        base_path = os.path.join(self.error_dir, url.replace('/', ','))
+        path = base_path
+
+        n = 0
+        while os.path.exists(path):
+            n += 1
+            path = base_path + "-%d" % n
+
+        with open(path, 'w') as fp:
+            json.dump(out, fp)
+
+    @contextlib.contextmanager
+    def urlopen_context(self, url):
+        body = None
+
+        try:
+            body = self.urlopen(url)
+            yield body
+        except:
+            if self.save_errors:
+                self._save_error(url, body)
+            raise
