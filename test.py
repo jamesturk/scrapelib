@@ -95,6 +95,26 @@ class ScraperTest(unittest.TestCase):
 
         scrapelib.USE_HTTPLIB2 = old
 
+    def test_headers(self):
+        s = scrapelib.Scraper(user_agent='test_agent')
+
+        self.assertEqual('test_agent', s._make_headers(
+                'http://localhost:8000')['user-agent'])
+
+        # override user_agent
+        s.headers = {'user-agent': 'other_agent'}
+        self.assertEqual('other_agent', s._make_headers(
+                'http://localhost:8000')['user-agent'])
+
+        # callable headers
+        s.headers = lambda url: {'req-url': url}
+        self.assertEqual('http://localhost:8000', s._make_headers(
+                'http://localhost:8000')['req-url'])
+
+        s.disable_compression = True
+        self.assertEqual('text/*', s._make_headers(
+                'http://localhost:8000')['Accept-Encoding'])
+
 if __name__ == '__main__':
     os.chdir(os.path.abspath('./test_root'))
     unittest.main()
