@@ -2,6 +2,7 @@ import time
 import urllib2
 import urlparse
 import functools
+import robotparser
 
 try:
     import httplib2
@@ -10,13 +11,26 @@ except ImportError:
     USE_HTTPLIB2 = False
 
 
+class RobotExclusionError(Exception):
+
+    def __init__(self, message, url, user_agent):
+        super(RobotExclusionError, self).__init__(message)
+        self.url = url
+        self.user_agent = user_agent
+
+
 class Scraper(object):
 
     def __init__(self, user_agent='scrapelib 0.1',
                  cache_dir=None, headers={},
-                 requests_per_minute=60):
+                 requests_per_minute=60,
+                 follow_robots=True):
         self.headers = headers
         self.user_agent = user_agent
+
+        self.follow_robots = follow_robots
+        if self.follow_robots:
+            self._robot_parsers = {}
 
         if requests_per_minute > 0:
             self.throttled = True
@@ -29,7 +43,7 @@ class Scraper(object):
             print "httplib2 not available, caching will be disabled."
 
         if USE_HTTPLIB2:
-              self._http = httplib2.Http(cache_dir)
+            self._http = httplib2.Http(cache_dir)
 
     def _throttle(self):
         now = time.time()
@@ -40,6 +54,20 @@ class Scraper(object):
             self.last_request = time.time()
         else:
             self.last_request = now
+
+    def _robot_allowed(self, user_agent, parsed_url):
+        robots_url = urlparse.urljoin(parsed_url.scheme + "://" +
+                                      parsed_url.netloc, "robots.txt")
+
+        try:
+            parser = self._robot_parsers[robots_url]
+        except KeyError:
+            parser = robotparser.RobotFileParser()
+            parser.set_url(robots_url)
+            parser.read()
+            self._robot_parsers[robots_url] = parser
+
+        return parser.can_fetch(user_agent, parsed_url.geturl())
 
     def urlopen(self, url):
         if self.throttled:
@@ -54,13 +82,20 @@ class Scraper(object):
 
         if 'User-Agent' not in headers:
             headers['User-Agent'] = self.user_agent
+        user_agent = headers['User-Agent']
 
-        if parsed_url.scheme in ['http', 'https'] and USE_HTTPLIB2:
-            resp, content = self._http.request(url, 'GET', headers=headers)
+        if parsed_url.scheme in ['http', 'https']:
+            if self.follow_robots and not self._robot_allowed(user_agent,
+                                                              parsed_url):
+                raise RobotExclusionError(
+                    "User-Agent '%s' not allowed at '%s'" % (
+                        user_agent, url), url, user_agent)
 
-            return content
-        else:
-            req = urllib2.Request(url, headers=headers)
-            resp = urllib2.urlopen(req)
+            if USE_HTTPLIB2:
+                resp, content = self._http.request(url, 'GET',
+                                                   headers=headers)
+                return content
 
-            return resp.read()
+        req = urllib2.Request(url, headers=headers)
+        resp = urllib2.urlopen(req)
+        return resp.read()
