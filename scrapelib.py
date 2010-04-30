@@ -43,6 +43,17 @@ class RobotExclusionError(ScrapeError):
         self.user_agent = user_agent
 
 
+class HTTPMethodUnavailableError(ScrapeError):
+    """
+    Raised when the supplied HTTP method is invalid or not supported
+    by the HTTP backend.
+    """
+
+    def __init__(self, message, method):
+        super(HTTPMethodUnavailableError, self).__init__(message)
+        self.method = method
+
+
 class Headers(dict):
     def __init__(self, d={}):
         super(Headers, self).__init__()
@@ -228,10 +239,16 @@ class Scraper(object):
                     self._cookie_jar.extract_cookies(fake_resp, fake_req)
 
                 return content
+        else:
+            # not an HTTP(S) request
+            if method != 'GET':
+                raise HTTPMethodUnavailableError(
+                    "non-HTTP(S) requests do not support method '%s'" %
+                    method, method)
 
         if method not in ['GET', 'POST']:
-            raise ScrapeError("urllib2 does not support '%s' method" %
-                              method)
+            raise HTTPMethodUnavailableError(
+                "urllib2 does not support '%s' method" % method, method)
 
         req = urllib2.Request(url, data=body, headers=headers)
         if self.allow_cookies:

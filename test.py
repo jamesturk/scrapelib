@@ -7,6 +7,11 @@ import threading
 import BaseHTTPServer
 import SimpleHTTPServer
 
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
 
 class SilentRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     def log_message(self, *args):
@@ -90,8 +95,11 @@ class ScraperTest(unittest.TestCase):
 
         s = scrapelib.Scraper(requests_per_minute=0)
 
-        self.assertRaises(scrapelib.ScrapeError, s.urlopen,
+        self.assertRaises(scrapelib.HTTPMethodUnavailableError, s.urlopen,
                           "http://localhost:8000", 'HEAD')
+
+        self.assertRaises(scrapelib.HTTPMethodUnavailableError, s.urlopen,
+                          "ftp://example.com", "POST")
 
         scrapelib.USE_HTTPLIB2 = old
 
