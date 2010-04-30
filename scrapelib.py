@@ -36,8 +36,12 @@ class Scraper(object):
                  follow_robots=True,
                  error_dir=None,
                  disable_compression=False):
-        self.headers = headers
         self.user_agent = user_agent
+
+        if not callable(headers):
+            self.headers = headers.copy()
+        else:
+            self.headers = headers
 
         self.follow_robots = follow_robots
         if self.follow_robots:
@@ -88,6 +92,20 @@ class Scraper(object):
 
         return parser.can_fetch(user_agent, parsed_url.geturl())
 
+    def _make_headers(self, url):
+        if callable(self.headers):
+            headers = self.headers(url)
+        else:
+            headers = self.headers
+
+        if 'User-Agent' not in headers:
+            headers['User-Agent'] = self.user_agent
+
+        if self.disable_compression and 'Accept-Encoding' not in headers:
+            headers['Accept-Encoding'] = 'text/*'
+
+        return headers
+
     def urlopen(self, url):
         if self.throttled:
             self._throttle()
@@ -99,17 +117,8 @@ class Scraper(object):
             url = "http://" + url
             parsed_url = urlparse.urlparse(url)
 
-        if callable(self.headers):
-            headers = self.headers(url)
-        else:
-            headers = self.headers
-
-        if 'User-Agent' not in headers:
-            headers['User-Agent'] = self.user_agent
+        headers = self._make_headers(url)
         user_agent = headers['User-Agent']
-
-        if self.disable_compression and 'Accept-Encoding' not in headers:
-            headers['Accept-Encoding'] = 'text/*'
 
         if parsed_url.scheme in ['http', 'https']:
             if self.follow_robots and not self._robot_allowed(user_agent,
