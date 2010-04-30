@@ -279,7 +279,7 @@ class Scraper(object):
         document.
         """
         if not USE_LXML:
-            raise Exception("lxml does not seem to be installed.")
+            raise ScrapeError("lxml does not seem to be installed.")
 
         body = None
         try:
