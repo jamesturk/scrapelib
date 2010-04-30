@@ -117,8 +117,7 @@ class Scraper(object):
         self.headers = headers
 
         self.follow_robots = follow_robots
-        if self.follow_robots:
-            self._robot_parsers = {}
+        self._robot_parsers = {}
 
         if requests_per_minute > 0:
             self.throttled = True
@@ -126,20 +125,21 @@ class Scraper(object):
             self.last_request = 0
         else:
             self.throttled = False
+            self.request_frequency = 0.0
+            self.last_request = 0
 
         if cache_dir and not USE_HTTPLIB2:
             print "httplib2 not available, HTTP caching and compression" \
                 "will be disabled."
 
-        if error_dir:
+        self.error_dir = error_dir
+        if self.error_dir:
             self.save_errors = True
-            self.error_dir = error_dir
         else:
             self.save_errors = False
 
         self.accept_cookies = accept_cookies
-        if self.accept_cookies:
-            self._cookie_jar = cookielib.CookieJar()
+        self._cookie_jar = cookielib.CookieJar()
 
         self.disable_compression = disable_compression
 
