@@ -27,7 +27,11 @@ except ImportError:
     USE_LXML = False
 
 
-class RobotExclusionError(Exception):
+class ScrapeError(Exception):
+    pass
+
+
+class RobotExclusionError(ScrapeError):
     """
     Raised when an attempt is made to access a page denied by
     the host's robots.txt file.
@@ -166,9 +170,12 @@ class Scraper(object):
 
         return headers
 
-    def urlopen(self, url):
+    def urlopen(self, url, method='GET', body=None):
         if self.throttled:
             self._throttle()
+
+        if method == 'POST' and body is None:
+            body = ''
 
         parsed_url = urlparse.urlparse(url)
 
@@ -188,7 +195,8 @@ class Scraper(object):
                         user_agent, url), url, user_agent)
 
             if USE_HTTPLIB2:
-                resp, content = self._http.request(url, 'GET',
+                resp, content = self._http.request(url, method,
+                                                   body=body,
                                                    headers=headers)
 
                 if self.accept_cookies:
@@ -198,7 +206,11 @@ class Scraper(object):
 
                 return content
 
-        req = urllib2.Request(url, headers=headers)
+        if method not in ['GET', 'POST']:
+            raise ScrapeError("urllib2 does not support '%s' method" %
+                              method)
+
+        req = urllib2.Request(url, data=body, headers=headers)
         if self.allow_cookies:
             self._cookie_jar.add_cookie_header(req)
         resp = urllib2.urlopen(req)
