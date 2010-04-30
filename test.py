@@ -54,7 +54,7 @@ class ScraperTest(unittest.TestCase):
     def test_get(self):
         s = scrapelib.Scraper(requests_per_minute=0)
         self.assertEqual('this is a test.',
-                         s.urlopen("http://localhost:8000/index.html"))
+                         s.urlopen("http://localhost:8000/index.html")[1])
 
     def test_request_throttling(self):
         requests = 0
@@ -83,11 +83,11 @@ class ScraperTest(unittest.TestCase):
         self.assertRaises(scrapelib.RobotExclusionError, s.urlopen,
                           "http://localhost:8000/private/secret.html")
         self.assertEqual("this is a test.",
-                         s.urlopen("http://localhost:8000/index.html"))
+                         s.urlopen("http://localhost:8000/index.html")[1])
 
         s.follow_robots = False
         self.assertEqual("this is a secret.", s.urlopen(
-                "http://localhost:8000/private/secret.html"))
+                "http://localhost:8000/private/secret.html")[1])
 
     def test_urllib2_methods(self):
         old = scrapelib.USE_HTTPLIB2

@@ -78,29 +78,39 @@ class Headers(dict):
                 return False
         return True
 
-
-class FakeResponse(object):
-    """
-    Adapts httplib2 response objects for use with cookielib.CookieJar
-    """
-
-    def __init__(self, response):
-        self._response = response
-
-    def info(self):
-        return self
-
     def getallmatchingheaders(self, name):
-        header = self._response.get(name.lower(), None)
+        header = self.get(name)
         if header:
             return [name + ": " + header]
         return []
 
     def getheaders(self, name):
-        header = self._response.get(name.lower(), None)
+        header = self.get(name)
         if header:
             return [header]
         return []
+
+
+class Response(object):
+
+    def __init__(self, url, requested_url, protocol='http', code=None,
+                 fromcache=False, headers={}):
+        """
+        :param url: the actual URL of the response (after following any
+          redirects)
+        :param requested_url: the original URL requested
+        :param code: response code (if HTTP)
+        :param fromcache: response was retrieved from local cache
+        """
+        self.url = url
+        self.requested_url = requested_url
+        self.protocol = protocol
+        self.code = code
+        self.fromcache = fromcache
+        self.headers = Headers(headers)
+
+    def info(self):
+        return self.headers
 
 
 class Scraper(object):
@@ -233,12 +243,18 @@ class Scraper(object):
                                                    body=body,
                                                    headers=headers)
 
-                if self.accept_cookies:
-                    fake_resp = FakeResponse(resp)
-                    fake_req = urllib2.Request(url, headers=headers)
-                    self._cookie_jar.extract_cookies(fake_resp, fake_req)
+                our_resp = Response(resp['content-location'],
+                                    url,
+                                    code=resp.status,
+                                    fromcache=resp.fromcache,
+                                    protocol=parsed_url.scheme,
+                                    headers=resp)
 
-                return content
+                if self.accept_cookies:
+                    fake_req = urllib2.Request(url, headers=headers)
+                    self._cookie_jar.extract_cookies(our_resp, fake_req)
+
+                return our_resp, content
         else:
             # not an HTTP(S) request
             if method != 'GET':
@@ -256,7 +272,12 @@ class Scraper(object):
         resp = urllib2.urlopen(req)
         if self.allow_cookies:
             self._cookie_jar.extract_cookies(resp, req)
-        return resp.read()
+
+        our_resp = Response(resp.geturl(), url, code=resp.code,
+                            fromcache=False, protocol=parsed_url.scheme,
+                            headers=resp.headers)
+
+        return our_resp, resp.read()
 
     def _save_error(self, url, body):
         exception = sys.exc_info()[1]
@@ -282,7 +303,7 @@ class Scraper(object):
         body = None
 
         try:
-            body = self.urlopen(url)
+            resp, body = self.urlopen(url)
             yield body
         except:
             if self.save_errors:
@@ -300,7 +321,7 @@ class Scraper(object):
 
         body = None
         try:
-            body = self.urlopen(url)
+            resp, body = self.urlopen(url)
             elem = lxml.html.fromstring(body)
             yield elem
         except:
