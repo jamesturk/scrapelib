@@ -34,7 +34,8 @@ class Scraper(object):
                  cache_dir=None, headers={},
                  requests_per_minute=60,
                  follow_robots=True,
-                 error_dir=None):
+                 error_dir=None,
+                 disable_compression=False):
         self.headers = headers
         self.user_agent = user_agent
 
@@ -57,6 +58,8 @@ class Scraper(object):
             self.error_dir = error_dir
         else:
             self.save_errors = False
+
+        self.disable_compression = disable_compression
 
         if USE_HTTPLIB2:
             self._http = httplib2.Http(cache_dir)
@@ -104,6 +107,9 @@ class Scraper(object):
         if 'User-Agent' not in headers:
             headers['User-Agent'] = self.user_agent
         user_agent = headers['User-Agent']
+
+        if self.disable_compression and 'Accept-Encoding' not in headers:
+            headers['Accept-Encoding'] = 'text/*'
 
         if parsed_url.scheme in ['http', 'https']:
             if self.follow_robots and not self._robot_allowed(user_agent,
