@@ -5,6 +5,7 @@ import urllib2
 import urlparse
 import datetime
 import functools
+import cookielib
 import contextlib
 import robotparser
 
@@ -28,6 +29,30 @@ class RobotExclusionError(Exception):
         self.user_agent = user_agent
 
 
+class FakeResponse(object):
+    """
+    Adapts httplib2 response objects for use with cookielib.CookieJar
+    """
+
+    def __init__(self, response):
+        self._response = response
+
+    def info(self):
+        return self
+
+    def getallmatchingheaders(self, name):
+        header = self._response.get(name.lower(), None)
+        if header:
+            return [name + ": " + header]
+        return []
+
+    def getheaders(self, name):
+        header = self._response.get(name.lower(), None)
+        if header:
+            return [header]
+        return []
+
+
 class Scraper(object):
 
     def __init__(self, user_agent='scrapelib 0.1',
@@ -35,6 +60,7 @@ class Scraper(object):
                  requests_per_minute=60,
                  follow_robots=True,
                  error_dir=None,
+                 accept_cookies=True,
                  disable_compression=False):
         self.user_agent = user_agent
 
@@ -62,6 +88,10 @@ class Scraper(object):
             self.error_dir = error_dir
         else:
             self.save_errors = False
+
+        self.accept_cookies = accept_cookies
+        if self.accept_cookies:
+            self._cookie_jar = cookielib.CookieJar()
 
         self.disable_compression = disable_compression
 
@@ -104,6 +134,13 @@ class Scraper(object):
         if self.disable_compression and 'Accept-Encoding' not in headers:
             headers['Accept-Encoding'] = 'text/*'
 
+        if self.accept_cookies:
+            # CookieJar expects a urllib2.Request-like object
+            req = urllib2.Request(url, headers=headers)
+            self._cookie_jar.add_cookie_header(req)
+            headers = req.headers
+            headers.update(req.unredirected_hdrs)
+
         return headers
 
     def urlopen(self, url):
@@ -118,7 +155,7 @@ class Scraper(object):
             parsed_url = urlparse.urlparse(url)
 
         headers = self._make_headers(url)
-        user_agent = headers['User-Agent']
+        user_agent = headers['User-agent']
 
         if parsed_url.scheme in ['http', 'https']:
             if self.follow_robots and not self._robot_allowed(user_agent,
@@ -130,10 +167,20 @@ class Scraper(object):
             if USE_HTTPLIB2:
                 resp, content = self._http.request(url, 'GET',
                                                    headers=headers)
+
+                if self.accept_cookies:
+                    fake_resp = FakeResponse(resp)
+                    fake_req = urllib2.Request(url, headers=headers)
+                    self._cookie_jar.extract_cookies(fake_resp, fake_req)
+
                 return content
 
         req = urllib2.Request(url, headers=headers)
+        if self.allow_cookies:
+            self._cookie_jar.add_cookie_header(req)
         resp = urllib2.urlopen(req)
+        if self.allow_cookies:
+            self._cookie_jar.extract_cookies(resp, req)
         return resp.read()
 
     def _save_error(self, url, body):
