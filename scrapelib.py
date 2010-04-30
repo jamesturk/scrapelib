@@ -16,6 +16,7 @@ class Scraper(object):
                  cache_dir=None, headers={},
                  requests_per_minute=60):
         self.headers = headers
+        self.user_agent = user_agent
 
         if requests_per_minute > 0:
             self.throttled = True
@@ -50,6 +51,9 @@ class Scraper(object):
             headers = self.headers(url)
         else:
             headers = self.headers
+
+        if 'User-Agent' not in headers:
+            headers['User-Agent'] = self.user_agent
 
         if parsed_url.scheme in ['http', 'https'] and USE_HTTPLIB2:
             resp, content = self._http.request(url, 'GET', headers=headers)
