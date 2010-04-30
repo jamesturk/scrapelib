@@ -91,6 +91,11 @@ class Scraper(object):
 
         parsed_url = urlparse.urlparse(url)
 
+        # Default to HTTP requests
+        if not parsed_url.scheme:
+            url = "http://" + url
+            parsed_url = urlparse.urlparse(url)
+
         if callable(self.headers):
             headers = self.headers(url)
         else:
