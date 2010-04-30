@@ -115,6 +115,11 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual('text/*', s._make_headers(
                 'http://localhost:8000')['Accept-Encoding'])
 
+        # override accept-encoding
+        s.headers = {'accept-encoding': '*'}
+        self.assertEqual('*', s._make_headers(
+                'http://localhost:8000')['Accept-encoding'])
+
 if __name__ == '__main__':
     os.chdir(os.path.abspath('./test_root'))
     unittest.main()
