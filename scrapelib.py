@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import logging
 import urllib2
 import urlparse
 import datetime
@@ -25,6 +26,12 @@ try:
     USE_LXML = True
 except ImportError:
     USE_LXML = False
+
+_log = logging.getLogger('scrapelib')
+_stream_handler = logging.StreamHandler()
+_stream_handler.setFormatter(logging.Formatter(
+        "%(asctime)s %(levelname)s %(message)s"))
+_log.addHandler(_stream_handler)
 
 
 class ScrapeError(Exception):
@@ -150,8 +157,8 @@ class Scraper(object):
             self.last_request = 0
 
         if cache_dir and not USE_HTTPLIB2:
-            print "httplib2 not available, HTTP caching and compression" \
-                "will be disabled."
+            _log.warning("httplib2 not available, HTTP caching "
+                         "and compression will be disabled.")
 
         self.error_dir = error_dir
         if self.error_dir:
@@ -171,7 +178,7 @@ class Scraper(object):
         now = time.time()
         diff = self.request_frequency - (now - self.last_request)
         if diff > 0:
-            print "sleeping for %fs" % diff
+            _log.info("sleeping for %fs" % diff)
             time.sleep(diff)
             self.last_request = time.time()
         else:
