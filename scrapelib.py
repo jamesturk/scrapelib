@@ -267,10 +267,10 @@ class Scraper(object):
                 "urllib2 does not support '%s' method" % method, method)
 
         req = urllib2.Request(url, data=body, headers=headers)
-        if self.allow_cookies:
+        if self.accept_cookies:
             self._cookie_jar.add_cookie_header(req)
         resp = urllib2.urlopen(req)
-        if self.allow_cookies:
+        if self.accept_cookies:
             self._cookie_jar.extract_cookies(resp, req)
 
         our_resp = Response(resp.geturl(), url, code=resp.code,
