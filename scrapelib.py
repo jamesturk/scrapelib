@@ -27,6 +27,9 @@ try:
 except ImportError:
     USE_LXML = False
 
+__version__ = '0.1'
+_user_agent = 'scrapelib %s' % __version__
+
 _log = logging.getLogger('scrapelib')
 _stream_handler = logging.StreamHandler()
 _stream_handler.setFormatter(logging.Formatter(
@@ -122,7 +125,7 @@ class Response(object):
 
 class Scraper(object):
 
-    def __init__(self, user_agent='scrapelib 0.1',
+    def __init__(self, user_agent=_user_agent,
                  cache_dir=None, headers={},
                  requests_per_minute=60,
                  follow_robots=True,
