@@ -313,8 +313,7 @@ class Scraper(object):
         body = None
 
         try:
-            resp, body = self.urlopen(url)
-            yield body
+            yield self.urlopen(url)
         except:
             if self.save_errors:
                 self._save_error(url, body)
@@ -333,7 +332,7 @@ class Scraper(object):
         try:
             resp, body = self.urlopen(url)
             elem = lxml.html.fromstring(body)
-            yield elem
+            yield resp, elem
         except:
             if self.save_errors:
                 self._save_error(url, body)
