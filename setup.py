@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from distutils.core import setup
+from setuptools import setup
 from scrapelib import __version__
 
 long_description = open('README.rst').read()
@@ -19,7 +19,8 @@ setup(name="scrapelib",
                    "Natural Language :: English",
                    "Operating System :: OS Independent",
                    "Programming Language :: Python",
-                   "Topic :: Software Development :: Libraries :: Python Modules",
+                   ("Topic :: Software Development :: Libraries :: "
+                    "Python Modules"),
                    ],
-      install_requires=["httplib2 >= 0.6.0"]
+      install_requires=["httplib2 >= 0.6.0"],
       )
