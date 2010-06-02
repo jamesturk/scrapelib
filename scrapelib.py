@@ -123,6 +123,23 @@ class Response(object):
         return self.headers
 
 
+class ResultTuple(tuple):
+    def __new__(cls, *args, **kwargs):
+        self = tuple.__new__(cls, args[1:], **kwargs)
+
+        self._scraper = args[0]
+
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type and self._scraper.save_errors:
+            self._scraper._save_error(self[0].url, self[1])
+        return False
+
+
 class Scraper(object):
 
     def __init__(self, user_agent=_user_agent,
@@ -264,7 +281,7 @@ class Scraper(object):
                     fake_req = urllib2.Request(url, headers=headers)
                     self._cookie_jar.extract_cookies(our_resp, fake_req)
 
-                return our_resp, content
+                return ResultTuple(self, our_resp, content)
         else:
             # not an HTTP(S) request
             if method != 'GET':
@@ -287,7 +304,7 @@ class Scraper(object):
                             fromcache=False, protocol=parsed_url.scheme,
                             headers=resp.headers)
 
-        return our_resp, resp.read()
+        return ResultTuple(self, our_resp, resp.read())
 
     def _save_error(self, url, body):
         exception = sys.exc_info()[1]
@@ -308,23 +325,7 @@ class Scraper(object):
         with open(path, 'w') as fp:
             json.dump(out, fp)
 
-    @contextlib.contextmanager
-    def urlopen_context(self, url):
-        body = None
-
-        try:
-            yield self.urlopen(url)
-        except:
-            if self.save_errors:
-                self._save_error(url, body)
-            raise
-
-    @contextlib.contextmanager
-    def lxml_context(self, url):
-        """
-        Like :method:`urlopen_context`, except returns an lxml parsed
-        document.
-        """
+    def lxml(self, url, method='GET', body=None):
         if not USE_LXML:
             raise ScrapeError("lxml does not seem to be installed.")
 
@@ -332,7 +333,7 @@ class Scraper(object):
         try:
             resp, body = self.urlopen(url)
             elem = lxml.html.fromstring(body)
-            yield resp, elem
+            return ResultTuple(self, resp, body)
         except:
             if self.save_errors:
                 self._save_error(url, body)
