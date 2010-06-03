@@ -21,12 +21,6 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-try:
-    import lxml.html
-    USE_LXML = True
-except ImportError:
-    USE_LXML = False
-
 __version__ = '0.1'
 _user_agent = 'scrapelib %s' % __version__
 
@@ -324,17 +318,3 @@ class Scraper(object):
 
         with open(path, 'w') as fp:
             json.dump(out, fp)
-
-    def lxml(self, url, method='GET', body=None):
-        if not USE_LXML:
-            raise ScrapeError("lxml does not seem to be installed.")
-
-        body = None
-        try:
-            resp, body = self.urlopen(url)
-            elem = lxml.html.fromstring(body)
-            return ResultTuple(self, resp, body)
-        except:
-            if self.save_errors:
-                self._save_error(url, body)
-            raise
