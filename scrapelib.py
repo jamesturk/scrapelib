@@ -58,6 +58,22 @@ class HTTPMethodUnavailableError(ScrapeError):
         self.method = method
 
 
+class ResultStr(unicode):
+    def __new__(cls, scraper, response, str):
+        self = unicode.__new__(cls, str)
+        self._scraper = scraper
+        self.response = response
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type and self._scraper.save_errors:
+            self._scraper._save_error(self[0].url, self[1])
+        return False
+
+
 class Headers(dict):
     def __init__(self, d={}):
         super(Headers, self).__init__()
@@ -115,23 +131,6 @@ class Response(object):
 
     def info(self):
         return self.headers
-
-
-class ResultTuple(tuple):
-    def __new__(cls, *args, **kwargs):
-        self = tuple.__new__(cls, args[1:], **kwargs)
-
-        self._scraper = args[0]
-
-        return self
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type and self._scraper.save_errors:
-            self._scraper._save_error(self[0].url, self[1])
-        return False
 
 
 class Scraper(object):
@@ -275,7 +274,7 @@ class Scraper(object):
                     fake_req = urllib2.Request(url, headers=headers)
                     self._cookie_jar.extract_cookies(our_resp, fake_req)
 
-                return ResultTuple(self, our_resp, content)
+                return ResultStr(self, our_resp, content)
         else:
             # not an HTTP(S) request
             if method != 'GET':
@@ -298,7 +297,7 @@ class Scraper(object):
                             fromcache=False, protocol=parsed_url.scheme,
                             headers=resp.headers)
 
-        return ResultTuple(self, our_resp, resp.read())
+        return ResultStr(self, our_resp, resp.read())
 
     def _save_error(self, url, body):
         exception = sys.exc_info()[1]
