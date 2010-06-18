@@ -336,4 +336,4 @@ class Scraper(object):
             path = base_path + "-%d" % n
 
         with open(path, 'w') as fp:
-            json.dump(out, fp)
+            json.dump(out, fp, ensure_ascii=False)
