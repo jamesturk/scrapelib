@@ -24,11 +24,13 @@ except ImportError:
 __version__ = '0.1'
 _user_agent = 'scrapelib %s' % __version__
 
+
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
 _log = logging.getLogger('scrapelib')
-_stream_handler = logging.StreamHandler()
-_stream_handler.setFormatter(logging.Formatter(
-        "%(asctime)s %(levelname)s %(message)s"))
-_log.addHandler(_stream_handler)
+_log.addHandler(NullHandler())
 
 
 class ScrapeError(Exception):
@@ -211,19 +213,22 @@ class Scraper(object):
         now = time.time()
         diff = self.request_frequency - (now - self.last_request)
         if diff > 0:
-            _log.info("sleeping for %fs" % diff)
+            _log.debug("sleeping for %fs" % diff)
             time.sleep(diff)
             self.last_request = time.time()
         else:
             self.last_request = now
 
     def _robot_allowed(self, user_agent, parsed_url):
+        _log.info("checking robots permission for %s" % parsed_url.geturl())
         robots_url = urlparse.urljoin(parsed_url.scheme + "://" +
                                       parsed_url.netloc, "robots.txt")
 
         try:
             parser = self._robot_parsers[robots_url]
+            _log.info("using cached copy of %s" % robots_url)
         except KeyError:
+            _log.info("grabbing %s" % robots_url)
             parser = robotparser.RobotFileParser()
             parser.set_url(robots_url)
             parser.read()
@@ -265,6 +270,7 @@ class Scraper(object):
 
         # Default to HTTP requests
         if not parsed_url.scheme:
+            _log.warning("no URL scheme provided, assuming HTTP")
             url = "http://" + url
             parsed_url = urlparse.urlparse(url)
 
@@ -279,6 +285,7 @@ class Scraper(object):
                         user_agent, url), url, user_agent)
 
             if USE_HTTPLIB2:
+                _log.info("getting %s using HTTPLIB2" % url)
                 resp, content = self._http.request(url, method,
                                                    body=body,
                                                    headers=headers)
@@ -306,6 +313,7 @@ class Scraper(object):
             raise HTTPMethodUnavailableError(
                 "urllib2 does not support '%s' method" % method, method)
 
+        _log.info("getting %s using urllib2" % url)
         req = urllib2.Request(url, data=body, headers=headers)
         if self.accept_cookies:
             self._cookie_jar.add_cookie_header(req)
