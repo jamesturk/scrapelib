@@ -161,7 +161,7 @@ class Scraper(object):
                  follow_robots=True,
                  error_dir=None,
                  accept_cookies=True,
-                 disable_compression=False):
+                 disable_compression=False, **kwargs):
         """
         :param user_agent: the value to send as a User-Agent header on
           HTTP requests
