@@ -21,7 +21,7 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-__version__ = '0.1'
+__version__ = '0.1.1'
 _user_agent = 'scrapelib %s' % __version__
 
 
@@ -263,6 +263,7 @@ class Scraper(object):
         if self.throttled:
             self._throttle()
 
+        method = method.upper()
         if method == 'POST' and body is None:
             body = ''
 
@@ -286,6 +287,11 @@ class Scraper(object):
 
             if USE_HTTPLIB2:
                 _log.info("getting %s using HTTPLIB2" % url)
+
+                if method == 'POST' and 'Content-Type' not in headers:
+                    headers['Content-Type'] = ('application/'
+                                               'x-www-form-urlencoded')
+
                 resp, content = self._http.request(url, method,
                                                    body=body,
                                                    headers=headers)
