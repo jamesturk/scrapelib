@@ -301,7 +301,7 @@ class Scraper(object):
                                                    body=body,
                                                    headers=headers)
 
-                our_resp = Response(resp.get('content-location'),
+                our_resp = Response(resp.get('content-location') or url,
                                     url,
                                     code=resp.status,
                                     fromcache=resp.fromcache,
