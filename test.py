@@ -128,6 +128,22 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual('*', s._make_headers(
                 'http://localhost:8000')['Accept-encoding'])
 
+    def test_error(self):
+        errdir = os.tmpnam()
+        s = scrapelib.Scraper(error_dir=errdir)
+
+        # error_dir created
+        self.assert_(os.path.isdir(errdir))
+
+        def raises():
+            with s.urlopen('http://localhost:8000'):
+                raise Exception('test')
+
+        self.assertRaises(Exception, raises)
+
+        # ensure that the file was created
+        self.assert_(os.path.isfile(os.path.join(errdir, 'http:,,localhost:8000')))
+
 if __name__ == '__main__':
     os.chdir(os.path.abspath('./test_root'))
     unittest.main()

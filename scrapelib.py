@@ -197,6 +197,11 @@ class Scraper(object):
 
         self.error_dir = error_dir
         if self.error_dir:
+            try:
+                os.makedirs(error_dir)
+            except OSError, e:
+                if e.errno != 17:
+                    raise
             self.save_errors = True
         else:
             self.save_errors = False
