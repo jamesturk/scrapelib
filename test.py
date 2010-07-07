@@ -147,14 +147,14 @@ class ScraperTest(unittest.TestCase):
                                       'http:,,localhost:8000')))
 
     def test_raise_errors(self):
-        s = scrapelib.Scraper()
-
         # detect a 404
+        s = scrapelib.Scraper(raise_errors=True)
         self.assertRaises(scrapelib.HTTPError, s.urlopen,
-                          'http://localhost:8000/404', raise_errors=True)
+                          'http://localhost:8000/404')
 
         # the other way to detect a 404
-        resp = s.urlopen('http://localhost:8000/404', raise_errors=False)
+        s = scrapelib.Scraper(raise_errors=False)
+        resp = s.urlopen('http://localhost:8000/404')
         self.assertEqual(resp.response.code, 404)
 
     def test_use_cache_first(self):
