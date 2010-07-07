@@ -178,7 +178,9 @@ class Scraper(object):
                  follow_robots=True,
                  error_dir=None,
                  accept_cookies=True,
-                 disable_compression=False, **kwargs):
+                 disable_compression=False,
+                 use_cache_first=False,
+                 **kwargs):
         """
         :param user_agent: the value to send as a User-Agent header on
           HTTP requests
@@ -190,6 +192,7 @@ class Scraper(object):
         :param error_dir: if not None,
         :param accept_cookies: HTTP cookie support
         :param disable_compression: do not accept compressed content
+        :param use_cache_first: always make an attempt to use cached data first
         """
         self.user_agent = user_agent
         self.headers = headers
@@ -225,6 +228,8 @@ class Scraper(object):
         self._cookie_jar = cookielib.CookieJar()
 
         self.disable_compression = disable_compression
+
+        self.use_cache_first = use_cache_first
 
         if USE_HTTPLIB2:
             self._http = httplib2.Http(cache_dir)
@@ -312,9 +317,19 @@ class Scraper(object):
                     headers['Content-Type'] = ('application/'
                                                'x-www-form-urlencoded')
 
+                if self.use_cache_first and 'Cache-Control' not in headers:
+                    headers['cache-control'] = 'only-if-cached'
+
                 resp, content = self._http.request(url, method,
                                                    body=body,
                                                    headers=headers)
+
+                if self.use_cache_first and resp.status == 504:
+                    headers.pop('cache-control')
+                    resp, content = self._http.request(url, method,
+                                                       body=body,
+                                                       headers=headers)
+
 
                 our_resp = Response(resp.get('content-location') or url,
                                     url,

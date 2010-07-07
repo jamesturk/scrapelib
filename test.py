@@ -3,6 +3,7 @@ import os
 import time
 import unittest
 import scrapelib
+import tempfile
 import threading
 import BaseHTTPServer
 import SimpleHTTPServer
@@ -129,7 +130,7 @@ class ScraperTest(unittest.TestCase):
                 'http://localhost:8000')['Accept-encoding'])
 
     def test_error_context(self):
-        errdir = os.tmpnam()
+        errdir = tempfile.mkdtemp()
         s = scrapelib.Scraper(error_dir=errdir)
 
         # error_dir created
@@ -155,6 +156,15 @@ class ScraperTest(unittest.TestCase):
         # the other way to detect a 404
         resp = s.urlopen('http://localhost:8000/404', raise_errors=False)
         self.assertEqual(resp.response.code, 404)
+
+    def test_use_cache_first(self):
+        cachedir = tempfile.mkdtemp()
+        s = scrapelib.Scraper(use_cache_first=True, cache_dir=cachedir)
+
+        r = s.urlopen('http://localhost:8000')
+        r2 = s.urlopen('http://localhost:8000')
+        self.assertFalse(r.response.fromcache)
+        self.assertTrue(r2.response.fromcache)
 
 if __name__ == '__main__':
     os.chdir(os.path.abspath('./test_root'))
