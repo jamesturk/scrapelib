@@ -59,6 +59,18 @@ class HTTPMethodUnavailableError(ScrapeError):
         super(HTTPMethodUnavailableError, self).__init__(message)
         self.method = method
 
+class HTTPError(ScrapeError):
+    """
+    Raised when urlopen encounters a 4xx or 5xx error code and the
+    raise_errors option is true.
+    """
+
+    def __init__(self, result):
+        message = '%s while retrieving %s' % (result.response.code,
+                                              result.response.url)
+        super(HTTPError, self).__init__(message)
+        self.result = result
+
 
 class ErrorManager(object):
     def __enter__(self):
@@ -264,7 +276,7 @@ class Scraper(object):
 
         return headers
 
-    def urlopen(self, url, method='GET', body=None):
+    def urlopen(self, url, method='GET', body=None, raise_errors=False):
         if self.throttled:
             self._throttle()
 
@@ -312,7 +324,10 @@ class Scraper(object):
                     fake_req = urllib2.Request(url, headers=headers)
                     self._cookie_jar.extract_cookies(our_resp, fake_req)
 
-                return wrap_result(self, our_resp, content)
+                result = wrap_result(self, our_resp, content)
+                if raise_errors and result.response.code >= 400:
+                    raise HTTPError(result)
+                return result
         else:
             # not an HTTP(S) request
             if method != 'GET':
@@ -336,7 +351,10 @@ class Scraper(object):
                             fromcache=False, protocol=parsed_url.scheme,
                             headers=resp.headers)
 
-        return wrap_result(self, our_resp, resp.read())
+        result = wrap_result(self, our_resp, resp.read())
+        if raise_errors and result.response.status >= 400:
+            raise HTTPError(result)
+        return result
 
     def _save_error(self, url, body):
         exception = sys.exc_info()[1]
