@@ -65,11 +65,11 @@ class HTTPError(ScrapeError):
     raise_errors option is true.
     """
 
-    def __init__(self, result):
-        message = '%s while retrieving %s' % (result.response.code,
-                                              result.response.url)
+    def __init__(self, response, body):
+        message = '%s while retrieving %s' % (response.code, response.url)
         super(HTTPError, self).__init__(message)
-        self.result = result
+        self.response = response
+        self.body = body
 
 
 class ErrorManager(object):
@@ -98,7 +98,10 @@ class ResultUnicode(unicode, ErrorManager):
         return self
 
 
-def wrap_result(scraper, response, body):
+def wrap_result(scraper, response, body, raise_errors):
+    if raise_errors and response.code >= 400:
+        raise HTTPError(response, body)
+
     if isinstance(body, unicode):
         return ResultUnicode(scraper, response, body)
 
@@ -324,9 +327,7 @@ class Scraper(object):
                     fake_req = urllib2.Request(url, headers=headers)
                     self._cookie_jar.extract_cookies(our_resp, fake_req)
 
-                result = wrap_result(self, our_resp, content)
-                if raise_errors and result.response.code >= 400:
-                    raise HTTPError(result)
+                result = wrap_result(self, our_resp, content, raise_errors)
                 return result
         else:
             # not an HTTP(S) request
@@ -351,9 +352,7 @@ class Scraper(object):
                             fromcache=False, protocol=parsed_url.scheme,
                             headers=resp.headers)
 
-        result = wrap_result(self, our_resp, resp.read())
-        if raise_errors and result.response.status >= 400:
-            raise HTTPError(result)
+        result = wrap_result(self, our_resp, resp.read(), raise_errors)
         return result
 
     def _save_error(self, url, body):
