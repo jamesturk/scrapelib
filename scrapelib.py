@@ -22,7 +22,7 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 _user_agent = 'scrapelib %s' % __version__
 
 
