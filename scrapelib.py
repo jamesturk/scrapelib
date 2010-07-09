@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import logging
+import tempfile
 import urllib2
 import urlparse
 import datetime
@@ -369,6 +370,18 @@ class Scraper(object):
                             headers=resp.headers)
 
         return self._wrap_result(our_resp, resp.read())
+
+    def urlretrieve(self, url, filename=None, method='GET', body=None):
+        result = self.urlopen(url, method, body)
+
+        if not filename:
+            _, filename = tempfile.mkstemp()
+
+        f = open(filename, 'w')
+        f.write(result)
+        f.close()
+
+        return filename, result.response
 
     def _save_error(self, url, body):
         exception = sys.exc_info()[1]
