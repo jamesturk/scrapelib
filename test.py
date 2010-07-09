@@ -166,6 +166,18 @@ class ScraperTest(unittest.TestCase):
         self.assertFalse(r.response.fromcache)
         self.assertTrue(r2.response.fromcache)
 
+    def test_urlretrieve(self):
+        s = scrapelib.Scraper()
+
+        fname, resp = s.urlretrieve('http://localhost:8000/index.html')
+        self.assertEqual(open(fname).read(), 'this is a test.')
+        self.assertEqual(resp.code, 200)
+
+        set_fname = '/tmp/test-tmpfile'
+        fname, resp = s.urlretrieve('http://localhost:8000/index.html', set_fname)
+        self.assertEqual(fname, set_fname)
+
+
 if __name__ == '__main__':
     os.chdir(os.path.abspath('./test_root'))
     unittest.main()
