@@ -3,6 +3,7 @@ import os
 import time
 import unittest
 import scrapelib
+import tempfile
 import threading
 import BaseHTTPServer
 import SimpleHTTPServer
@@ -129,7 +130,7 @@ class ScraperTest(unittest.TestCase):
                 'http://localhost:8000')['Accept-encoding'])
 
     def test_error_context(self):
-        errdir = os.tmpnam()
+        errdir = tempfile.mkdtemp()
         s = scrapelib.Scraper(error_dir=errdir)
 
         # error_dir created
@@ -146,15 +147,36 @@ class ScraperTest(unittest.TestCase):
                                       'http:,,localhost:8000')))
 
     def test_raise_errors(self):
-        s = scrapelib.Scraper()
-
         # detect a 404
+        s = scrapelib.Scraper(raise_errors=True)
         self.assertRaises(scrapelib.HTTPError, s.urlopen,
-                          'http://localhost:8000/404', raise_errors=True)
+                          'http://localhost:8000/404')
 
         # the other way to detect a 404
-        resp = s.urlopen('http://localhost:8000/404', raise_errors=False)
+        s = scrapelib.Scraper(raise_errors=False)
+        resp = s.urlopen('http://localhost:8000/404')
         self.assertEqual(resp.response.code, 404)
+
+    def test_use_cache_first(self):
+        cachedir = tempfile.mkdtemp()
+        s = scrapelib.Scraper(use_cache_first=True, cache_dir=cachedir)
+
+        r = s.urlopen('http://localhost:8000')
+        r2 = s.urlopen('http://localhost:8000')
+        self.assertFalse(r.response.fromcache)
+        self.assertTrue(r2.response.fromcache)
+
+    def test_urlretrieve(self):
+        s = scrapelib.Scraper()
+
+        fname, resp = s.urlretrieve('http://localhost:8000/index.html')
+        self.assertEqual(open(fname).read(), 'this is a test.')
+        self.assertEqual(resp.code, 200)
+
+        set_fname = '/tmp/test-tmpfile'
+        fname, resp = s.urlretrieve('http://localhost:8000/index.html', set_fname)
+        self.assertEqual(fname, set_fname)
+
 
 if __name__ == '__main__':
     os.chdir(os.path.abspath('./test_root'))

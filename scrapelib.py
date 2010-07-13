@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import logging
+import tempfile
 import urllib2
 import urlparse
 import datetime
@@ -21,7 +22,7 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 _user_agent = 'scrapelib %s' % __version__
 
 
@@ -98,19 +99,6 @@ class ResultUnicode(unicode, ErrorManager):
         return self
 
 
-def wrap_result(scraper, response, body, raise_errors):
-    if raise_errors and response.code >= 400:
-        raise HTTPError(response, body)
-
-    if isinstance(body, unicode):
-        return ResultUnicode(scraper, response, body)
-
-    if isinstance(body, str):
-        return ResultStr(scraper, response, body)
-
-    raise ValueError('expected body string')
-
-
 class Headers(dict):
     def __init__(self, d={}):
         super(Headers, self).__init__()
@@ -178,7 +166,10 @@ class Scraper(object):
                  follow_robots=True,
                  error_dir=None,
                  accept_cookies=True,
-                 disable_compression=False, **kwargs):
+                 disable_compression=False,
+                 use_cache_first=False,
+                 raise_errors=True,
+                 **kwargs):
         """
         :param user_agent: the value to send as a User-Agent header on
           HTTP requests
@@ -190,6 +181,8 @@ class Scraper(object):
         :param error_dir: if not None,
         :param accept_cookies: HTTP cookie support
         :param disable_compression: do not accept compressed content
+        :param use_cache_first: always make an attempt to use cached data first
+        :param raise_errors: raise a HTTPError on 4xx or 5xx response
         """
         self.user_agent = user_agent
         self.headers = headers
@@ -225,6 +218,9 @@ class Scraper(object):
         self._cookie_jar = cookielib.CookieJar()
 
         self.disable_compression = disable_compression
+
+        self.use_cache_first = use_cache_first
+        self.raise_errors = raise_errors
 
         if USE_HTTPLIB2:
             self._http = httplib2.Http(cache_dir)
@@ -279,7 +275,19 @@ class Scraper(object):
 
         return headers
 
-    def urlopen(self, url, method='GET', body=None, raise_errors=False):
+    def _wrap_result(self, response, body):
+        if self.raise_errors and response.code >= 400:
+            raise HTTPError(response, body)
+
+        if isinstance(body, unicode):
+            return ResultUnicode(self, response, body)
+
+        if isinstance(body, str):
+            return ResultStr(self, response, body)
+
+        raise ValueError('expected body string')
+
+    def urlopen(self, url, method='GET', body=None):
         if self.throttled:
             self._throttle()
 
@@ -312,9 +320,19 @@ class Scraper(object):
                     headers['Content-Type'] = ('application/'
                                                'x-www-form-urlencoded')
 
+                if self.use_cache_first and 'Cache-Control' not in headers:
+                    headers['cache-control'] = 'only-if-cached'
+
                 resp, content = self._http.request(url, method,
                                                    body=body,
                                                    headers=headers)
+
+                if self.use_cache_first and resp.status == 504:
+                    headers.pop('cache-control')
+                    resp, content = self._http.request(url, method,
+                                                       body=body,
+                                                       headers=headers)
+
 
                 our_resp = Response(resp.get('content-location') or url,
                                     url,
@@ -327,8 +345,7 @@ class Scraper(object):
                     fake_req = urllib2.Request(url, headers=headers)
                     self._cookie_jar.extract_cookies(our_resp, fake_req)
 
-                result = wrap_result(self, our_resp, content, raise_errors)
-                return result
+                return self._wrap_result(our_resp, content)
         else:
             # not an HTTP(S) request
             if method != 'GET':
@@ -352,8 +369,19 @@ class Scraper(object):
                             fromcache=False, protocol=parsed_url.scheme,
                             headers=resp.headers)
 
-        result = wrap_result(self, our_resp, resp.read(), raise_errors)
-        return result
+        return self._wrap_result(our_resp, resp.read())
+
+    def urlretrieve(self, url, filename=None, method='GET', body=None):
+        result = self.urlopen(url, method, body)
+
+        if not filename:
+            _, filename = tempfile.mkstemp()
+
+        f = open(filename, 'w')
+        f.write(result)
+        f.close()
+
+        return filename, result.response
 
     def _save_error(self, url, body):
         exception = sys.exc_info()[1]
