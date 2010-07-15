@@ -6,9 +6,7 @@ import tempfile
 import urllib2
 import urlparse
 import datetime
-import functools
 import cookielib
-import contextlib
 import robotparser
 
 try:
@@ -59,6 +57,7 @@ class HTTPMethodUnavailableError(ScrapeError):
     def __init__(self, message, method):
         super(HTTPMethodUnavailableError, self).__init__(message)
         self.method = method
+
 
 class HTTPError(ScrapeError):
     """
@@ -130,7 +129,7 @@ class Headers(dict):
         return []
 
     def getheaders(self, name):
-        header = self.get(name)
+        header = self.get(name.lower())
         if header:
             return [header]
         return []
