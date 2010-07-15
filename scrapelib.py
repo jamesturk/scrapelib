@@ -319,6 +319,7 @@ class Scraper(object):
                     headers['Content-Type'] = ('application/'
                                                'x-www-form-urlencoded')
 
+                # tell httplib2 not to make a request
                 if self.use_cache_first and 'Cache-Control' not in headers:
                     headers['cache-control'] = 'only-if-cached'
 
@@ -326,12 +327,12 @@ class Scraper(object):
                                                    body=body,
                                                    headers=headers)
 
+                # do another request if there's no copy in local cache
                 if self.use_cache_first and resp.status == 504:
                     headers.pop('cache-control')
                     resp, content = self._http.request(url, method,
                                                        body=body,
                                                        headers=headers)
-
 
                 our_resp = Response(resp.get('content-location') or url,
                                     url,
@@ -340,9 +341,25 @@ class Scraper(object):
                                     protocol=parsed_url.scheme,
                                     headers=resp)
 
+                # important to accept cookies before redirect handling
                 if self.accept_cookies:
                     fake_req = urllib2.Request(url, headers=headers)
                     self._cookie_jar.extract_cookies(our_resp, fake_req)
+
+                # needed because httplib2 follows the HTTP spec a bit *too*
+                # closely and won't issue a GET following a POST (incorrect
+                # but expected and often seen behavior)
+                if resp.status in (301, 302, 303, 307):
+                    if resp['location'].startswith('http'):
+                        redirect = resp['location']
+                    else:
+                        redirect = urlparse.urljoin(parsed_url.scheme +
+                                                    "://" +
+                                                    parsed_url.netloc +
+                                                    parsed_url.path,
+                                                    resp['location'])
+                    _log.debug('redirecting to %s' % redirect)
+                    return self.urlopen(redirect)
 
                 return self._wrap_result(our_resp, content)
         else:
