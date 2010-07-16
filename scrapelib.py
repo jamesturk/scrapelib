@@ -294,13 +294,12 @@ class Scraper(object):
         if method == 'POST' and body is None:
             body = ''
 
-        parsed_url = urlparse.urlparse(url)
-
         # Default to HTTP requests
-        if not parsed_url.scheme:
+        if not "://" in url:
             _log.warning("no URL scheme provided, assuming HTTP")
             url = "http://" + url
-            parsed_url = urlparse.urlparse(url)
+
+        parsed_url = urlparse.urlparse(url)
 
         headers = self._make_headers(url)
         user_agent = headers['User-Agent']
