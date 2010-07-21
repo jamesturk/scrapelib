@@ -1,61 +1,85 @@
-#!/usr/bin/env python
 import os
+import sys
+import glob
 import time
 import unittest
-import scrapelib
 import tempfile
-import threading
-import BaseHTTPServer
-import SimpleHTTPServer
+from multiprocessing import Process
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import flask
+import scrapelib
+
+app = flask.Flask(__name__)
 
 
-class SilentRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
+@app.route('/')
+def index():
+    resp = app.make_response("Hello world!")
+    return resp
 
 
-class TestServerThread(threading.Thread):
-    def __init__(self, test_object):
-        super(TestServerThread, self).__init__()
-        self.test_object = test_object
-        self.test_object.lock.acquire()
+@app.route('/ua')
+def ua():
+    resp = app.make_response(flask.request.headers['user-agent'])
+    resp.headers['cache-control'] = 'no-cache'
+    return resp
 
-    def run(self):
-        try:
-            self.server = BaseHTTPServer.HTTPServer(
-                ('', 8000), SilentRequestHandler)
-        finally:
-            self.test_object.lock.release()
 
-        try:
-            self.server.serve_forever()
-        finally:
-            self.server.server_close()
+@app.route('/p/s.html')
+def secret():
+    return "secret"
 
-    def stop(self):
-        self.server.shutdown()
+
+@app.route('/redirect')
+def redirect():
+    return flask.redirect(flask.url_for('index'))
+
+
+@app.route('/500')
+def fivehundred():
+    flask.abort(500)
+
+
+@app.route('/robots.txt')
+def robots():
+    return """
+    User-agent: *
+    Disallow: /p/
+    Allow: /
+    """
+
+
+def run_server():
+    class NullFile(object):
+        def write(self, s):
+            pass
+
+    sys.stdout = NullFile()
+    sys.stderr = NullFile()
+
+    app.run()
 
 
 class ScraperTest(unittest.TestCase):
     def setUp(self):
-        self.lock = threading.Lock()
-        self.thread = TestServerThread(self)
-        self.thread.start()
-        self.lock.acquire()
+        self.cache_dir = tempfile.mkdtemp()
+        self.error_dir = tempfile.mkdtemp()
+        self.s = scrapelib.Scraper(requests_per_minute=0,
+                                   error_dir=self.error_dir,
+                                   cache_dir=self.cache_dir,
+                                   use_cache_first=True)
 
     def tearDown(self):
-        self.lock.release()
-        self.thread.stop()
+        for path in glob.iglob(os.path.join(self.cache_dir, "*")):
+            os.remove(path)
+        os.rmdir(self.cache_dir)
+        for path in glob.iglob(os.path.join(self.error_dir, "*")):
+            os.remove(path)
+        os.rmdir(self.error_dir)
 
     def test_get(self):
-        s = scrapelib.Scraper(requests_per_minute=0)
-        self.assertEqual('this is a test.',
-                         s.urlopen("http://localhost:8000/index.html"))
+        self.assertEqual('Hello world!',
+                         self.s.urlopen("http://localhost:5000/"))
 
     def test_request_throttling(self):
         requests = 0
@@ -63,7 +87,7 @@ class ScraperTest(unittest.TestCase):
 
         begin = time.time()
         while time.time() <= (begin + 2):
-            s.urlopen("http://localhost:8000/index.html")
+            s.urlopen("http://localhost:5000/")
             requests += 1
 
         self.assert_(requests <= 2)
@@ -74,110 +98,97 @@ class ScraperTest(unittest.TestCase):
         requests = 0
         begin = time.time()
         while time.time() <= (begin + 2):
-            s.urlopen("http://localhost:8000/index.html")
+            s.urlopen("http://localhost:5000/")
             requests += 1
 
         self.assert_(requests > 10)
 
+    def test_user_agent(self):
+        resp = self.s.urlopen("http://localhost:5000/ua")
+        self.assertEqual(resp, scrapelib._user_agent)
+
+        self.s.user_agent = 'a different agent'
+        resp = self.s.urlopen("http://localhost:5000/ua")
+        self.assertEqual(resp, 'a different agent')
+
+    def test_default_to_http(self):
+        self.assertEqual('Hello world!',
+                         self.s.urlopen("localhost:5000/"))
+
     def test_follow_robots(self):
-        s = scrapelib.Scraper(follow_robots=True, requests_per_minute=0)
-        self.assertRaises(scrapelib.RobotExclusionError, s.urlopen,
-                          "http://localhost:8000/private/secret.html")
-        self.assertEqual("this is a test.",
-                         s.urlopen("http://localhost:8000/index.html"))
+        self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
+                          "http://localhost:5000/p/s.html")
+        self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
+                          "http://localhost:5000/p/a/t/h/")
 
-        s.follow_robots = False
-        self.assertEqual("this is a secret.", s.urlopen(
-                "http://localhost:8000/private/secret.html"))
-
-    def test_urllib2_methods(self):
-        old = scrapelib.USE_HTTPLIB2
-        scrapelib.USE_HTTPLIB2 = False
-
-        s = scrapelib.Scraper(requests_per_minute=0)
-
-        self.assertRaises(scrapelib.HTTPMethodUnavailableError, s.urlopen,
-                          "http://localhost:8000", 'HEAD')
-
-        self.assertRaises(scrapelib.HTTPMethodUnavailableError, s.urlopen,
-                          "ftp://example.com", "POST")
-
-        scrapelib.USE_HTTPLIB2 = old
-
-    def test_headers(self):
-        s = scrapelib.Scraper(user_agent='test_agent')
-
-        self.assertEqual('test_agent', s._make_headers(
-                'http://localhost:8000')['user-agent'])
-
-        # override user_agent
-        s.headers = {'user-agent': 'other_agent'}
-        self.assertEqual('other_agent', s._make_headers(
-                'http://localhost:8000')['user-agent'])
-
-        # callable headers
-        s.headers = lambda url: {'req-url': url}
-        self.assertEqual('http://localhost:8000', s._make_headers(
-                'http://localhost:8000')['req-url'])
-
-        s.disable_compression = True
-        self.assertEqual('text/*', s._make_headers(
-                'http://localhost:8000')['Accept-Encoding'])
-
-        # override accept-encoding
-        s.headers = {'accept-encoding': '*'}
-        self.assertEqual('*', s._make_headers(
-                'http://localhost:8000')['Accept-encoding'])
+        self.s.follow_robots = False
+        self.assertEqual("secret",
+                         self.s.urlopen("http://localhost:5000/p/s.html"))
+        self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
+                          "http://localhost:5000/p/a/t/h/")
 
     def test_error_context(self):
-        errdir = tempfile.mkdtemp()
-        s = scrapelib.Scraper(error_dir=errdir)
-
-        # error_dir created
-        self.assert_(os.path.isdir(errdir))
-
         def raises():
-            with s.urlopen('http://localhost:8000'):
+            with self.s.urlopen("http://localhost:5000/"):
                 raise Exception('test')
 
         self.assertRaises(Exception, raises)
+        self.assertTrue(os.path.isfile(os.path.join(
+            self.error_dir, "http:,,localhost:5000,")))
 
-        # ensure that the file was created
-        self.assertTrue(os.path.isfile(os.path.join(errdir,
-                                      'http:,,localhost:8000')))
+    def test_404(self):
+        self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
+                          "http://localhost:5000/does/not/exist")
 
-    def test_raise_errors(self):
-        # detect a 404
-        s = scrapelib.Scraper(raise_errors=True)
-        self.assertRaises(scrapelib.HTTPError, s.urlopen,
-                          'http://localhost:8000/404')
+        self.s.raise_errors = False
+        resp = self.s.urlopen("http://localhost:5000/does/not/exist")
+        self.assertEqual(404, resp.response.code)
 
-        # the other way to detect a 404
-        s = scrapelib.Scraper(raise_errors=False)
-        resp = s.urlopen('http://localhost:8000/404')
-        self.assertEqual(resp.response.code, 404)
+    def test_500(self):
+        self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
+                          "http://localhost:5000/500")
 
-    def test_use_cache_first(self):
-        cachedir = tempfile.mkdtemp()
-        s = scrapelib.Scraper(use_cache_first=True, cache_dir=cachedir)
+        self.s.raise_errors = False
+        resp = self.s.urlopen("http://localhost:5000/500")
+        self.assertEqual(resp.response.code, 500)
 
-        r = s.urlopen('http://localhost:8000')
-        r2 = s.urlopen('http://localhost:8000')
-        self.assertFalse(r.response.fromcache)
-        self.assertTrue(r2.response.fromcache)
+    def test_follow_redirect(self):
+        resp = self.s.urlopen("http://localhost:5000/redirect")
+        self.assertEqual("http://localhost:5000/", resp.response.url)
+        self.assertEqual("http://localhost:5000/redirect",
+                         resp.response.requested_url)
+        self.assertEqual(200, resp.response.code)
+
+    def test_caching(self):
+        resp = self.s.urlopen("http://localhost:5000/")
+        self.assertFalse(resp.response.fromcache)
+        resp = self.s.urlopen("http://localhost:5000/")
+        self.assert_(resp.response.fromcache)
+
+        self.s.use_cache_first = False
+        resp = self.s.urlopen("http://localhost:5000/")
+        self.assertFalse(resp.response.fromcache)
 
     def test_urlretrieve(self):
-        s = scrapelib.Scraper()
+        fname, resp = self.s.urlretrieve("http://localhost:5000/")
+        with open(fname) as f:
+            self.assertEqual(f.read(), "Hello world!")
+            self.assertEqual(200, resp.code)
+        os.remove(fname)
 
-        fname, resp = s.urlretrieve('http://localhost:8000/index.html')
-        self.assertEqual(open(fname).read(), 'this is a test.')
-        self.assertEqual(resp.code, 200)
-
-        set_fname = '/tmp/test-tmpfile'
-        fname, resp = s.urlretrieve('http://localhost:8000/index.html', set_fname)
+        (fh, set_fname) = tempfile.mkstemp()
+        fname, resp = self.s.urlretrieve("http://localhost:5000/",
+                                         set_fname)
         self.assertEqual(fname, set_fname)
+        with open(set_fname) as f:
+            self.assertEqual(f.read(), "Hello world!")
+            self.assertEqual(200, resp.code)
+        os.remove(set_fname)
 
 
 if __name__ == '__main__':
-    os.chdir(os.path.abspath('./test_root'))
-    unittest.main()
+    process = Process(target=run_server)
+    process.start()
+    time.sleep(0.1)
+    unittest.main(exit=False)
+    process.terminate()
