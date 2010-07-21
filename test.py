@@ -159,6 +159,14 @@ class ScraperTest(unittest.TestCase):
                          resp.response.requested_url)
         self.assertEqual(200, resp.response.code)
 
+        self.s.follow_redirects = False
+        resp = self.s.urlopen("http://localhost:5000/redirect")
+        self.assertEqual("http://localhost:5000/redirect",
+                         resp.response.url)
+        self.assertEqual("http://localhost:5000/redirect",
+                         resp.response.requested_url)
+        self.assertEqual(302, resp.response.code)
+
     def test_caching(self):
         resp = self.s.urlopen("http://localhost:5000/")
         self.assertFalse(resp.response.fromcache)

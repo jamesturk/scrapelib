@@ -168,6 +168,7 @@ class Scraper(object):
                  disable_compression=False,
                  use_cache_first=False,
                  raise_errors=True,
+                 follow_redirects=True,
                  **kwargs):
         """
         :param user_agent: the value to send as a User-Agent header on
@@ -223,6 +224,10 @@ class Scraper(object):
 
         if USE_HTTPLIB2:
             self._http = httplib2.Http(cache_dir)
+        else:
+            self._http = None
+
+        self.follow_redirects = follow_redirects
 
     def _throttle(self):
         now = time.time()
@@ -286,6 +291,17 @@ class Scraper(object):
 
         raise ValueError('expected body string')
 
+    @property
+    def follow_redirects(self):
+        if self._http:
+            return self._http.follow_redirects
+        return False
+
+    @follow_redirects.setter
+    def follow_redirects(self, value):
+        if self._http:
+            self._http.follow_redirects = value
+
     def urlopen(self, url, method='GET', body=None):
         if self.throttled:
             self._throttle()
@@ -348,7 +364,9 @@ class Scraper(object):
                 # needed because httplib2 follows the HTTP spec a bit *too*
                 # closely and won't issue a GET following a POST (incorrect
                 # but expected and often seen behavior)
-                if resp.status in (301, 302, 303, 307):
+                if (resp.status in (301, 302, 303, 307) and
+                    self.follow_redirects):
+
                     if resp['location'].startswith('http'):
                         redirect = resp['location']
                     else:
@@ -358,7 +376,9 @@ class Scraper(object):
                                                     parsed_url.path,
                                                     resp['location'])
                     _log.debug('redirecting to %s' % redirect)
-                    return self.urlopen(redirect)
+                    resp = self.urlopen(redirect)
+                    resp.response.requested_url = url
+                    return resp
 
                 return self._wrap_result(our_resp, content)
         else:
