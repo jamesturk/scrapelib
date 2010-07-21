@@ -86,22 +86,18 @@ class ScraperTest(unittest.TestCase):
         s = scrapelib.Scraper(requests_per_minute=30)
 
         begin = time.time()
-        while time.time() <= (begin + 2):
+        while time.time() <= (begin + 1):
             s.urlopen("http://localhost:5000/")
             requests += 1
-
         self.assert_(requests <= 2)
 
-        # We should be able to make many more requests with throttling
-        # disabled
-        s.throttled = False
+        s.requests_per_minute = 500
         requests = 0
         begin = time.time()
-        while time.time() <= (begin + 2):
+        while time.time() <= (begin + 1):
             s.urlopen("http://localhost:5000/")
             requests += 1
-
-        self.assert_(requests > 10)
+        self.assert_(requests > 5)
 
     def test_user_agent(self):
         resp = self.s.urlopen("http://localhost:5000/ua")

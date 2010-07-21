@@ -190,14 +190,7 @@ class Scraper(object):
         self.follow_robots = follow_robots
         self._robot_parsers = {}
 
-        if requests_per_minute > 0:
-            self.throttled = True
-            self.request_frequency = 60.0 / requests_per_minute
-            self.last_request = 0
-        else:
-            self.throttled = False
-            self.request_frequency = 0.0
-            self.last_request = 0
+        self.requests_per_minute = requests_per_minute
 
         if cache_dir and not USE_HTTPLIB2:
             _log.warning("httplib2 not available, HTTP caching "
@@ -231,13 +224,13 @@ class Scraper(object):
 
     def _throttle(self):
         now = time.time()
-        diff = self.request_frequency - (now - self.last_request)
+        diff = self._request_frequency - (now - self._last_request)
         if diff > 0:
             _log.debug("sleeping for %fs" % diff)
             time.sleep(diff)
-            self.last_request = time.time()
+            self._last_request = time.time()
         else:
-            self.last_request = now
+            self._last_request = now
 
     def _robot_allowed(self, user_agent, parsed_url):
         _log.info("checking robots permission for %s" % parsed_url.geturl())
@@ -302,8 +295,25 @@ class Scraper(object):
         if self._http:
             self._http.follow_redirects = value
 
+    @property
+    def requests_per_minute(self):
+        return self._requests_per_minute
+
+    @requests_per_minute.setter
+    def requests_per_minute(self, value):
+        if value > 0:
+            self._throttled = True
+            self._requests_per_minute = value
+            self._request_frequency = 60.0 / value
+            self._last_request = 0
+        else:
+            self._throttled = False
+            self._requests_per_minute = 0
+            self._request_frequency = 0.0
+            self._last_request = 0
+
     def urlopen(self, url, method='GET', body=None):
-        if self.throttled:
+        if self._throttled:
             self._throttle()
 
         method = method.upper()
