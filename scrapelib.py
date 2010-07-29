@@ -169,6 +169,7 @@ class Scraper(object):
                  use_cache_first=False,
                  raise_errors=True,
                  follow_redirects=True,
+                 timeout=None,
                  **kwargs):
         """
         :param user_agent: the value to send as a User-Agent header on
@@ -216,7 +217,7 @@ class Scraper(object):
         self.raise_errors = raise_errors
 
         if USE_HTTPLIB2:
-            self._http = httplib2.Http(cache_dir)
+            self._http = httplib2.Http(cache_dir, timeout=timeout)
         else:
             self._http = None
 
