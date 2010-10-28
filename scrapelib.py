@@ -344,6 +344,9 @@ class Scraper(object):
                 try:
                     _log.info("getting %s using urllib2" % url)
                     resp = urllib2.urlopen(req)
+                    if self.accept_cookies:
+                        self._cookie_jar.extract_cookies(resp, req)
+
                     return resp
                 except urllib2.URLError, e:
                     if getattr(e, 'code', None) == 404:
@@ -459,9 +462,6 @@ class Scraper(object):
 
         resp = self._do_request(url, method, body, headers,
                                 use_httplib2=False)
-
-        if self.accept_cookies:
-            self._cookie_jar.extract_cookies(resp, req)
 
         our_resp = Response(resp.geturl(), url, code=resp.code,
                             fromcache=False, protocol=parsed_url.scheme,
