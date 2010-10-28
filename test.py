@@ -2,9 +2,17 @@ import os
 import sys
 import glob
 import time
-import unittest
 import tempfile
 from multiprocessing import Process
+
+if sys.version_info[1] < 7:
+    try:
+        import unittest2 as unittest
+    except ImportError:
+        print 'Test Suite requires Python 2.7 or unittest2'
+        sys.exit(1)
+else:
+    import unittest
 
 import flask
 import scrapelib
