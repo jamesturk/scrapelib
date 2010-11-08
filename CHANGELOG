@@ -1,0 +1,22 @@
+scrapelib changelog
+===================
+
+0.4.0
+-----
+    * bugfix: tests require unittest2 or python 2.7
+    * configurable retry handling for random failures
+
+
+0.3.0 - 5 October 2010
+----------------------
+    * bugfixes for cookie handling
+    * better test suite
+    * follow redirects even after a POST
+    * change several configuration variables into properties
+    * request timeout argument
+
+0.2.0 - 9 July 2010
+-------------------
+    * use_cache_first option to avoid extra HTTP HEAD requests
+    * raise_errors option to treat HTTP errors as exceptions
+    * addition of urlretrieve
