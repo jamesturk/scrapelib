@@ -2,6 +2,7 @@ import os
 import sys
 import glob
 import time
+import urllib2
 import tempfile
 from multiprocessing import Process
 
@@ -18,6 +19,7 @@ import flask
 import scrapelib
 
 app = flask.Flask(__name__)
+app.config.shaky_fail = False
 
 
 @app.route('/')
@@ -55,6 +57,16 @@ def robots():
     Disallow: /p/
     Allow: /
     """
+
+@app.route('/shaky')
+def shaky():
+    # toggle failure state each time
+    app.config.shaky_fail = not app.config.shaky_fail
+
+    if app.config.shaky_fail:
+        flask.abort(500)
+    else:
+        return "shaky success!"
 
 
 def run_server():
@@ -188,6 +200,7 @@ class ScraperTest(unittest.TestCase):
             self.assertEqual(200, resp.code)
         os.remove(fname)
 
+
         (fh, set_fname) = tempfile.mkstemp()
         fname, resp = self.s.urlretrieve("http://localhost:5000/",
                                          set_fname)
@@ -196,6 +209,46 @@ class ScraperTest(unittest.TestCase):
             self.assertEqual(f.read(), "Hello world!")
             self.assertEqual(200, resp.code)
         os.remove(set_fname)
+
+    def test_retry_httplib2(self):
+        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=1.5)
+
+        # one failure, then success
+        resp, content = s._do_request('http://localhost:5000/shaky',
+                                      'GET', None, {}, use_httplib2=True)
+        self.assertEqual(content, 'shaky success!')
+
+        # TODO: on this and the other test it'd be nice to have a way to test
+        # it tries 3 times for 500 and once for 404
+
+        # 500 always
+        resp, content = s._do_request('http://localhost:5000/500',
+                                      'GET', None, {}, use_httplib2=True)
+        self.assertEqual(resp.status, 500)
+
+        # 404
+        resp, content = s._do_request('http://localhost:5000/404',
+                                      'GET', None, {}, use_httplib2=True)
+        self.assertEqual(resp.status, 404)
+
+
+    def test_retry_urllib2(self):
+        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=1)
+
+        # without httplib2
+        resp = s._do_request('http://localhost:5000/shaky',
+                             'GET', None, {}, use_httplib2=False)
+        self.assertEqual(resp.read(), 'shaky success!')
+
+        # 500 always
+        self.assertRaises(urllib2.URLError, s._do_request,
+                          'http://localhost:5000/500',
+                          'GET', None, {}, use_httplib2=False)
+
+        # 404
+        self.assertRaises(urllib2.URLError, s._do_request,
+                          'http://localhost:5000/404',
+                          'GET', None, {}, use_httplib2=False)
 
 
 if __name__ == '__main__':

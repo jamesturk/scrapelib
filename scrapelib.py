@@ -170,6 +170,8 @@ class Scraper(object):
                  raise_errors=True,
                  follow_redirects=True,
                  timeout=None,
+                 retry_attempts=0,
+                 retry_wait_seconds=5,
                  **kwargs):
         """
         :param user_agent: the value to send as a User-Agent header on
@@ -222,6 +224,10 @@ class Scraper(object):
             self._http = None
 
         self.follow_redirects = follow_redirects
+
+        self.retry_attempts = max(retry_attempts, 0)
+        self.retry_wait_seconds = retry_wait_seconds
+
 
     def _throttle(self):
         now = time.time()
@@ -313,6 +319,53 @@ class Scraper(object):
             self._request_frequency = 0.0
             self._last_request = 0
 
+
+    def _do_request(self, url, method, body, headers, use_httplib2):
+
+        # initialization for this request
+        if not use_httplib2:
+            req = urllib2.Request(url, data=body, headers=headers)
+            if self.accept_cookies:
+                self._cookie_jar.add_cookie_header(req)
+
+        # the retry loop
+        tries = 0
+
+        while tries <= self.retry_attempts:
+
+            if use_httplib2:
+                resp, content = self._http.request(url, method, body=body,
+                                                   headers=headers)
+                # return on a success/redirect/404
+                if resp.status < 400 or resp.status == 404:
+                    return resp, content
+
+            else:
+                try:
+                    _log.info("getting %s using urllib2" % url)
+                    resp = urllib2.urlopen(req)
+                    if self.accept_cookies:
+                        self._cookie_jar.extract_cookies(resp, req)
+
+                    return resp
+                except urllib2.URLError, e:
+                    if getattr(e, 'code', None) == 404:
+                        raise e
+
+            # if we're going to retry, sleep first
+            tries += 1
+            if tries <= self.retry_attempts:
+                # twice as long each time
+                wait = self.retry_wait_seconds * (2**(tries-1))
+                _log.debug('sleeping for %s seconds before retry' % wait)
+                time.sleep(wait)
+
+        if use_httplib2:
+            return resp, content
+        else:
+            raise e
+
+
     def urlopen(self, url, method='GET', body=None):
         if self._throttled:
             self._throttle()
@@ -341,24 +394,28 @@ class Scraper(object):
             if USE_HTTPLIB2:
                 _log.info("getting %s using HTTPLIB2" % url)
 
+                # make sure POSTs have x-www-form-urlencoded content type
                 if method == 'POST' and 'Content-Type' not in headers:
                     headers['Content-Type'] = ('application/'
                                                'x-www-form-urlencoded')
 
-                # tell httplib2 not to make a request
+                # optionally try a dummy request to cache only
                 if self.use_cache_first and 'Cache-Control' not in headers:
                     headers['cache-control'] = 'only-if-cached'
 
-                resp, content = self._http.request(url, method,
-                                                   body=body,
-                                                   headers=headers)
-
-                # do another request if there's no copy in local cache
-                if self.use_cache_first and resp.status == 504:
-                    headers.pop('cache-control')
                     resp, content = self._http.request(url, method,
                                                        body=body,
                                                        headers=headers)
+                    if resp.status == 504:
+                        headers.pop('cache-control')
+                        resp = content = None
+                else:
+                    resp = content = None
+
+                # do request if there's no copy in local cache
+                if not resp:
+                    resp, content =self._do_request(url, method, body, headers,
+                                                    use_httplib2=True)
 
                 our_resp = Response(resp.get('content-location') or url,
                                     url,
@@ -403,13 +460,8 @@ class Scraper(object):
             raise HTTPMethodUnavailableError(
                 "urllib2 does not support '%s' method" % method, method)
 
-        _log.info("getting %s using urllib2" % url)
-        req = urllib2.Request(url, data=body, headers=headers)
-        if self.accept_cookies:
-            self._cookie_jar.add_cookie_header(req)
-        resp = urllib2.urlopen(req)
-        if self.accept_cookies:
-            self._cookie_jar.extract_cookies(resp, req)
+        resp = self._do_request(url, method, body, headers,
+                                use_httplib2=False)
 
         our_resp = Response(resp.geturl(), url, code=resp.code,
                             fromcache=False, protocol=parsed_url.scheme,
