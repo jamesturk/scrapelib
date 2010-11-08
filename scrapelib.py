@@ -157,6 +157,31 @@ class Response(object):
         return self.headers
 
 
+class MongoCache(object):
+    """
+    Implements the httplib2 cache protocol using MongoDB
+    (especially useful with capped collection)
+    """
+
+    def __init__(self, collection):
+        """
+        :param collection: a pymongo collection obj to store the cache in
+        """
+        self.collection = collection
+
+    def get(self, key):
+        ret = self.collection.find_one({'_id': key})
+        if ret:
+            ret = ret['value']
+        return ret
+
+    def set(self, key, value):
+        self.collection.save({'_id': key, 'value': value})
+
+    def delete(self, key):
+        self.collection.remove({'_id': key})
+
+
 class Scraper(object):
 
     def __init__(self, user_agent=_user_agent,
@@ -172,6 +197,7 @@ class Scraper(object):
                  timeout=None,
                  retry_attempts=0,
                  retry_wait_seconds=5,
+                 cache_obj=None,
                  **kwargs):
         """
         :param user_agent: the value to send as a User-Agent header on
@@ -219,7 +245,10 @@ class Scraper(object):
         self.raise_errors = raise_errors
 
         if USE_HTTPLIB2:
-            self._http = httplib2.Http(cache_dir, timeout=timeout)
+            cache = cache_dir
+            if cache_obj:
+                cache = cache_obj
+            self._http = httplib2.Http(cache, timeout=timeout)
         else:
             self._http = None
 
@@ -227,7 +256,6 @@ class Scraper(object):
 
         self.retry_attempts = max(retry_attempts, 0)
         self.retry_wait_seconds = retry_wait_seconds
-
 
     def _throttle(self):
         now = time.time()
@@ -319,7 +347,6 @@ class Scraper(object):
             self._request_frequency = 0.0
             self._last_request = 0
 
-
     def _do_request(self, url, method, body, headers, use_httplib2):
 
         # initialization for this request
@@ -356,7 +383,7 @@ class Scraper(object):
             tries += 1
             if tries <= self.retry_attempts:
                 # twice as long each time
-                wait = self.retry_wait_seconds * (2**(tries-1))
+                wait = self.retry_wait_seconds * (2 ** (tries - 1))
                 _log.debug('sleeping for %s seconds before retry' % wait)
                 time.sleep(wait)
 
@@ -364,7 +391,6 @@ class Scraper(object):
             return resp, content
         else:
             raise e
-
 
     def urlopen(self, url, method='GET', body=None):
         if self._throttled:
@@ -414,8 +440,9 @@ class Scraper(object):
 
                 # do request if there's no copy in local cache
                 if not resp:
-                    resp, content =self._do_request(url, method, body, headers,
-                                                    use_httplib2=True)
+                    resp, content = self._do_request(url, method, body,
+                                                     headers,
+                                                     use_httplib2=True)
 
                 our_resp = Response(resp.get('content-location') or url,
                                     url,
