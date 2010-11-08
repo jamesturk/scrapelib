@@ -20,7 +20,7 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-__version__ = '0.4.0-dev'
+__version__ = '0.4.0'
 _user_agent = 'scrapelib %s' % __version__
 
 

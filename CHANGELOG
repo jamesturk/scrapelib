@@ -1,8 +1,8 @@
 scrapelib changelog
 ===================
 
-0.4.0
------
+0.4.0 - 8 November 2010
+-----------------------
     * bugfix: tests require unittest2 or python 2.7
     * configurable retry handling for random failures
 
