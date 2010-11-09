@@ -309,6 +309,19 @@ class ScraperTest(unittest.TestCase):
         headers = s._make_headers('example.com')
         self.assertEqual(headers['url'], 'example.com')
 
+    def test_method_restrictions(self):
+        # we can't use urllib2 for non GET/POST requests
+        scrapelib.USE_HTTPLIB2 = False
+        self.assertRaises(scrapelib.HTTPMethodUnavailableError,
+                          lambda: self.s.urlopen("http://google.com",
+                                                 method='PUT'))
+        scrapelib.USE_HTTPLIB2 = True
+
+        # only http(s) supports non-'GET' requests
+        self.assertRaises(scrapelib.HTTPMethodUnavailableError,
+                          lambda: self.s.urlopen("ftp://google.com",
+                                                 method='POST'))
+
 
 if __name__ == '__main__':
     process = Process(target=run_server)
