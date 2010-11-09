@@ -299,6 +299,16 @@ class ScraperTest(unittest.TestCase):
         headers = s._make_headers('http://google.com')
         self.assertEqual(headers['accept-encoding'], '*')
 
+    def test_callable_headers(self):
+        s = scrapelib.Scraper(headers=lambda url: {'URL': url})
+
+        headers = s._make_headers('http://google.com')
+        self.assertEqual(headers['url'], 'http://google.com')
+
+        # Make sure it gets called freshly each time
+        headers = s._make_headers('example.com')
+        self.assertEqual(headers['url'], 'example.com')
+
 
 if __name__ == '__main__':
     process = Process(target=run_server)
