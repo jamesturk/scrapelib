@@ -117,22 +117,30 @@ class Headers(dict):
         return super(Headers, self).__contains__(key.lower())
 
     def __eq__(self, other):
+        if len(self) != len(other):
+            return False
+
         for k, v in other.items():
             if self[k] != v:
                 return False
+
         return True
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def getallmatchingheaders(self, name):
-        header = self.get(name)
-        if header:
+        try:
+            header = self[name]
             return [name + ": " + header]
-        return []
+        except KeyError:
+            return []
 
     def getheaders(self, name):
-        header = self.get(name.lower())
-        if header:
-            return [header]
-        return []
+        try:
+            return [self[name]]
+        except KeyError:
+            return []
 
 
 class Response(object):

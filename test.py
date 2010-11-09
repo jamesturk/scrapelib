@@ -81,6 +81,44 @@ def run_server():
     app.run()
 
 
+class HeaderTest(unittest.TestCase):
+    def test_keys(self):
+        h = scrapelib.Headers()
+        h['A'] = '1'
+
+        self.assertEqual(h['A'], '1')
+
+        self.assertEqual(h.getallmatchingheaders('A'), ["A: 1"])
+        self.assertEqual(h.getallmatchingheaders('b'), [])
+        self.assertEqual(h.getheaders('A'), ['1'])
+        self.assertEqual(h.getheaders('b'), [])
+
+        # should be case-insensitive
+        self.assertEqual(h['a'], '1')
+        h['a'] = '2'
+        self.assertEqual(h['A'], '2')
+
+        self.assert_('a' in h)
+        self.assert_('A' in h)
+
+        del h['A']
+        self.assert_('a' not in h)
+        self.assert_('A' not in h)
+
+    def test_equality(self):
+        h1 = scrapelib.Headers()
+        h1['Accept-Encoding'] = '*'
+
+        h2 = scrapelib.Headers()
+        self.assertNotEqual(h1, h2)
+
+        h2['accept-encoding'] = 'not'
+        self.assertNotEqual(h1, h2)
+
+        h2['accept-encoding'] = '*'
+        self.assertEqual(h1, h2)
+
+
 class ScraperTest(unittest.TestCase):
     def setUp(self):
         self.cache_dir = tempfile.mkdtemp()
