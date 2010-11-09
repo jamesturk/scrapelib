@@ -143,6 +143,7 @@ class ScraperTest(unittest.TestCase):
     def test_request_throttling(self):
         requests = 0
         s = scrapelib.Scraper(requests_per_minute=30)
+        self.assertEqual(s.requests_per_minute, 30)
 
         begin = time.time()
         while time.time() <= (begin + 1):
