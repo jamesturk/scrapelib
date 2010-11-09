@@ -58,6 +58,7 @@ def robots():
     Allow: /
     """
 
+
 @app.route('/shaky')
 def shaky():
     # toggle failure state each time
@@ -200,7 +201,6 @@ class ScraperTest(unittest.TestCase):
             self.assertEqual(200, resp.code)
         os.remove(fname)
 
-
         (fh, set_fname) = tempfile.mkstemp()
         fname, resp = self.s.urlretrieve("http://localhost:5000/",
                                          set_fname)
@@ -231,7 +231,6 @@ class ScraperTest(unittest.TestCase):
                                       'GET', None, {}, use_httplib2=True)
         self.assertEqual(resp.status, 404)
 
-
     def test_retry_urllib2(self):
         s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=1)
 
@@ -249,6 +248,18 @@ class ScraperTest(unittest.TestCase):
         self.assertRaises(urllib2.URLError, s._do_request,
                           'http://localhost:5000/404',
                           'GET', None, {}, use_httplib2=False)
+
+    def test_disable_compression(self):
+        s = scrapelib.Scraper(disable_compression=True)
+
+        headers = s._make_headers("http://google.com")
+        self.assertEqual(headers['accept-encoding'], 'text/*')
+
+        # A supplied Accept-Encoding headers overrides the
+        # disable_compression option
+        s.headers['accept-encoding'] = '*'
+        headers = s._make_headers('http://google.com')
+        self.assertEqual(headers['accept-encoding'], '*')
 
 
 if __name__ == '__main__':
