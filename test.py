@@ -223,6 +223,12 @@ class ScraperTest(unittest.TestCase):
                          resp.response.requested_url)
         self.assertEqual(302, resp.response.code)
 
+        # No following redirects with urllib2 only
+        scrapelib.USE_HTTPLIB2 = False
+        s = scrapelib.Scraper()
+        self.assertFalse(s.follow_redirects)
+        scrapelib.USE_HTTPLIB2 = True
+
     def test_caching(self):
         resp = self.s.urlopen("http://localhost:5000/")
         self.assertFalse(resp.response.fromcache)
