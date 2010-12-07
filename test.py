@@ -2,6 +2,7 @@ import os
 import sys
 import glob
 import time
+import socket
 import urllib2
 import tempfile
 from multiprocessing import Process
@@ -15,7 +16,9 @@ if sys.version_info[1] < 7:
 else:
     import unittest
 
+import mock
 import flask
+import httplib2
 import scrapelib
 
 app = flask.Flask(__name__)
@@ -293,6 +296,32 @@ class ScraperTest(unittest.TestCase):
         self.assertRaises(urllib2.URLError, s._do_request,
                           'http://localhost:5000/404',
                           'GET', None, {}, use_httplib2=False)
+
+    def test_socket_retry(self):
+        orig_request = httplib2.Http().request
+        count = []
+
+        # On the first call raise socket.timeout
+        # On subsequent calls pass through to httplib2.Http.request
+        def side_effect(*args, **kwargs):
+            if count:
+                return orig_request(*args, **kwargs)
+            count.append(1)
+            raise socket.timeout('timed out :(')
+
+        mock_request = mock.Mock(side_effect=side_effect)
+
+        with mock.patch.object(httplib2.Http, 'request', mock_request):
+            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=1)
+            self.assertRaises(socket.timeout, self.s.urlopen,
+                              "http://localhost")
+
+        mock_request.reset_mock()
+        count = []
+        with mock.patch.object(httplib2.Http, 'request', mock_request):
+            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=1)
+            resp = s.urlopen("http://localhost:5000/")
+            self.assertEqual(resp, "Hello world!")
 
     def test_disable_compression(self):
         s = scrapelib.Scraper(disable_compression=True)

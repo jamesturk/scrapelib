@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import socket
 import logging
 import tempfile
 import urllib2
@@ -20,7 +21,7 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-__version__ = '0.4.0'
+__version__ = '0.4.1-dev'
 _user_agent = 'scrapelib %s' % __version__
 
 
@@ -365,16 +366,20 @@ class Scraper(object):
 
         # the retry loop
         tries = 0
+        exception_raised = False
 
         while tries <= self.retry_attempts:
+            exception_raised = False
 
             if use_httplib2:
-                resp, content = self._http.request(url, method, body=body,
-                                                   headers=headers)
-                # return on a success/redirect/404
-                if resp.status < 400 or resp.status == 404:
-                    return resp, content
-
+                try:
+                    resp, content = self._http.request(url, method, body=body,
+                                                       headers=headers)
+                    # return on a success/redirect/404
+                    if resp.status < 400 or resp.status == 404:
+                        return resp, content
+                except socket.timeout, e:
+                    exception_raised = True
             else:
                 try:
                     _log.info("getting %s using urllib2" % url)
@@ -384,6 +389,7 @@ class Scraper(object):
 
                     return resp
                 except urllib2.URLError, e:
+                    exception_raised = True
                     if getattr(e, 'code', None) == 404:
                         raise e
 
@@ -395,10 +401,10 @@ class Scraper(object):
                 _log.debug('sleeping for %s seconds before retry' % wait)
                 time.sleep(wait)
 
-        if use_httplib2:
-            return resp, content
-        else:
+        if exception_raised:
             raise e
+        else:
+            return resp, content
 
     def urlopen(self, url, method='GET', body=None):
         if self._throttled:
