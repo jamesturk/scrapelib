@@ -1,11 +1,15 @@
 scrapelib changelog
 ===================
 
+0.4.1 - 7 December 2010
+-----------------------
+    * support retry of requests that produce socket timeouts
+    * increased test coverage
+
 0.4.0 - 8 November 2010
 -----------------------
     * bugfix: tests require unittest2 or python 2.7
     * configurable retry handling for random failures
-
 
 0.3.0 - 5 October 2010
 ----------------------
