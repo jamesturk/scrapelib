@@ -24,4 +24,8 @@ setup(name="scrapelib",
                     "Python Modules"),
                    ],
       install_requires=["httplib2 >= 0.6.0"],
+      entry_points="""
+[console_scripts]
+scrapeshell = scrapelib:scrapeshell
+"""
       )

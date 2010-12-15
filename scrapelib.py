@@ -540,3 +540,32 @@ class Scraper(object):
 
         with open(path, 'w') as fp:
             json.dump(out, fp, ensure_ascii=False)
+
+def scrapeshell():
+    try:
+        from IPython.Shell import IPShellEmbed
+    except ImportError:
+        print 'scrapeshell requires ipython'
+        return
+    try:
+        import lxml.html
+        USE_LXML = True
+    except ImportError:
+        USE_LXML = False
+
+    scraper = Scraper(follow_robots=False)
+
+    import sys
+    for arg in sys.argv[1:]:
+        url = arg
+        html = scraper.urlopen(url)
+        if USE_LXML:
+            doc = lxml.html.fromstring(html)
+
+    print 'local variables'
+    print '---------------'
+    print 'url: %s' % url
+    print 'html: `scrapelib.ResultStr` instance'
+    if USE_LXML:
+        print 'doc: `lxml HTML element`'
+    IPShellEmbed()()
