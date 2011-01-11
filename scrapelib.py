@@ -514,9 +514,9 @@ class Scraper(object):
         result = self.urlopen(url, method, body)
 
         if not filename:
-            _, filename = tempfile.mkstemp()
+            fd, filename = tempfile.mkstemp()
 
-        f = open(filename, 'w')
+        f = os.fdopen(fd, 'w')
         f.write(result)
         f.close()
 
