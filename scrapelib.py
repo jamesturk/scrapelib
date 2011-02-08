@@ -378,7 +378,7 @@ class Scraper(object):
                     # return on a success/redirect/404
                     if resp.status < 400 or resp.status == 404:
                         return resp, content
-                except socket.timeout, e:
+                except socket.error, e:
                     exception_raised = True
             else:
                 try:
