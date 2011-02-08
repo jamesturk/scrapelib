@@ -515,8 +515,10 @@ class Scraper(object):
 
         if not filename:
             fd, filename = tempfile.mkstemp()
+            f = os.fdopen(fd, 'w')
+        else:
+            f = open(filename, 'w')
 
-        f = os.fdopen(fd, 'w')
         f.write(result)
         f.close()
 
