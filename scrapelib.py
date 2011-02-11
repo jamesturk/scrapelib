@@ -547,3 +547,10 @@ class Scraper(object):
 
         with open(path, 'w') as fp:
             json.dump(out, fp, ensure_ascii=False)
+
+
+_default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
+
+
+def urlopen(url):
+    return _default_scraper.urlopen(url)
