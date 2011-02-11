@@ -380,6 +380,11 @@ class Scraper(object):
                         return resp, content
                 except socket.error, e:
                     exception_raised = True
+                except AttributeError, e:
+                    if e.message == "'NoneType' object has no attribute 'makefile'":
+                        exception_raised = True
+                    else:
+                        raise
             else:
                 try:
                     _log.info("getting %s using urllib2" % url)
