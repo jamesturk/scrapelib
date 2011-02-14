@@ -597,5 +597,7 @@ def scrapeshell():
     print 'html: `scrapelib.ResultStr` instance'
     if USE_LXML:
         print 'doc: `lxml HTML element`'
+    import sys
+    sys.argv = []
     IPShellEmbed()()
 
