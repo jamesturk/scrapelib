@@ -21,7 +21,7 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-__version__ = '0.4.1'
+__version__ = '0.4.3'
 _user_agent = 'scrapelib %s' % __version__
 
 
@@ -378,8 +378,13 @@ class Scraper(object):
                     # return on a success/redirect/404
                     if resp.status < 400 or resp.status == 404:
                         return resp, content
-                except socket.timeout, e:
+                except socket.error, e:
                     exception_raised = True
+                except AttributeError, e:
+                    if e.message == "'NoneType' object has no attribute 'makefile'":
+                        exception_raised = True
+                    else:
+                        raise
             else:
                 try:
                     _log.info("getting %s using urllib2" % url)
@@ -514,9 +519,11 @@ class Scraper(object):
         result = self.urlopen(url, method, body)
 
         if not filename:
-            _, filename = tempfile.mkstemp()
+            fd, filename = tempfile.mkstemp()
+            f = os.fdopen(fd, 'w')
+        else:
+            f = open(filename, 'w')
 
-        f = open(filename, 'w')
         f.write(result)
         f.close()
 
@@ -541,6 +548,11 @@ class Scraper(object):
         with open(path, 'w') as fp:
             json.dump(out, fp, ensure_ascii=False)
 
+_default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
+
+def urlopen(url):
+    return _default_scraper.urlopen(url)
+
 def scrapeshell():
     try:
         from IPython.Shell import IPShellEmbed
@@ -548,19 +560,36 @@ def scrapeshell():
         print 'scrapeshell requires ipython'
         return
     try:
+        import argparse
+    except ImportError:
+        print 'scrapeshell requires argparse'
+        return
+    try:
         import lxml.html
         USE_LXML = True
     except ImportError:
         USE_LXML = False
 
-    scraper = Scraper(follow_robots=False)
+    parser = argparse.ArgumentParser(description='interactive python shell for'
+                                                  ' scraping')
+    parser.add_argument('url', help="url to scrape")
+    parser.add_argument('--ua', dest='user_agent', default=_user_agent,
+                        help='user agent to make requests with')
+    parser.add_argument('--robots', dest='robots', action='store_true',
+                        default=False, help='obey robots.txt')
+    parser.add_argument('--noredirect', dest='redirects', action='store_false',
+                        default=True, help="don't follow redirects")
 
-    import sys
-    for arg in sys.argv[1:]:
-        url = arg
-        html = scraper.urlopen(url)
-        if USE_LXML:
-            doc = lxml.html.fromstring(html)
+    args = parser.parse_args()
+
+    scraper = Scraper(user_agent=args.user_agent,
+                      follow_robots=args.robots,
+                      follow_redirects=args.redirects)
+    url = args.url
+    html = scraper.urlopen(args.url)
+
+    if USE_LXML:
+        doc = lxml.html.fromstring(html)
 
     print 'local variables'
     print '---------------'
@@ -569,3 +598,4 @@ def scrapeshell():
     if USE_LXML:
         print 'doc: `lxml HTML element`'
     IPShellEmbed()()
+

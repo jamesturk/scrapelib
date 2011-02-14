@@ -1,6 +1,16 @@
 scrapelib changelog
 ===================
 
+0.4.3 - 11 February 2011
+------------------------
+    * fix retry on certain httplib2 errors
+    * add a top-level urlopen function
+
+0.4.2 - 8 February 2011
+-----------------------
+    * fix retry on socket errors
+    * close temporary file handle
+
 0.4.1 - 7 December 2010
 -----------------------
     * support retry of requests that produce socket timeouts
