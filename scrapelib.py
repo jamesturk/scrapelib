@@ -366,10 +366,10 @@ class Scraper(object):
 
         # the retry loop
         tries = 0
-        exception_raised = False
+        exception_raised = None
 
         while tries <= self.retry_attempts:
-            exception_raised = False
+            exception_raised = None
 
             if use_httplib2:
                 try:
@@ -382,7 +382,7 @@ class Scraper(object):
                     exception_raised = True
                 except AttributeError, e:
                     if e.message == "'NoneType' object has no attribute 'makefile'":
-                        exception_raised = True
+                        exception_raised = e
                     else:
                         raise
             else:
@@ -394,7 +394,7 @@ class Scraper(object):
 
                     return resp
                 except urllib2.URLError, e:
-                    exception_raised = True
+                    exception_raised = e
                     if getattr(e, 'code', None) == 404:
                         raise e
 
@@ -407,7 +407,7 @@ class Scraper(object):
                 time.sleep(wait)
 
         if exception_raised:
-            raise e
+            raise exception_raised
         else:
             return resp, content
 
