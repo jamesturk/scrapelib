@@ -1,6 +1,13 @@
 scrapelib changelog
 ===================
 
+0.5.0
+-----
+**10 March 2011**
+    * sphinx documentation
+    * addition of scrapeshell
+    * small bugfix to exception handling
+
 0.4.3
 -----
 **11 February 2011**
