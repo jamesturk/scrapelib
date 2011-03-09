@@ -636,9 +636,56 @@ class Scraper(object):
         with open(path, 'w') as fp:
             json.dump(out, fp, ensure_ascii=False)
 
-
 _default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
-
 
 def urlopen(url):
     return _default_scraper.urlopen(url)
+
+def scrapeshell():
+    try:
+        from IPython.Shell import IPShellEmbed
+    except ImportError:
+        print 'scrapeshell requires ipython'
+        return
+    try:
+        import argparse
+    except ImportError:
+        print 'scrapeshell requires argparse'
+        return
+    try:
+        import lxml.html
+        USE_LXML = True
+    except ImportError:
+        USE_LXML = False
+
+    parser = argparse.ArgumentParser(description='interactive python shell for'
+                                                  ' scraping')
+    parser.add_argument('url', help="url to scrape")
+    parser.add_argument('--ua', dest='user_agent', default=_user_agent,
+                        help='user agent to make requests with')
+    parser.add_argument('--robots', dest='robots', action='store_true',
+                        default=False, help='obey robots.txt')
+    parser.add_argument('--noredirect', dest='redirects', action='store_false',
+                        default=True, help="don't follow redirects")
+
+    args = parser.parse_args()
+
+    scraper = Scraper(user_agent=args.user_agent,
+                      follow_robots=args.robots,
+                      follow_redirects=args.redirects)
+    url = args.url
+    html = scraper.urlopen(args.url)
+
+    if USE_LXML:
+        doc = lxml.html.fromstring(html)
+
+    print 'local variables'
+    print '---------------'
+    print 'url: %s' % url
+    print 'html: `scrapelib.ResultStr` instance'
+    if USE_LXML:
+        print 'doc: `lxml HTML element`'
+    import sys
+    sys.argv = []
+    IPShellEmbed()()
+
