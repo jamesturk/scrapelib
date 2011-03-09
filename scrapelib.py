@@ -84,6 +84,11 @@ class ErrorManager(object):
 
 
 class ResultStr(str, ErrorManager):
+    """
+    Wrapper for non-unicode responses.  Can treat identically to a ``str``
+    o get body of response, additional headers, etc. available via ``response``
+    attribute (instance of :class:`Response`).
+    """
     def __new__(cls, scraper, response, str):
         self = str.__new__(cls, str)
         self._scraper = scraper
@@ -92,6 +97,11 @@ class ResultStr(str, ErrorManager):
 
 
 class ResultUnicode(unicode, ErrorManager):
+    """
+    Wrapper for unicode responses.  Can treat identically to a ``unicode``
+    string to get body of response, additional headers, etc. available via
+    ``response`` attribute (instance of :class:`Response`).
+    """
     def __new__(cls, scraper, response, str):
         self = unicode.__new__(cls, str)
         self._scraper = scraper
@@ -100,6 +110,12 @@ class ResultUnicode(unicode, ErrorManager):
 
 
 class Headers(dict):
+    """
+    Dictionary-like object for storing response headers in a
+    case-insensitive way (keeping with the HTTP spec).
+
+    Accessed as the ``headers`` attribute of :class:`Response`.
+    """
     def __init__(self, d={}):
         super(Headers, self).__init__()
         for k, v in d.items():
@@ -145,6 +161,24 @@ class Headers(dict):
 
 
 class Response(object):
+    """
+    Details about a server response.
+
+    Has the following attributes:
+
+    :attr:`url`
+        actual URL of the response (after redirects)
+    :attr:`requested_url`
+        original URL requested
+    :attr:`code`
+        HTTP response code (not set for FTP requests)
+    :attr:`protocol`
+        protocol used: http, https, or ftp
+    :attr:`fromcache`
+        True iff responsse was retrieved from local cache
+    :attr:`headers`
+        :class:`Headers` instance containing response headers
+    """
 
     def __init__(self, url, requested_url, protocol='http', code=None,
                  fromcache=False, headers={}):
@@ -192,9 +226,42 @@ class MongoCache(object):
 
 
 class Scraper(object):
+    """
+    Scraper is the most important class provided by scrapelib (and generally
+    the only one to be instantiated directly).  It provides a large number
+    of options allowing for customization.
 
+    Usage is generally just creating an instance with the desired options and
+    then using the :meth:`urlopen` & :meth:`urlretrieve` methods of that
+    instance.
+
+    :param user_agent: the value to send as a User-Agent header on
+        HTTP requests (default is "scrapelib |release|")
+    :param cache_dir: if not None, http caching will be enabled with
+        cached pages stored under the supplied path
+    :param requests_per_minute: maximum requests per minute (0 for
+        unlimited, defaults to 60)
+    :param follow_robots: respect robots.txt files (default: True)
+    :param error_dir: if not None, store scraped documents for which
+        an error was encountered.  (TODO: document with blocks)
+    :param accept_cookies: set to False to disable HTTP cookie support
+    :param disable_compression: set to True to not accept compressed content
+    :param use_cache_first: set to True to always make an attempt to use cached
+        data, before even making a HEAD request to check if content is stale
+    :param raise_errors: set to True to raise a :class:`HTTPError`
+        on 4xx or 5xx response
+    :param follow_redirects: set to False to disable redirect following
+    :param timeout: socket timeout in seconds (default: None)
+    :param retry_attempts: number of times to retry if timeout occurs or
+        page returns a (non-404) error
+    :param retry_wait_seconds: number of seconds to retry after first failure,
+        subsequent retries will double this wait
+    :param cache_obj: object to use for non-file based cache.  scrapelib
+        provides :class:`MongoCache` for this purpose
+    """
     def __init__(self, user_agent=_user_agent,
-                 cache_dir=None, headers={},
+                 cache_dir=None,
+                 headers={},
                  requests_per_minute=60,
                  follow_robots=True,
                  error_dir=None,
@@ -208,20 +275,6 @@ class Scraper(object):
                  retry_wait_seconds=5,
                  cache_obj=None,
                  **kwargs):
-        """
-        :param user_agent: the value to send as a User-Agent header on
-          HTTP requests
-        :param cache_dir: if not None, http caching will be enabled with
-          cached pages stored under the supplied path
-        :param requests_per_minute: maximum requests per minute (0 for
-          unlimited)
-        :param follow_robots: respect robots.txt files
-        :param error_dir: if not None,
-        :param accept_cookies: HTTP cookie support
-        :param disable_compression: do not accept compressed content
-        :param use_cache_first: always make an attempt to use cached data first
-        :param raise_errors: raise a HTTPError on 4xx or 5xx response
-        """
         self.user_agent = user_agent
         self.headers = headers
 
@@ -412,6 +465,18 @@ class Scraper(object):
             return resp, content
 
     def urlopen(self, url, method='GET', body=None):
+        """
+            Make an HTTP request and return a
+            :class:`ResultStr` or :class:`ResultUnicode` object.
+
+            If an error is encountered may raise any of the scrapelib
+            `exceptions`_.
+
+            :param url: URL for request
+            :param method: any valid HTTP method, but generally GET or POST
+            :param body: optional body for request, to turn parameters into
+                an appropriate string use :func:`urllib.urlencode()`
+        """
         if self._throttled:
             self._throttle()
 
@@ -516,6 +581,29 @@ class Scraper(object):
         return self._wrap_result(our_resp, resp.read())
 
     def urlretrieve(self, url, filename=None, method='GET', body=None):
+        """
+        Save result of a request to a file, similarly to
+        :func:`urllib.urlretrieve`.
+
+        If an error is encountered may raise any of the scrapelib
+        `exceptions`_.
+
+        A filename may be provided or :meth:`urlretrieve` will safely create a
+        temporary file.  Either way it is the responsibility of the caller
+        to ensure that the temporary file is deleted when it is no longer
+        needed.
+
+        :param url: URL for request
+        :param filename: optional name for file
+        :param method: any valid HTTP method, but generally GET or POST
+        :param body: optional body for request, to turn parameters into
+            an appropriate string use :func:`urllib.urlencode()`
+        :returns filename, response: tuple with filename for saved
+            response (will be same as given filename if one was given,
+            otherwise will be a temp file in the OS temp directory) and
+            a :class:`Response` object that can be used to inspect the
+            response headers.
+        """
         result = self.urlopen(url, method, body)
 
         if not filename:
