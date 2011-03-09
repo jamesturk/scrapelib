@@ -22,6 +22,7 @@ Contents
    :maxdepth: 2
 
    scrapelib
+   scrapeshell
    changelog
 
 Indices and tables
