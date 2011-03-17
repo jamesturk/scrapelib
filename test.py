@@ -314,7 +314,7 @@ class ScraperTest(unittest.TestCase):
         with mock.patch.object(httplib2.Http, 'request', mock_request):
             s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=1)
             self.assertRaises(socket.timeout, self.s.urlopen,
-                              "http://localhost")
+                              "http://localhost:5000/")
 
         mock_request.reset_mock()
         count = []
