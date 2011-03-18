@@ -7,7 +7,8 @@ scrapelib changelog
     * sphinx documentation
     * addition of scrapeshell
     * addition of retry_on_404 parameter to urlopen
-    * small bugfix to exception handling
+    * bugfix to exception handling scope issue
+    * bugfix within tests to avoid false negative
 
 0.4.3
 -----
