@@ -23,7 +23,7 @@ import scrapelib
 
 app = flask.Flask(__name__)
 app.config.shaky_fail = False
-
+app.config.shaky_404_fail = False
 
 @app.route('/')
 def index():
@@ -72,6 +72,15 @@ def shaky():
     else:
         return "shaky success!"
 
+@app.route('/shaky404')
+def shaky404():
+    # toggle failure state each time
+    app.config.shaky_404_fail = not app.config.shaky_404_fail
+
+    if app.config.shaky_404_fail:
+        flask.abort(404)
+    else:
+        return "shaky404 success!"
 
 def run_server():
     class NullFile(object):
@@ -258,21 +267,33 @@ class ScraperTest(unittest.TestCase):
             self.assertEqual(200, resp.code)
         os.remove(set_fname)
 
+
+    # TODO: on these retry tests it'd be nice to ensure that it tries
+    # 3 times for 500 and once for 404
+
     def test_retry_httplib2(self):
-        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=1.5)
+        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
 
         # one failure, then success
         resp, content = s._do_request('http://localhost:5000/shaky',
                                       'GET', None, {}, use_httplib2=True)
         self.assertEqual(content, 'shaky success!')
 
-        # TODO: on this and the other test it'd be nice to have a way to test
-        # it tries 3 times for 500 and once for 404
 
         # 500 always
         resp, content = s._do_request('http://localhost:5000/500',
                                       'GET', None, {}, use_httplib2=True)
         self.assertEqual(resp.status, 500)
+
+
+    def test_retry_httplib2_404(self):
+        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
+
+        # like shaky but raises a 404
+        resp, content = s._do_request('http://localhost:5000/shaky404',
+                                      'GET', None, {}, use_httplib2=True,
+                                      retry_on_404=True)
+        self.assertEqual(content, 'shaky404 success!')
 
         # 404
         resp, content = s._do_request('http://localhost:5000/404',
@@ -280,7 +301,7 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(resp.status, 404)
 
     def test_retry_urllib2(self):
-        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=1)
+        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
 
         # without httplib2
         resp = s._do_request('http://localhost:5000/shaky',
@@ -292,10 +313,19 @@ class ScraperTest(unittest.TestCase):
                           'http://localhost:5000/500',
                           'GET', None, {}, use_httplib2=False)
 
+    def test_retry_urllib2_404(self):
+        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
+
+        # like shaky but raises a 404
+        resp = s._do_request('http://localhost:5000/shaky404',
+                             'GET', None, {}, use_httplib2=False,
+                                      retry_on_404=True)
+        self.assertEqual(resp.read(), 'shaky404 success!')
+
         # 404
-        self.assertRaises(urllib2.URLError, s._do_request,
-                          'http://localhost:5000/404',
-                          'GET', None, {}, use_httplib2=False)
+        self.assertRaises(urllib2.HTTPError, s._do_request,
+                          'http://localhost:5000/404', 'GET', None, {},
+                          use_httplib2=False)
 
     def test_socket_retry(self):
         orig_request = httplib2.Http().request
@@ -312,14 +342,14 @@ class ScraperTest(unittest.TestCase):
         mock_request = mock.Mock(side_effect=side_effect)
 
         with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=1)
+            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.1)
             self.assertRaises(socket.timeout, self.s.urlopen,
                               "http://localhost:5000/")
 
         mock_request.reset_mock()
         count = []
         with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=1)
+            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.1)
             resp = s.urlopen("http://localhost:5000/")
             self.assertEqual(resp, "Hello world!")
 

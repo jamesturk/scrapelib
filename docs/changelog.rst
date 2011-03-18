@@ -3,9 +3,10 @@ scrapelib changelog
 
 0.5.0
 -----
-**10 March 2011**
+**18 March 2011**
     * sphinx documentation
     * addition of scrapeshell
+    * addition of retry_on_404 parameter to urlopen
     * small bugfix to exception handling
 
 0.4.3

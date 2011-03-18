@@ -409,7 +409,8 @@ class Scraper(object):
             self._request_frequency = 0.0
             self._last_request = 0
 
-    def _do_request(self, url, method, body, headers, use_httplib2):
+    def _do_request(self, url, method, body, headers, use_httplib2,
+                    retry_on_404=False):
 
         # initialization for this request
         if not use_httplib2:
@@ -429,7 +430,8 @@ class Scraper(object):
                     resp, content = self._http.request(url, method, body=body,
                                                        headers=headers)
                     # return on a success/redirect/404
-                    if resp.status < 400 or resp.status == 404:
+                    if resp.status < 400 or (resp.status == 404
+                                             and not retry_on_404):
                         return resp, content
                 except socket.error, e:
                     exception_raised = True
@@ -448,7 +450,7 @@ class Scraper(object):
                     return resp
                 except urllib2.URLError, e:
                     exception_raised = e
-                    if getattr(e, 'code', None) == 404:
+                    if getattr(e, 'code', None) == 404 and not retry_on_404:
                         raise e
 
             # if we're going to retry, sleep first
@@ -464,7 +466,7 @@ class Scraper(object):
         else:
             return resp, content
 
-    def urlopen(self, url, method='GET', body=None):
+    def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
             Make an HTTP request and return a
             :class:`ResultStr` or :class:`ResultUnicode` object.
@@ -476,6 +478,10 @@ class Scraper(object):
             :param method: any valid HTTP method, but generally GET or POST
             :param body: optional body for request, to turn parameters into
                 an appropriate string use :func:`urllib.urlencode()`
+            :param retry_on_404: if retries are enabled, retry if a 404 is
+                encountered, this should only be used on pages known to exist
+                if retries are not enabled this parameter does nothing
+                (default: False)
         """
         if self._throttled:
             self._throttle()
@@ -526,7 +532,8 @@ class Scraper(object):
                 if not resp:
                     resp, content = self._do_request(url, method, body,
                                                      headers,
-                                                     use_httplib2=True)
+                                                     use_httplib2=True,
+                                                     retry_on_404=retry_on_404)
 
                 our_resp = Response(resp.get('content-location') or url,
                                     url,
@@ -572,7 +579,7 @@ class Scraper(object):
                 "urllib2 does not support '%s' method" % method, method)
 
         resp = self._do_request(url, method, body, headers,
-                                use_httplib2=False)
+                                use_httplib2=False, retry_on_404=retry_on_404)
 
         our_resp = Response(resp.geturl(), url, code=resp.code,
                             fromcache=False, protocol=parsed_url.scheme,
