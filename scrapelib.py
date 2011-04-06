@@ -434,7 +434,7 @@ class Scraper(object):
                                              and not retry_on_404):
                         return resp, content
                 except socket.error, e:
-                    exception_raised = True
+                    exception_raised = e
                 except AttributeError, e:
                     if e.message == "'NoneType' object has no attribute 'makefile'":
                         exception_raised = e
