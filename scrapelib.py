@@ -21,7 +21,7 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 _user_agent = 'scrapelib %s' % __version__
 
 
@@ -436,7 +436,8 @@ class Scraper(object):
                 except socket.error, e:
                     exception_raised = e
                 except AttributeError, e:
-                    if str(e) == "'NoneType' object has no attribute 'makefile'":
+                    if (str(e) ==
+                        "'NoneType' object has no attribute 'makefile'"):
                         exception_raised = e
                     else:
                         raise
@@ -645,8 +646,10 @@ class Scraper(object):
 
 _default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
 
+
 def urlopen(url):
     return _default_scraper.urlopen(url)
+
 
 def scrapeshell():
     try:
@@ -695,4 +698,3 @@ def scrapeshell():
     import sys
     sys.argv = []
     IPShellEmbed()()
-

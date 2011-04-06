@@ -1,6 +1,12 @@
 scrapelib changelog
 ===================
 
+0.5.1
+-----
+**6 April 2011**
+    * bugfix for exception handling on retry
+    * fix a deprecation warning for Python 2.6+
+
 0.5.0
 -----
 **18 March 2011**
