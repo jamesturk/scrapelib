@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+0.5.2
+-----
+**16 May 2011**
+    * support timeout for urllib2 requests
+
 0.5.1
 -----
 **6 April 2011**

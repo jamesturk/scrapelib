@@ -21,7 +21,7 @@ try:
 except ImportError:
     USE_HTTPLIB2 = False
 
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 _user_agent = 'scrapelib %s' % __version__
 
 
@@ -277,6 +277,7 @@ class Scraper(object):
                  **kwargs):
         self.user_agent = user_agent
         self.headers = headers
+        self.timeout = timeout
 
         self.follow_robots = follow_robots
         self._robot_parsers = {}
@@ -446,7 +447,7 @@ class Scraper(object):
             else:
                 try:
                     _log.info("getting %s using urllib2" % url)
-                    resp = urllib2.urlopen(req)
+                    resp = urllib2.urlopen(req, timeout=self.timeout)
                     if self.accept_cookies:
                         self._cookie_jar.extract_cookies(resp, req)
 
