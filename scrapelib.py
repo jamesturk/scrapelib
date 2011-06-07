@@ -441,7 +441,7 @@ class Scraper(object):
                         "'NoneType' object has no attribute 'makefile'"):
                         # when this error occurs, re-establish the connection
                         self._http = httplib2.Http(self._cache_obj,
-                                                   timeout=timeout)
+                                                   timeout=self.timeout)
                         exception_raised = e
                     else:
                         raise
