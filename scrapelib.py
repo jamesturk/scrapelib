@@ -308,10 +308,10 @@ class Scraper(object):
         self.raise_errors = raise_errors
 
         if USE_HTTPLIB2:
-            cache = cache_dir
+            self._cache_obj = cache_dir
             if cache_obj:
-                cache = cache_obj
-            self._http = httplib2.Http(cache, timeout=timeout)
+                self._cache_obj = cache_obj
+            self._http = httplib2.Http(self._cache_obj, timeout=timeout)
         else:
             self._http = None
 
@@ -440,7 +440,8 @@ class Scraper(object):
                     if (str(e) ==
                         "'NoneType' object has no attribute 'makefile'"):
                         # when this error occurs, re-establish the connection
-                        self._http = httplib2.Http(cache, timeout=timeout)
+                        self._http = httplib2.Http(self._cache_obj,
+                                                   timeout=timeout)
                         exception_raised = e
                     else:
                         raise
