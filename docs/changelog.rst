@@ -1,6 +1,10 @@
 scrapelib changelog
 ===================
 
+0.5.3
+**7 June 2011**
+    * bugfix for reinstantiation of Http object
+
 0.5.2
 -----
 **16 May 2011**
