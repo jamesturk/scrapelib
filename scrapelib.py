@@ -277,6 +277,9 @@ class Scraper(object):
                  **kwargs):
         self.user_agent = user_agent
         self.headers = headers
+        # weird quirk between 0/None for timeout, accept either
+        if timeout == 0:
+            timeout = None
         self.timeout = timeout
 
         self.follow_robots = follow_robots
