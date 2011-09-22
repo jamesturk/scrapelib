@@ -7,10 +7,10 @@ long_description = open('README.rst').read()
 setup(name="scrapelib",
       version=__version__,
       py_modules=['scrapelib'],
-      author="Michael Stephens",
-      author_email='mstephens@sunlightfoundation.com',
+      author="James Turk",
+      author_email='jturk@sunlightfoundation.com',
       license="BSD",
-      url="http://github.com/mikejs/scrapelib",
+      url="http://github.com/sunlightlabs/scrapelib",
       long_description=long_description,
       description="a library for scraping things",
       platforms=["any"],
@@ -23,7 +23,7 @@ setup(name="scrapelib",
                    ("Topic :: Software Development :: Libraries :: "
                     "Python Modules"),
                    ],
-      install_requires=["httplib2 >= 0.6.0"],
+      install_requires=["httplib2 >= 0.7.0"],
       entry_points="""
 [console_scripts]
 scrapeshell = scrapelib:scrapeshell
