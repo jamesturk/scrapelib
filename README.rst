@@ -13,13 +13,12 @@ Features include:
   * robots.txt compliance (optional)
   * robust error handling
 
-scrapelib is a project of Sunlight Labs (c) 2010.
+scrapelib is a project of Sunlight Labs (c) 2011.
 All code is released under a BSD-style license, see LICENSE for details.
 
 Written by Michael Stephens <mstephens@sunlightfoundation.com> and James Turk
 <jturk@sunlightfoundation.com>.
 
-Source is available at http://github.com/sunlightlabs/scrapelib.
 
 Requirements
 ============
@@ -31,10 +30,13 @@ httplib2 optional but highly recommended.
 Installation
 ============
 
-scrapelib is available on PyPI and thus can be downloaded installed via
-``pip install scrapelib`` or ``easy_install scrapelib``.
+scrapelib is available on PyPI and can be installed via ``pip install scrapelib``
 
-To install from a source distribution run ``python setup.py install``.
+PyPI package: http://pypi.python.org/pypi/scrapelib
+
+Source: http://github.com/sunlightlabs/scrapelib
+
+Documentation: http://scrapelib.readthedocs.org/en/latest/
 
 Example Usage
 =============
