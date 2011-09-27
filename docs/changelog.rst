@@ -3,8 +3,9 @@ scrapelib changelog
 
 0.5.5
 -----
-**13 June 2011**
+**27 September 2011**
     * use None for no timeout, never create non-blocking socket
+    * documentation and owernship changes
 
 0.5.4
 -----
