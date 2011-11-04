@@ -660,10 +660,14 @@ def urlopen(url):
 
 def scrapeshell():
     try:
-        from IPython.Shell import IPShellEmbed
+        from IPython import embed
     except ImportError:
-        print 'scrapeshell requires ipython'
-        return
+        try:
+            from IPython.Shell import IPShellEmbed
+            embed = IPShellEmbed()
+        except ImportError:
+            print 'scrapeshell requires ipython'
+            return
     try:
         import argparse
     except ImportError:
@@ -704,4 +708,4 @@ def scrapeshell():
         print 'doc: `lxml HTML element`'
     import sys
     sys.argv = []
-    IPShellEmbed()()
+    embed()
