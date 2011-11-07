@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+0.5.6
+-----
+**7 November 2011**
+    * scrapeshell fix for IPython >= 0.11
+
 0.5.5
 -----
 **27 September 2011**
