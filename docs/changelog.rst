@@ -3,8 +3,9 @@ scrapelib changelog
 
 0.5.6
 -----
-**7 November 2011**
+**9 November 2011**
     * scrapeshell fix for IPython >= 0.11
+    * scrapelib.urlopen can take method/body params too
 
 0.5.5
 -----
