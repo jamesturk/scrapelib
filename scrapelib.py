@@ -654,8 +654,8 @@ class Scraper(object):
 _default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
 
 
-def urlopen(url):
-    return _default_scraper.urlopen(url)
+def urlopen(url, method='GET', body=None):
+    return _default_scraper.urlopen(url, method, body)
 
 
 def scrapeshell():
