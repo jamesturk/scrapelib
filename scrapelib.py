@@ -450,7 +450,7 @@ class Scraper(object):
                         raise
             else:
                 try:
-                    _log.info("getting %s using urllib2" % url)
+                    _log.info("%sing %s using urllib2" % (method, url))
                     resp = urllib2.urlopen(req, timeout=self.timeout)
                     if self.accept_cookies:
                         self._cookie_jar.extract_cookies(resp, req)
@@ -516,7 +516,7 @@ class Scraper(object):
                         user_agent, url), url, user_agent)
 
             if USE_HTTPLIB2:
-                _log.info("getting %s using HTTPLIB2" % url)
+                _log.info("%sing %s using HTTPLIB2" % (method, url))
 
                 # make sure POSTs have x-www-form-urlencoded content type
                 if method == 'POST' and 'Content-Type' not in headers:
