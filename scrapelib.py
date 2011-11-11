@@ -659,6 +659,11 @@ def urlopen(url, method='GET', body=None):
 
 
 def scrapeshell():
+    # clear argv for IPython
+    import sys
+    orig_argv = sys.argv[1:]
+    sys.argv = []
+
     try:
         from IPython import embed
     except ImportError:
@@ -679,8 +684,9 @@ def scrapeshell():
     except ImportError:
         USE_LXML = False
 
-    parser = argparse.ArgumentParser(description='interactive python shell for'
-                                                  ' scraping')
+    parser = argparse.ArgumentParser(prog='scrapeshell',
+                                     description='interactive python shell for'
+                                     ' scraping')
     parser.add_argument('url', help="url to scrape")
     parser.add_argument('--ua', dest='user_agent', default=_user_agent,
                         help='user agent to make requests with')
@@ -688,14 +694,19 @@ def scrapeshell():
                         default=False, help='obey robots.txt')
     parser.add_argument('--noredirect', dest='redirects', action='store_false',
                         default=True, help="don't follow redirects")
-
-    args = parser.parse_args()
+    parser.add_argument('-p', '--postdata', dest='postdata',
+                        default=None,
+                        help="POST data (will make a POST instead of GET)")
+    args = parser.parse_args(orig_argv)
 
     scraper = Scraper(user_agent=args.user_agent,
                       follow_robots=args.robots,
                       follow_redirects=args.redirects)
     url = args.url
-    html = scraper.urlopen(args.url)
+    if args.postdata:
+        html = scraper.urlopen(args.url, 'POST', args.postdata)
+    else:
+        html = scraper.urlopen(args.url)
 
     if USE_LXML:
         doc = lxml.html.fromstring(html)
@@ -706,6 +717,4 @@ def scrapeshell():
     print 'html: `scrapelib.ResultStr` instance'
     if USE_LXML:
         print 'doc: `lxml HTML element`'
-    import sys
-    sys.argv = []
     embed()
