@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+0.5.7
+-----
+    * -p, --postdata parameter
+    * argv fix for IPython <= 0.10
+
 0.5.6
 -----
 **9 November 2011**
