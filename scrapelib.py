@@ -662,7 +662,7 @@ def scrapeshell():
     # clear argv for IPython
     import sys
     orig_argv = sys.argv[1:]
-    sys.argv = []
+    sys.argv = sys.argv[:1]
 
     try:
         from IPython import embed
