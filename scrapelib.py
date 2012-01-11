@@ -478,7 +478,8 @@ class Scraper(object):
         else:
             return resp, content
 
-    def urlopen(self, url, method='GET', body=None, retry_on_404=False):
+    def urlopen(self, url, method='GET', body=None, retry_on_404=False,
+                use_cache_first=None):
         """
             Make an HTTP request and return a
             :class:`ResultStr` or :class:`ResultUnicode` object.
@@ -494,8 +495,17 @@ class Scraper(object):
                 encountered, this should only be used on pages known to exist
                 if retries are not enabled this parameter does nothing
                 (default: False)
+            :param use_cache_first: set to True to make an attempt to use
+                cached data, before even making a HEAD request to check if
+                content is stale (overrides self.use_cache_first)
+
         """
-        if self._throttled:
+        # allow overriding self.use_cache_first
+        if use_cache_first is None:
+            use_cache_first = self.use_cache_first
+
+        # don't throttle use_cache_first requests
+        if self._throttled and not use_cache_first:
             self._throttle()
 
         method = method.upper()
@@ -528,7 +538,7 @@ class Scraper(object):
                                                'x-www-form-urlencoded')
 
                 # optionally try a dummy request to cache only
-                if self.use_cache_first and 'Cache-Control' not in headers:
+                if use_cache_first and 'Cache-Control' not in headers:
                     headers['cache-control'] = 'only-if-cached'
 
                     resp, content = self._http.request(url, method,
