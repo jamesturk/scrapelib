@@ -460,6 +460,10 @@ class Scraper(object):
                     exception_raised = e
                     if getattr(e, 'code', None) == 404 and not retry_on_404:
                         raise e
+                    # also count a 550 from an FTP as a 404
+                    elif (url.startswith('ftp://') and '550' in str(e)
+                          and not retry_on_404):
+                        raise e
 
             # if we're going to retry, sleep first
             tries += 1
