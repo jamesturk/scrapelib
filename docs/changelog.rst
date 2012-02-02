@@ -3,8 +3,11 @@ scrapelib changelog
 
 0.5.7
 -----
+**2 February 2012**
     * -p, --postdata parameter
     * argv fix for IPython <= 0.10
+    * treat FTP 550 errors as HTTP 404s
+    * use_cache_first improvements
 
 0.5.6
 -----
