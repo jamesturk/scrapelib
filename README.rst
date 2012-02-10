@@ -19,6 +19,10 @@ All code is released under a BSD-style license, see LICENSE for details.
 Written by Michael Stephens <mstephens@sunlightfoundation.com> and James Turk
 <jturk@sunlightfoundation.com>.
 
+Contributors:
+    * Joe Germuska - fix for IPython embedding
+    * Alex Chiang - fix to test suite
+
 
 Requirements
 ============
