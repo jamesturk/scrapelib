@@ -393,5 +393,7 @@ if __name__ == '__main__':
     process = Process(target=run_server)
     process.start()
     time.sleep(0.1)
-    unittest.main(exit=False)
-    process.terminate()
+    try:
+        unittest.main()
+    finally:
+        process.terminate()
