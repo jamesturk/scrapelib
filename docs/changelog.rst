@@ -3,8 +3,8 @@ scrapelib changelog
 
 0.5.8
 -----
+**15 February 2012**
     * fix to test suite from Alex Chiang
-
 
 0.5.7
 -----
