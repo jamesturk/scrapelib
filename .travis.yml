@@ -4,3 +4,6 @@ python:
     - "2.7"
 install: pip install unittest2 flask httplib2 mock --use-mirrors
 script: python test.py
+notifications:
+    email:
+        - jturk@sunlightfoundation.com
