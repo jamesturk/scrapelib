@@ -1,8 +1,6 @@
 language: python
 python:
-    - "2.5"
     - "2.6"
     - "2.7"
-    - "3.2"
 install: pip install unittest2 flask httplib2 mock --use-mirrors
 script: python test.py
