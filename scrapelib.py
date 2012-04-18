@@ -437,13 +437,14 @@ class Scraper(object):
                     else:
                         raise
             else:
-                raise HTTPMethodUnavailableError(
-                    "non-HTTP(S) requests do not support method '%s'" %
-                    method, method)
+                if method != 'GET':
+                    raise HTTPMethodUnavailableError(
+                        "non-HTTP(S) requests do not support method '%s'" %
+                        method, method)
                 try:
-                    resp = urllib2.urlopen(req, timeout=self.timeout)
+                    resp = urllib2.urlopen(url, timeout=self.timeout)
                     return Response(url, url, code=None, fromcache=False,
-                                    protocol='ftp', headers=[]), resp.read()
+                                    protocol='ftp', headers={}), resp.read()
                 except urllib2.URLError, e:
                     exception_raised = e
                     # FTP 550 ~ HTTP 404
