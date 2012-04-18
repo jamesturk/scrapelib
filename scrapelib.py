@@ -10,16 +10,8 @@ import datetime
 import cookielib
 import robotparser
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
-try:
-    import httplib2
-    USE_HTTPLIB2 = True
-except ImportError:
-    USE_HTTPLIB2 = False
+import json
+import httplib2
 
 __version__ = '0.5.8'
 _user_agent = 'scrapelib %s' % __version__
@@ -287,10 +279,6 @@ class Scraper(object):
 
         self.requests_per_minute = requests_per_minute
 
-        if cache_dir and not USE_HTTPLIB2:
-            _log.warning("httplib2 not available, HTTP caching "
-                         "and compression will be disabled.")
-
         self.error_dir = error_dir
         if self.error_dir:
             try:
@@ -310,13 +298,10 @@ class Scraper(object):
         self.use_cache_first = use_cache_first
         self.raise_errors = raise_errors
 
-        if USE_HTTPLIB2:
-            self._cache_obj = cache_dir
-            if cache_obj:
-                self._cache_obj = cache_obj
-            self._http = httplib2.Http(self._cache_obj, timeout=timeout)
-        else:
-            self._http = None
+        self._cache_obj = cache_dir
+        if cache_obj:
+            self._cache_obj = cache_obj
+        self._http = httplib2.Http(self._cache_obj, timeout=timeout)
 
         self.follow_redirects = follow_redirects
 
@@ -529,66 +514,65 @@ class Scraper(object):
                     "User-Agent '%s' not allowed at '%s'" % (
                         user_agent, url), url, user_agent)
 
-            if USE_HTTPLIB2:
-                _log.info("%sing %s using HTTPLIB2" % (method, url))
+            _log.info("%sing %s" % (method, url))
 
-                # make sure POSTs have x-www-form-urlencoded content type
-                if method == 'POST' and 'Content-Type' not in headers:
-                    headers['Content-Type'] = ('application/'
-                                               'x-www-form-urlencoded')
+            # make sure POSTs have x-www-form-urlencoded content type
+            if method == 'POST' and 'Content-Type' not in headers:
+                headers['Content-Type'] = ('application/'
+                                           'x-www-form-urlencoded')
 
-                # optionally try a dummy request to cache only
-                if use_cache_first and 'Cache-Control' not in headers:
-                    headers['cache-control'] = 'only-if-cached'
+            # optionally try a dummy request to cache only
+            if use_cache_first and 'Cache-Control' not in headers:
+                headers['cache-control'] = 'only-if-cached'
 
-                    resp, content = self._http.request(url, method,
-                                                       body=body,
-                                                       headers=headers)
-                    if resp.status == 504:
-                        headers.pop('cache-control')
-                        resp = content = None
-                else:
+                resp, content = self._http.request(url, method,
+                                                   body=body,
+                                                   headers=headers)
+                if resp.status == 504:
+                    headers.pop('cache-control')
                     resp = content = None
+            else:
+                resp = content = None
 
-                # do request if there's no copy in local cache
-                if not resp:
-                    resp, content = self._do_request(url, method, body,
-                                                     headers,
-                                                     use_httplib2=True,
-                                                     retry_on_404=retry_on_404)
+            # do request if there's no copy in local cache
+            if not resp:
+                resp, content = self._do_request(url, method, body,
+                                                 headers,
+                                                 use_httplib2=True,
+                                                 retry_on_404=retry_on_404)
 
-                our_resp = Response(resp.get('content-location') or url,
-                                    url,
-                                    code=resp.status,
-                                    fromcache=resp.fromcache,
-                                    protocol=parsed_url.scheme,
-                                    headers=resp)
+            our_resp = Response(resp.get('content-location') or url,
+                                url,
+                                code=resp.status,
+                                fromcache=resp.fromcache,
+                                protocol=parsed_url.scheme,
+                                headers=resp)
 
-                # important to accept cookies before redirect handling
-                if self.accept_cookies:
-                    fake_req = urllib2.Request(url, headers=headers)
-                    self._cookie_jar.extract_cookies(our_resp, fake_req)
+            # important to accept cookies before redirect handling
+            if self.accept_cookies:
+                fake_req = urllib2.Request(url, headers=headers)
+                self._cookie_jar.extract_cookies(our_resp, fake_req)
 
-                # needed because httplib2 follows the HTTP spec a bit *too*
-                # closely and won't issue a GET following a POST (incorrect
-                # but expected and often seen behavior)
-                if (resp.status in (301, 302, 303, 307) and
-                    self.follow_redirects):
+            # needed because httplib2 follows the HTTP spec a bit *too*
+            # closely and won't issue a GET following a POST (incorrect
+            # but expected and often seen behavior)
+            if (resp.status in (301, 302, 303, 307) and
+                self.follow_redirects):
 
-                    if resp['location'].startswith('http'):
-                        redirect = resp['location']
-                    else:
-                        redirect = urlparse.urljoin(parsed_url.scheme +
-                                                    "://" +
-                                                    parsed_url.netloc +
-                                                    parsed_url.path,
-                                                    resp['location'])
-                    _log.debug('redirecting to %s' % redirect)
-                    resp = self.urlopen(redirect)
-                    resp.response.requested_url = url
-                    return resp
+                if resp['location'].startswith('http'):
+                    redirect = resp['location']
+                else:
+                    redirect = urlparse.urljoin(parsed_url.scheme +
+                                                "://" +
+                                                parsed_url.netloc +
+                                                parsed_url.path,
+                                                resp['location'])
+                _log.debug('redirecting to %s' % redirect)
+                resp = self.urlopen(redirect)
+                resp.response.requested_url = url
+                return resp
 
-                return self._wrap_result(our_resp, content)
+            return self._wrap_result(our_resp, content)
         else:
             # not an HTTP(S) request
             if method != 'GET':
@@ -596,18 +580,14 @@ class Scraper(object):
                     "non-HTTP(S) requests do not support method '%s'" %
                     method, method)
 
-        if method not in ['GET', 'POST']:
-            raise HTTPMethodUnavailableError(
-                "urllib2 does not support '%s' method" % method, method)
+            resp = self._do_request(url, method, body, headers,
+                                    use_httplib2=False, retry_on_404=retry_on_404)
 
-        resp = self._do_request(url, method, body, headers,
-                                use_httplib2=False, retry_on_404=retry_on_404)
+            our_resp = Response(resp.geturl(), url, code=resp.code,
+                                fromcache=False, protocol=parsed_url.scheme,
+                                headers=resp.headers)
 
-        our_resp = Response(resp.geturl(), url, code=resp.code,
-                            fromcache=False, protocol=parsed_url.scheme,
-                            headers=resp.headers)
-
-        return self._wrap_result(our_resp, resp.read())
+            return self._wrap_result(our_resp, resp.read())
 
     def urlretrieve(self, url, filename=None, method='GET', body=None):
         """

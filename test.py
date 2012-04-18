@@ -235,12 +235,6 @@ class ScraperTest(unittest.TestCase):
                          resp.response.requested_url)
         self.assertEqual(302, resp.response.code)
 
-        # No following redirects with urllib2 only
-        scrapelib.USE_HTTPLIB2 = False
-        s = scrapelib.Scraper()
-        self.assertFalse(s.follow_redirects)
-        scrapelib.USE_HTTPLIB2 = True
-
     def test_caching(self):
         resp = self.s.urlopen("http://localhost:5000/")
         self.assertFalse(resp.response.fromcache)
@@ -375,14 +369,7 @@ class ScraperTest(unittest.TestCase):
         headers = s._make_headers('example.com')
         self.assertEqual(headers['url'], 'example.com')
 
-    def test_method_restrictions(self):
-        # we can't use urllib2 for non GET/POST requests
-        scrapelib.USE_HTTPLIB2 = False
-        self.assertRaises(scrapelib.HTTPMethodUnavailableError,
-                          lambda: self.s.urlopen("http://google.com",
-                                                 method='PUT'))
-        scrapelib.USE_HTTPLIB2 = True
-
+    def test_ftp_method_restrictions(self):
         # only http(s) supports non-'GET' requests
         self.assertRaises(scrapelib.HTTPMethodUnavailableError,
                           lambda: self.s.urlopen("ftp://google.com",
