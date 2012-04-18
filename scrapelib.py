@@ -191,6 +191,16 @@ class Response(object):
     def info(self):
         return self.headers
 
+    @classmethod
+    def from_httplib2_response(self, url, resp):
+        return Response(resp.get('content-location') or url,
+                        url,
+                        code=resp.status,
+                        fromcache=resp.fromcache,
+                        protocol=urlparse.urlparse(url).scheme,
+                        headers=resp)
+
+
 
 class MongoCache(object):
     """
@@ -414,7 +424,7 @@ class Scraper(object):
                     # return on a success/redirect/404
                     if resp.status < 400 or (resp.status == 404
                                              and not retry_on_404):
-                        return resp, content
+                        break
                 except socket.error, e:
                     exception_raised = e
                 except AttributeError, e:
@@ -431,7 +441,9 @@ class Scraper(object):
                     "non-HTTP(S) requests do not support method '%s'" %
                     method, method)
                 try:
-                    return urllib2.urlopen(req, timeout=self.timeout)
+                    resp = urllib2.urlopen(req, timeout=self.timeout)
+                    return Response(url, url, code=None, fromcache=False,
+                                    protocol='ftp', headers=[]), resp.read()
                 except urllib2.URLError, e:
                     exception_raised = e
                     # FTP 550 ~ HTTP 404
@@ -446,10 +458,11 @@ class Scraper(object):
                 _log.debug('sleeping for %s seconds before retry' % wait)
                 time.sleep(wait)
 
+        # out of the loop, either an exception was raised or we had a success
         if exception_raised:
             raise exception_raised
         else:
-            return resp, content
+            return Response.from_httplib2_response(url, resp), content
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False,
                 use_cache_first=None):
@@ -495,14 +508,18 @@ class Scraper(object):
         headers = self._make_headers(url)
         user_agent = headers['User-Agent']
 
+        _log.info("%sing %s" % (method, url))
+
+        # start with blank response & content
+        our_resp = content = None
+
+        # robots.txt, POST, cache-control are http-only
         if parsed_url.scheme in ('http', 'https'):
             if self.follow_robots and not self._robot_allowed(user_agent,
                                                               parsed_url):
                 raise RobotExclusionError(
                     "User-Agent '%s' not allowed at '%s'" % (
                         user_agent, url), url, user_agent)
-
-            _log.info("%sing %s" % (method, url))
 
             # make sure POSTs have x-www-form-urlencoded content type
             if method == 'POST' and 'Content-Type' not in headers:
@@ -516,24 +533,20 @@ class Scraper(object):
                 resp, content = self._http.request(url, method,
                                                    body=body,
                                                    headers=headers)
+
+                # a 504 means it wasn't found, clear the content
                 if resp.status == 504:
                     headers.pop('cache-control')
-                    resp = content = None
-            else:
-                resp = content = None
+                    content = None
+                else:
+                    # we have our response
+                    our_resp = Response.from_httplib2_response(url, resp)
 
-            # do request if there's no copy in local cache
-            if not resp:
-                resp, content = self._do_request(url, method, body,
+        # do request if we didn't get it from cache earlier
+        if not our_resp:
+            our_resp, content = self._do_request(url, method, body,
                                                  headers,
                                                  retry_on_404=retry_on_404)
-
-            our_resp = Response(resp.get('content-location') or url,
-                                url,
-                                code=resp.status,
-                                fromcache=resp.fromcache,
-                                protocol=parsed_url.scheme,
-                                headers=resp)
 
             # important to accept cookies before redirect handling
             if self.accept_cookies:
@@ -542,32 +555,29 @@ class Scraper(object):
 
             # needed because httplib2 follows the HTTP spec a bit *too*
             # closely and won't issue a GET following a POST (incorrect
-            # but expected and often seen behavior)
-            if (resp.status in (301, 302, 303, 307) and self.follow_redirects):
+            # but expected and often relied-upon behavior)
+            if (our_resp.code in (301, 302, 303, 307) and
+                self.follow_redirects):
 
-                if resp['location'].startswith('http'):
+                if our_resp.headers['location'].startswith('http'):
                     redirect = resp['location']
                 else:
+                    # relative redirect
                     redirect = urlparse.urljoin(parsed_url.scheme +
                                                 "://" +
                                                 parsed_url.netloc +
                                                 parsed_url.path,
                                                 resp['location'])
                 _log.debug('redirecting to %s' % redirect)
+
+                # just return the result of a urlopen to new url
                 resp = self.urlopen(redirect)
                 resp.response.requested_url = url
                 return resp
 
-            return self._wrap_result(our_resp, content)
-        elif parsed_url.scheme == 'ftp':
-            resp = self._do_request(url, method, body, headers,
-                                    retry_on_404=retry_on_404)
+        # return our_resp wrapped in content
+        return self._wrap_result(our_resp, content)
 
-            our_resp = Response(resp.geturl(), url, code=resp.code,
-                                fromcache=False, protocol=parsed_url.scheme,
-                                headers=resp.headers)
-
-            return self._wrap_result(our_resp, resp.read())
 
     def urlretrieve(self, url, filename=None, method='GET', body=None):
         """

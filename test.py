@@ -277,7 +277,7 @@ class ScraperTest(unittest.TestCase):
         # 500 always
         resp, content = s._do_request('http://localhost:5000/500',
                                       'GET', None, {})
-        self.assertEqual(resp.status, 500)
+        self.assertEqual(resp.code, 500)
 
 
     def test_retry_httplib2_404(self):
@@ -291,7 +291,7 @@ class ScraperTest(unittest.TestCase):
         # 404
         resp, content = s._do_request('http://localhost:5000/404',
                                       'GET', None, {})
-        self.assertEqual(resp.status, 404)
+        self.assertEqual(resp.code, 404)
 
     def test_socket_retry(self):
         orig_request = httplib2.Http().request
