@@ -13,7 +13,7 @@ import robotparser
 import json
 import httplib2
 
-__version__ = '0.5.8'
+__version__ = '0.6.0-dev'
 _user_agent = 'scrapelib %s' % __version__
 
 

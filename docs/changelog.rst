@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+0.6.0
+-----
+    * remove urllib2 fallback for HTTP
+
+
 0.5.8
 -----
 **15 February 2012**
