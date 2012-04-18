@@ -3,7 +3,6 @@ import sys
 import glob
 import time
 import socket
-import urllib2
 import tempfile
 from multiprocessing import Process
 
@@ -24,6 +23,7 @@ import scrapelib
 app = flask.Flask(__name__)
 app.config.shaky_fail = False
 app.config.shaky_404_fail = False
+
 
 @app.route('/')
 def index():
@@ -72,6 +72,7 @@ def shaky():
     else:
         return "shaky success!"
 
+
 @app.route('/shaky404')
 def shaky404():
     # toggle failure state each time
@@ -81,6 +82,7 @@ def shaky404():
         flask.abort(404)
     else:
         return "shaky404 success!"
+
 
 def run_server():
     class NullFile(object):
@@ -261,7 +263,6 @@ class ScraperTest(unittest.TestCase):
             self.assertEqual(200, resp.code)
         os.remove(set_fname)
 
-
     # TODO: on these retry tests it'd be nice to ensure that it tries
     # 3 times for 500 and once for 404
 
@@ -273,12 +274,10 @@ class ScraperTest(unittest.TestCase):
                                       'GET', None, {})
         self.assertEqual(content, 'shaky success!')
 
-
         # 500 always
         resp, content = s._do_request('http://localhost:5000/500',
                                       'GET', None, {})
         self.assertEqual(resp.code, 500)
-
 
     def test_retry_httplib2_404(self):
         s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)

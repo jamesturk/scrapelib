@@ -201,7 +201,6 @@ class Response(object):
                         headers=resp)
 
 
-
 class MongoCache(object):
     """
     Implements the httplib2 cache protocol using MongoDB
@@ -578,7 +577,6 @@ class Scraper(object):
 
         # return our_resp wrapped in content
         return self._wrap_result(our_resp, content)
-
 
     def urlretrieve(self, url, filename=None, method='GET', body=None):
         """
