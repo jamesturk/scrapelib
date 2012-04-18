@@ -398,14 +398,7 @@ class Scraper(object):
             self._request_frequency = 0.0
             self._last_request = 0
 
-    def _do_request(self, url, method, body, headers, use_httplib2,
-                    retry_on_404=False):
-
-        # initialization for this request
-        if not use_httplib2:
-            req = urllib2.Request(url, data=body, headers=headers)
-            if self.accept_cookies:
-                self._cookie_jar.add_cookie_header(req)
+    def _do_request(self, url, method, body, headers, retry_on_404=False):
 
         # the retry loop
         tries = 0
@@ -414,7 +407,7 @@ class Scraper(object):
         while tries <= self.retry_attempts:
             exception_raised = None
 
-            if use_httplib2:
+            if url.startswith('http'):
                 try:
                     resp, content = self._http.request(url, method, body=body,
                                                        headers=headers)
@@ -434,20 +427,15 @@ class Scraper(object):
                     else:
                         raise
             else:
+                raise HTTPMethodUnavailableError(
+                    "non-HTTP(S) requests do not support method '%s'" %
+                    method, method)
                 try:
-                    _log.info("%sing %s using urllib2" % (method, url))
-                    resp = urllib2.urlopen(req, timeout=self.timeout)
-                    if self.accept_cookies:
-                        self._cookie_jar.extract_cookies(resp, req)
-
-                    return resp
+                    return urllib2.urlopen(req, timeout=self.timeout)
                 except urllib2.URLError, e:
                     exception_raised = e
-                    if getattr(e, 'code', None) == 404 and not retry_on_404:
-                        raise e
-                    # also count a 550 from an FTP as a 404
-                    elif (url.startswith('ftp://') and '550' in str(e)
-                          and not retry_on_404):
+                    # FTP 550 ~ HTTP 404
+                    if '550' in str(e) and not retry_on_404:
                         raise e
 
             # if we're going to retry, sleep first
@@ -507,7 +495,7 @@ class Scraper(object):
         headers = self._make_headers(url)
         user_agent = headers['User-Agent']
 
-        if parsed_url.scheme in ['http', 'https']:
+        if parsed_url.scheme in ('http', 'https'):
             if self.follow_robots and not self._robot_allowed(user_agent,
                                                               parsed_url):
                 raise RobotExclusionError(
@@ -538,7 +526,6 @@ class Scraper(object):
             if not resp:
                 resp, content = self._do_request(url, method, body,
                                                  headers,
-                                                 use_httplib2=True,
                                                  retry_on_404=retry_on_404)
 
             our_resp = Response(resp.get('content-location') or url,
@@ -556,8 +543,7 @@ class Scraper(object):
             # needed because httplib2 follows the HTTP spec a bit *too*
             # closely and won't issue a GET following a POST (incorrect
             # but expected and often seen behavior)
-            if (resp.status in (301, 302, 303, 307) and
-                self.follow_redirects):
+            if (resp.status in (301, 302, 303, 307) and self.follow_redirects):
 
                 if resp['location'].startswith('http'):
                     redirect = resp['location']
@@ -573,15 +559,9 @@ class Scraper(object):
                 return resp
 
             return self._wrap_result(our_resp, content)
-        else:
-            # not an HTTP(S) request
-            if method != 'GET':
-                raise HTTPMethodUnavailableError(
-                    "non-HTTP(S) requests do not support method '%s'" %
-                    method, method)
-
+        elif parsed_url.scheme == 'ftp':
             resp = self._do_request(url, method, body, headers,
-                                    use_httplib2=False, retry_on_404=retry_on_404)
+                                    retry_on_404=retry_on_404)
 
             our_resp = Response(resp.geturl(), url, code=resp.code,
                                 fromcache=False, protocol=parsed_url.scheme,

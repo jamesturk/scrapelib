@@ -270,13 +270,13 @@ class ScraperTest(unittest.TestCase):
 
         # one failure, then success
         resp, content = s._do_request('http://localhost:5000/shaky',
-                                      'GET', None, {}, use_httplib2=True)
+                                      'GET', None, {})
         self.assertEqual(content, 'shaky success!')
 
 
         # 500 always
         resp, content = s._do_request('http://localhost:5000/500',
-                                      'GET', None, {}, use_httplib2=True)
+                                      'GET', None, {})
         self.assertEqual(resp.status, 500)
 
 
@@ -285,41 +285,13 @@ class ScraperTest(unittest.TestCase):
 
         # like shaky but raises a 404
         resp, content = s._do_request('http://localhost:5000/shaky404',
-                                      'GET', None, {}, use_httplib2=True,
-                                      retry_on_404=True)
+                                      'GET', None, {}, retry_on_404=True)
         self.assertEqual(content, 'shaky404 success!')
 
         # 404
         resp, content = s._do_request('http://localhost:5000/404',
-                                      'GET', None, {}, use_httplib2=True)
+                                      'GET', None, {})
         self.assertEqual(resp.status, 404)
-
-    def test_retry_urllib2(self):
-        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
-
-        # without httplib2
-        resp = s._do_request('http://localhost:5000/shaky',
-                             'GET', None, {}, use_httplib2=False)
-        self.assertEqual(resp.read(), 'shaky success!')
-
-        # 500 always
-        self.assertRaises(urllib2.URLError, s._do_request,
-                          'http://localhost:5000/500',
-                          'GET', None, {}, use_httplib2=False)
-
-    def test_retry_urllib2_404(self):
-        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
-
-        # like shaky but raises a 404
-        resp = s._do_request('http://localhost:5000/shaky404',
-                             'GET', None, {}, use_httplib2=False,
-                                      retry_on_404=True)
-        self.assertEqual(resp.read(), 'shaky404 success!')
-
-        # 404
-        self.assertRaises(urllib2.HTTPError, s._do_request,
-                          'http://localhost:5000/404', 'GET', None, {},
-                          use_httplib2=False)
 
     def test_socket_retry(self):
         orig_request = httplib2.Http().request
