@@ -29,12 +29,6 @@ app.config.shaky_fail = False
 app.config.shaky_404_fail = False
 
 
-@app.route('/')
-def index():
-    resp = app.make_response("Hello world!")
-    return resp
-
-
 @app.route('/shaky')
 def shaky():
     # toggle failure state each time
@@ -334,23 +328,28 @@ class ScraperTest(unittest.TestCase):
         # On subsequent calls pass through to httplib2.Http.request
         def side_effect(*args, **kwargs):
             if count:
-                return orig_request(*args, **kwargs)
+                return httplib2.Response({'status': 200}), 'success!'
             count.append(1)
             raise socket.timeout('timed out :(')
 
         mock_request = mock.Mock(side_effect=side_effect)
 
         with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.1)
-            self.assertRaises(socket.timeout, self.s.urlopen,
-                              "http://localhost:5000/")
+            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001, 
+                                  follow_robots=False)
+            # try only once, get the error
+            self.assertRaises(socket.timeout, self.s.urlopen, "http://dummy/")
+            self.assertEqual(mock_request.call_count, 1)
 
         mock_request.reset_mock()
         count = []
         with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.1)
-            resp = s.urlopen("http://localhost:5000/")
-            self.assertEqual(resp, "Hello world!")
+            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                                  follow_robots=False)
+            resp = s.urlopen("http://dummy/")
+            # get the result, take two tries
+            self.assertEqual(resp, "success!")
+            self.assertEqual(mock_request.call_count, 2)
 
     def test_disable_compression(self):
         s = scrapelib.Scraper(disable_compression=True)
