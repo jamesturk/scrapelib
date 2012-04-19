@@ -220,13 +220,18 @@ class ScraperTest(unittest.TestCase):
                           "http://localhost:5000/p/a/t/h/")
 
     def test_error_context(self):
-        def raises():
-            with self.s.urlopen("http://localhost:5000/"):
-                raise Exception('test')
+        def do_request(url, *args, **kwargs):
+            return scrapelib.Response(url, url), ''
+        mock_do_request = mock.Mock(wraps=do_request)
 
-        self.assertRaises(Exception, raises)
+        with mock.patch.object(self.s, '_do_request', mock_do_request):
+            def raises():
+                with self.s.urlopen("http://dummy/"):
+                    raise Exception('test')
+
+            self.assertRaises(Exception, raises)
         self.assertTrue(os.path.isfile(os.path.join(
-            self.error_dir, "http:,,localhost:5000,")))
+            self.error_dir, "http:,,dummy,")))
 
     def test_404(self):
         self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
