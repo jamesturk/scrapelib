@@ -5,22 +5,11 @@ import json
 import time
 import socket
 import tempfile
+import unittest
 
 if sys.version_info[0] < 3:
     import robotparser
-
-    # python 2.6 needs unittest2
-    if sys.version_info[1] < 7:
-        try:
-            import unittest2 as unittest
-        except ImportError:
-            print('Test Suite requires Python 2.7 or unittest2')
-            sys.exit(1)
-    else:
-        import unittest
-
 else:
-    import unittest
     from urllib import robotparser
 
 import mock
