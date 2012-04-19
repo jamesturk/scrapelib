@@ -23,7 +23,7 @@ setup(name="scrapelib",
                    ("Topic :: Software Development :: Libraries :: "
                     "Python Modules"),
                    ],
-      install_requires=["httplib2 >= 0.7.0"],
+      install_requires=["httplib2 >= 0.7.0", "chardet"],
       entry_points="""
 [console_scripts]
 scrapeshell = scrapelib:scrapeshell

@@ -27,9 +27,9 @@ Contributors:
 Requirements
 ============
 
-python >= 2.6
-
-httplib2
+* python >= 2.6 (experimental support for Python 3.2)
+* httplib2
+* chardet
 
 Installation
 ============

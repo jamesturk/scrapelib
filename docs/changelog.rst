@@ -3,8 +3,11 @@ scrapelib changelog
 
 0.6.0
 -----
+**19 April 2012**
     * remove urllib2 fallback for HTTP
     * rework entire test suite to not rely on Flask
+    * Unicode & Str unification
+    * experimental Python 3.2 support
 
 0.5.8
 -----

@@ -31,7 +31,7 @@ else:
     _str_type = str
     _str_types = (str, bytes)
 
-__version__ = '0.6.0-dev'
+__version__ = '0.6.0'
 _user_agent = 'scrapelib %s' % __version__
 
 
