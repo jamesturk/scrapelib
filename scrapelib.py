@@ -4,14 +4,24 @@ import time
 import socket
 import logging
 import tempfile
-import urllib2
-import urlparse
 import datetime
-import cookielib
-import robotparser
-
 import json
 import httplib2
+
+if sys.version_info[0] < 3:
+    from urllib2 import Request as urllib_Request
+    from urllib2 import urlopen as urllib_urlopen
+    from urllib2 import URLError as urllib_URLError
+    import urlparse
+    import robotparser
+    import cookielib
+else:
+    from urllib.request import Request as urllib_Request
+    from urllib.request import urlopen as urllib_urlopen
+    from urllib.error import URLError as urllib_URLError
+    from urllib import parse as urlparse
+    from urllib import robotparser
+    from http import cookiejar as cookielib
 
 __version__ = '0.6.0-dev'
 _user_agent = 'scrapelib %s' % __version__
@@ -87,18 +97,20 @@ class ResultStr(str, ErrorManager):
         self.response = response
         return self
 
-
-class ResultUnicode(unicode, ErrorManager):
-    """
-    Wrapper for unicode responses.  Can treat identically to a ``unicode``
-    string to get body of response, additional headers, etc. available via
-    ``response`` attribute (instance of :class:`Response`).
-    """
-    def __new__(cls, scraper, response, str):
-        self = unicode.__new__(cls, str)
-        self._scraper = scraper
-        self.response = response
-        return self
+if sys.version_info[0] < 3:
+    class ResultUnicode(unicode, ErrorManager):
+        """
+        Wrapper for unicode responses.  Can treat identically to a ``unicode``
+        string to get body of response, additional headers, etc. available via
+        ``response`` attribute (instance of :class:`Response`).
+        """
+        def __new__(cls, scraper, response, str):
+            self = unicode.__new__(cls, str)
+            self._scraper = scraper
+            self.response = response
+            return self
+else:
+    ResultUnicode = ResultStr
 
 
 class Headers(dict):
@@ -267,7 +279,7 @@ class Scraper(object):
         if self.error_dir:
             try:
                 os.makedirs(error_dir)
-            except OSError, e:
+            except OSError as e:
                 if e.errno != 17:
                     raise
             self.save_errors = True
@@ -327,7 +339,7 @@ class Scraper(object):
 
         if self.accept_cookies:
             # CookieJar expects a urllib2.Request-like object
-            req = urllib2.Request(url, headers=headers)
+            req = urllib_Request(url, headers=headers)
             self._cookie_jar.add_cookie_header(req)
             headers = req.headers
             headers.update(req.unredirected_hdrs)
@@ -346,7 +358,7 @@ class Scraper(object):
         if self.raise_errors and response.code >= 400:
             raise HTTPError(response, body)
 
-        if isinstance(body, unicode):
+        if sys.version_info[0] < 3 and isinstance(body, unicode):
             return ResultUnicode(self, response, body)
 
         if isinstance(body, str):
@@ -399,9 +411,9 @@ class Scraper(object):
                     if resp.status < 400 or (resp.status == 404
                                              and not retry_on_404):
                         break
-                except socket.error, e:
+                except socket.error as e:
                     exception_raised = e
-                except AttributeError, e:
+                except AttributeError as e:
                     if (str(e) ==
                         "'NoneType' object has no attribute 'makefile'"):
                         # when this error occurs, re-establish the connection
@@ -416,10 +428,10 @@ class Scraper(object):
                         "non-HTTP(S) requests do not support method '%s'" %
                         method, method)
                 try:
-                    resp = urllib2.urlopen(url, timeout=self.timeout)
+                    resp = urllib_urlopen(url, timeout=self.timeout)
                     return Response(url, url, code=None, fromcache=False,
                                     protocol='ftp', headers={}), resp.read()
-                except urllib2.URLError, e:
+                except urllib_URLError as e:
                     exception_raised = e
                     # FTP 550 ~ HTTP 404
                     if '550' in str(e) and not retry_on_404:
@@ -525,7 +537,7 @@ class Scraper(object):
 
             # important to accept cookies before redirect handling
             if self.accept_cookies:
-                fake_req = urllib2.Request(url, headers=headers)
+                fake_req = urllib_Request(url, headers=headers)
                 self._cookie_jar.extract_cookies(our_resp, fake_req)
 
             # needed because httplib2 follows the HTTP spec a bit *too*
@@ -629,12 +641,12 @@ def scrapeshell():
             from IPython.Shell import IPShellEmbed
             embed = IPShellEmbed()
         except ImportError:
-            print 'scrapeshell requires ipython'
+            print('scrapeshell requires ipython')
             return
     try:
         import argparse
     except ImportError:
-        print 'scrapeshell requires argparse'
+        print('scrapeshell requires argparse')
         return
     try:
         import lxml.html
@@ -669,10 +681,10 @@ def scrapeshell():
     if USE_LXML:
         doc = lxml.html.fromstring(html)
 
-    print 'local variables'
-    print '---------------'
-    print 'url: %s' % url
-    print 'html: `scrapelib.ResultStr` instance'
+    print('local variables')
+    print('---------------')
+    print('url: %s' % url)
+    print('html: `scrapelib.ResultStr` instance')
     if USE_LXML:
-        print 'doc: `lxml HTML element`'
+        print('doc: `lxml HTML element`')
     embed()

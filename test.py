@@ -5,16 +5,23 @@ import json
 import time
 import socket
 import tempfile
-import robotparser
 
-if sys.version_info[1] < 7:
-    try:
-        import unittest2 as unittest
-    except ImportError:
-        print 'Test Suite requires Python 2.7 or unittest2'
-        sys.exit(1)
+if sys.version_info[0] < 3:
+    import robotparser
+
+    # python 2.6 needs unittest2
+    if sys.version_info[1] < 7:
+        try:
+            import unittest2 as unittest
+        except ImportError:
+            print('Test Suite requires Python 2.7 or unittest2')
+            sys.exit(1)
+    else:
+        import unittest
+
 else:
     import unittest
+    from urllib import robotparser
 
 import mock
 import httplib2
@@ -40,12 +47,12 @@ class HeaderTest(unittest.TestCase):
         h['a'] = '2'
         self.assertEqual(h['A'], '2')
 
-        self.assert_('a' in h)
-        self.assert_('A' in h)
+        self.assertTrue('a' in h)
+        self.assertTrue('A' in h)
 
         del h['A']
-        self.assert_('a' not in h)
-        self.assert_('A' not in h)
+        self.assertTrue('a' not in h)
+        self.assertTrue('A' not in h)
 
     def test_equality(self):
         h1 = scrapelib.Headers()
@@ -110,10 +117,10 @@ class ScraperTest(unittest.TestCase):
                 s.urlopen('http://dummy/')
                 s.urlopen('http://dummy/')
                 s.urlopen('http://dummy/')
-                self.assert_(mock_sleep.call_count == 2)
+                self.assertTrue(mock_sleep.call_count == 2)
                 # should have slept for ~2 seconds
-                self.assert_(1.8 <= mock_sleep.call_args[0][0] <= 2.2)
-                self.assert_(mock_do_request.call_count == 3)
+                self.assertTrue(1.8 <= mock_sleep.call_args[0][0] <= 2.2)
+                self.assertTrue(mock_do_request.call_count == 3)
 
         # unthrottled, should be able to fit in lots of calls
         s.requests_per_minute = 0
@@ -125,8 +132,8 @@ class ScraperTest(unittest.TestCase):
                 s.urlopen('http://dummy/')
                 s.urlopen('http://dummy/')
                 s.urlopen('http://dummy/')
-                self.assert_(mock_sleep.call_count == 0)
-                self.assert_(mock_do_request.call_count == 3)
+                self.assertTrue(mock_sleep.call_count == 0)
+                self.assertTrue(mock_do_request.call_count == 3)
 
     def test_user_agent(self):
         resp = self.s.urlopen(HTTPBIN + 'user-agent')
@@ -224,7 +231,7 @@ class ScraperTest(unittest.TestCase):
         resp = self.s.urlopen(HTTPBIN + 'status/200')
         self.assertFalse(resp.response.fromcache)
         resp = self.s.urlopen(HTTPBIN + 'status/200')
-        self.assert_(resp.response.fromcache)
+        self.assertTrue(resp.response.fromcache)
 
         self.s.use_cache_first = False
         resp = self.s.urlopen(HTTPBIN + 'status/200')
