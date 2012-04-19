@@ -10,8 +10,8 @@ import json
 import chardet
 import httplib2
 
+
 if sys.version_info[0] < 3:         # pragma: no cover
-    PY3K = False
     from urllib2 import Request as urllib_Request
     from urllib2 import urlopen as urllib_urlopen
     from urllib2 import URLError as urllib_URLError
@@ -19,7 +19,6 @@ if sys.version_info[0] < 3:         # pragma: no cover
     import robotparser
     from cookielib import CookieJar
     _str_type = unicode
-    _str_types = basestring
 else:                               # pragma: no cover
     PY3K = True
     from urllib.request import Request as urllib_Request
@@ -29,10 +28,9 @@ else:                               # pragma: no cover
     from urllib import robotparser
     from http.cookiejar import CookieJar
     _str_type = str
-    _str_types = (str, bytes)
 
 __version__ = '0.6.1'
-_user_agent = 'scrapelib %s' % __version__
+_user_agent = 'scrapelib {0}'.format( __version__)
 
 
 class NullHandler(logging.Handler):
@@ -489,7 +487,7 @@ class Scraper(object):
         headers = self._make_headers(url)
         user_agent = headers['User-Agent']
 
-        _log.info("%sing %s" % (method, url))
+        _log.info("{0} - {1}".format(method, url))
 
         # start with blank response & content
         our_resp = content = None
@@ -562,7 +560,6 @@ class Scraper(object):
             raise HTTPError(our_resp, content)
 
         return ResultStr(self, our_resp, content)
-
 
     def urlretrieve(self, url, filename=None, method='GET', body=None):
         """
