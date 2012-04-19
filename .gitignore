@@ -5,3 +5,5 @@ build/
 errors/
 dist/
 scrapelib.egg-info/
+.coverage
+cover/

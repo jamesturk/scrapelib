@@ -10,7 +10,7 @@ import json
 import chardet
 import httplib2
 
-if sys.version_info[0] < 3:
+if sys.version_info[0] < 3:         # pragma: no cover
     PY3K = False
     from urllib2 import Request as urllib_Request
     from urllib2 import urlopen as urllib_urlopen
@@ -20,7 +20,7 @@ if sys.version_info[0] < 3:
     from cookielib import CookieJar
     _str_type = unicode
     _str_types = basestring
-else:
+else:                               # pragma: no cover
     PY3K = True
     from urllib.request import Request as urllib_Request
     from urllib.request import urlopen as urllib_urlopen
@@ -631,7 +631,7 @@ def urlopen(url, method='GET', body=None):
     return _default_scraper.urlopen(url, method, body)
 
 
-def scrapeshell():
+def scrapeshell():                  # pragma: no cover
     # clear argv for IPython
     import sys
     orig_argv = sys.argv[1:]
