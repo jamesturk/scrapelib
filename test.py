@@ -239,7 +239,8 @@ class ScraperTest(unittest.TestCase):
 
     def test_urlretrieve(self):
         # assume urlopen works fine
-        content = self.s._wrap_result(scrapelib.Response('', '', code=200),
+        content = scrapelib.ResultStr(self.s,
+                                      scrapelib.Response('', '', code=200),
                                       'in your file')
         fake_urlopen = mock.Mock(return_value=content)
 

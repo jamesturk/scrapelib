@@ -361,15 +361,6 @@ class Scraper(object):
 
         return headers
 
-    def _wrap_result(self, response, body):
-        if self.raise_errors and response.code >= 400:
-            raise HTTPError(response, body)
-
-        if isinstance(body, _str_types):
-            return ResultStr(self, response, body)
-
-        raise ValueError('expected body string')
-
     @property
     def follow_redirects(self):
         if self._http:
@@ -565,8 +556,13 @@ class Scraper(object):
                 resp.response.requested_url = url
                 return resp
 
+        # response exception/ResultStr
         # return our_resp wrapped in content
-        return self._wrap_result(our_resp, content)
+        if self.raise_errors and our_resp.code >= 400:
+            raise HTTPError(our_resp, content)
+
+        return ResultStr(self, our_resp, content)
+
 
     def urlretrieve(self, url, filename=None, method='GET', body=None):
         """
