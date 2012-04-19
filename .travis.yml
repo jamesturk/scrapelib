@@ -3,8 +3,8 @@ python:
     - "2.6"
     - "2.7"
     - "3.2"
-install: pip install httplib2 chardet mock --use-mirrors
-script: python test.py
+install: pip install httplib2 chardet mock nose --use-mirrors
+script: nosetests
 notifications:
     email:
         - jturk@sunlightfoundation.com
