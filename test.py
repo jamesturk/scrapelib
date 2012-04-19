@@ -90,6 +90,17 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(resp.response.code, 200)
         self.assertEqual(json.loads(resp)['args']['woo'], 'woo')
 
+    def test_bytes(self):
+        raw_bytes = b'\xb5\xb5'
+        mock_do_request = mock.Mock(return_value=(
+            scrapelib.Response('', '', code=200), raw_bytes))
+
+        # check that sleep is called
+        with mock.patch.object(self.s, '_do_request', mock_do_request):
+            resp = self.s.urlopen('http://dummy/bin/')
+            self.assertEqual(resp.response.code, 200)
+            self.assertEqual(resp.bytes, raw_bytes)
+
     def test_request_throttling(self):
         s = scrapelib.Scraper(requests_per_minute=30, follow_robots=False,
                               accept_cookies=False)

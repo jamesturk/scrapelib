@@ -102,10 +102,14 @@ class ResultStr(_str_type, ErrorManager):
     def __new__(cls, scraper, response, s):
         if isinstance(s, bytes):
             encoding = chardet.detect(s)['encoding']
-            s = s.decode(encoding or 'utf8')
+            _bytes = s
+            s = s.decode(encoding or 'utf8', 'ignore')
+        else:
+            _bytes = bytes(s, 'utf8')
         self = _str_type.__new__(cls, s)
         self._scraper = scraper
         self.response = response
+        self.bytes = _bytes
         return self
 ResultUnicode = ResultStr
 
@@ -592,11 +596,11 @@ class Scraper(object):
 
         if not filename:
             fd, filename = tempfile.mkstemp()
-            f = os.fdopen(fd, 'w')
+            f = os.fdopen(fd, 'wb')
         else:
-            f = open(filename, 'w')
+            f = open(filename, 'wb')
 
-        f.write(result)
+        f.write(result.bytes)
         f.close()
 
         return filename, result.response
