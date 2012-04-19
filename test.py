@@ -1,6 +1,7 @@
 import os
 import sys
 import glob
+import json
 import time
 import socket
 import tempfile
@@ -19,6 +20,8 @@ import mock
 import flask
 import httplib2
 import scrapelib
+
+HTTPBIN = 'http://httpbin.org/'
 
 app = flask.Flask(__name__)
 app.config.shaky_fail = False
@@ -134,7 +137,8 @@ class HeaderTest(unittest.TestCase):
 
 
 class ScraperTest(unittest.TestCase):
-    def setUp(self):
+
+    def _setup_cache(self):
         self.cache_dir = tempfile.mkdtemp()
         self.error_dir = tempfile.mkdtemp()
         self.s = scrapelib.Scraper(requests_per_minute=0,
@@ -142,50 +146,85 @@ class ScraperTest(unittest.TestCase):
                                    cache_dir=self.cache_dir,
                                    use_cache_first=True)
 
+
+    def setUp(self):
+        self.cache_dir = tempfile.mkdtemp()
+        self.error_dir = tempfile.mkdtemp()
+        self.s = scrapelib.Scraper(requests_per_minute=0,
+                                   error_dir=self.error_dir,
+                                   follow_robots=False
+                                  )
+
     def tearDown(self):
-        for path in glob.iglob(os.path.join(self.cache_dir, "*")):
-            os.remove(path)
-        os.rmdir(self.cache_dir)
+        if hasattr(self, 'cache_dir'):
+            for path in glob.iglob(os.path.join(self.cache_dir, "*")):
+                os.remove(path)
+            os.rmdir(self.cache_dir)
         for path in glob.iglob(os.path.join(self.error_dir, "*")):
             os.remove(path)
         os.rmdir(self.error_dir)
 
     def test_get(self):
-        self.assertEqual('Hello world!',
-                         self.s.urlopen("http://localhost:5000/"))
+        resp = self.s.urlopen(HTTPBIN + 'get?woo=woo')
+        self.assertEqual(resp.response.code, 200)
+        self.assertEqual(json.loads(resp)['args']['woo'], 'woo')
 
     def test_request_throttling(self):
-        requests = 0
-        s = scrapelib.Scraper(requests_per_minute=30)
+        s = scrapelib.Scraper(requests_per_minute=30, follow_robots=False,
+                              accept_cookies=False)
         self.assertEqual(s.requests_per_minute, 30)
 
-        begin = time.time()
-        while time.time() <= (begin + 1):
-            s.urlopen("http://localhost:5000/")
-            requests += 1
-        self.assert_(requests <= 2)
+        # mock to quickly return a dummy response
+        mock_do_request = mock.Mock(return_value=(
+            scrapelib.Response('', '', None, None), 'ok'))
+        mock_sleep = mock.Mock()
 
-        s.requests_per_minute = 500
-        requests = 0
-        begin = time.time()
-        while time.time() <= (begin + 1):
-            s.urlopen("http://localhost:5000/")
-            requests += 1
-        self.assert_(requests > 5)
+        # check that sleep is called
+        with mock.patch('time.sleep', mock_sleep):
+            with mock.patch.object(s, '_do_request', mock_do_request):
+                s.urlopen('http://dummy/')
+                s.urlopen('http://dummy/')
+                s.urlopen('http://dummy/')
+                self.assert_(mock_sleep.call_count == 2)
+                # should have slept for ~2 seconds
+                self.assert_(1.8 <= mock_sleep.call_args[0][0] <= 2.2)
+                self.assert_(mock_do_request.call_count == 3)
+
+        # unthrottled, should be able to fit in lots of calls
+        s.requests_per_minute = 0
+        mock_do_request.reset_mock()
+        mock_sleep.reset_mock()
+
+        with mock.patch('time.sleep', mock_sleep):
+            with mock.patch.object(s, '_do_request', mock_do_request):
+                s.urlopen('http://dummy/')
+                s.urlopen('http://dummy/')
+                s.urlopen('http://dummy/')
+                self.assert_(mock_sleep.call_count == 0)
+                self.assert_(mock_do_request.call_count == 3)
 
     def test_user_agent(self):
-        resp = self.s.urlopen("http://localhost:5000/ua")
-        self.assertEqual(resp, scrapelib._user_agent)
+        resp = self.s.urlopen(HTTPBIN + 'user-agent')
+        ua = json.loads(resp)['user-agent']
+        self.assertEqual(ua, scrapelib._user_agent)
 
         self.s.user_agent = 'a different agent'
-        resp = self.s.urlopen("http://localhost:5000/ua")
-        self.assertEqual(resp, 'a different agent')
+        resp = self.s.urlopen(HTTPBIN + 'user-agent')
+        ua = json.loads(resp)['user-agent']
+        self.assertEqual(ua, 'a different agent')
 
     def test_default_to_http(self):
-        self.assertEqual('Hello world!',
-                         self.s.urlopen("localhost:5000/"))
+
+        def do_request(url, *args, **kwargs):
+            return scrapelib.Response(url, url), ''
+        mock_do_request = mock.Mock(wraps=do_request)
+
+        with mock.patch.object(self.s, '_do_request', mock_do_request):
+            self.assertEqual('http://dummy',
+                             self.s.urlopen("dummy").response.url)
 
     def test_follow_robots(self):
+        self.s.follow_robots = True
         self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
                           "http://localhost:5000/p/s.html")
         self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
@@ -238,6 +277,8 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(302, resp.response.code)
 
     def test_caching(self):
+        self._setup_cache()
+
         resp = self.s.urlopen("http://localhost:5000/")
         self.assertFalse(resp.response.fromcache)
         resp = self.s.urlopen("http://localhost:5000/")
