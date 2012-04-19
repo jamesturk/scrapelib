@@ -201,31 +201,6 @@ class Response(object):
                         headers=resp)
 
 
-class MongoCache(object):
-    """
-    Implements the httplib2 cache protocol using MongoDB
-    (especially useful with capped collection)
-    """
-
-    def __init__(self, collection):
-        """
-        :param collection: a pymongo collection obj to store the cache in
-        """
-        self.collection = collection
-
-    def get(self, key):
-        ret = self.collection.find_one({'_id': key})
-        if ret:
-            ret = ret['value']
-        return ret
-
-    def set(self, key, value):
-        self.collection.save({'_id': key, 'value': value})
-
-    def delete(self, key):
-        self.collection.remove({'_id': key})
-
-
 class Scraper(object):
     """
     Scraper is the most important class provided by scrapelib (and generally

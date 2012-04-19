@@ -1,10 +1,11 @@
 import os
 import sys
 import glob
+import json
 import time
 import socket
 import tempfile
-from multiprocessing import Process
+import robotparser
 
 if sys.version_info[1] < 7:
     try:
@@ -16,59 +17,10 @@ else:
     import unittest
 
 import mock
-import flask
 import httplib2
 import scrapelib
 
-app = flask.Flask(__name__)
-
-
-@app.route('/')
-def index():
-    resp = app.make_response("Hello world!")
-    return resp
-
-
-@app.route('/ua')
-def ua():
-    resp = app.make_response(flask.request.headers['user-agent'])
-    resp.headers['cache-control'] = 'no-cache'
-    return resp
-
-
-@app.route('/p/s.html')
-def secret():
-    return "secret"
-
-
-@app.route('/redirect')
-def redirect():
-    return flask.redirect(flask.url_for('index'))
-
-
-@app.route('/500')
-def fivehundred():
-    flask.abort(500)
-
-
-@app.route('/robots.txt')
-def robots():
-    return """
-    User-agent: *
-    Disallow: /p/
-    Allow: /
-    """
-
-
-def run_server():
-    class NullFile(object):
-        def write(self, s):
-            pass
-
-    sys.stdout = NullFile()
-    sys.stderr = NullFile()
-
-    app.run()
+HTTPBIN = 'http://httpbin.org/'
 
 
 class HeaderTest(unittest.TestCase):
@@ -110,7 +62,8 @@ class HeaderTest(unittest.TestCase):
 
 
 class ScraperTest(unittest.TestCase):
-    def setUp(self):
+
+    def _setup_cache(self):
         self.cache_dir = tempfile.mkdtemp()
         self.error_dir = tempfile.mkdtemp()
         self.s = scrapelib.Scraper(requests_per_minute=0,
@@ -118,126 +71,186 @@ class ScraperTest(unittest.TestCase):
                                    cache_dir=self.cache_dir,
                                    use_cache_first=True)
 
+
+    def setUp(self):
+        self.cache_dir = tempfile.mkdtemp()
+        self.error_dir = tempfile.mkdtemp()
+        self.s = scrapelib.Scraper(requests_per_minute=0,
+                                   error_dir=self.error_dir,
+                                   follow_robots=False
+                                  )
+
     def tearDown(self):
-        for path in glob.iglob(os.path.join(self.cache_dir, "*")):
-            os.remove(path)
-        os.rmdir(self.cache_dir)
+        if hasattr(self, 'cache_dir'):
+            for path in glob.iglob(os.path.join(self.cache_dir, "*")):
+                os.remove(path)
+            os.rmdir(self.cache_dir)
         for path in glob.iglob(os.path.join(self.error_dir, "*")):
             os.remove(path)
         os.rmdir(self.error_dir)
 
     def test_get(self):
-        self.assertEqual('Hello world!',
-                         self.s.urlopen("http://localhost:5000/"))
+        resp = self.s.urlopen(HTTPBIN + 'get?woo=woo')
+        self.assertEqual(resp.response.code, 200)
+        self.assertEqual(json.loads(resp)['args']['woo'], 'woo')
 
     def test_request_throttling(self):
-        requests = 0
-        s = scrapelib.Scraper(requests_per_minute=30)
+        s = scrapelib.Scraper(requests_per_minute=30, follow_robots=False,
+                              accept_cookies=False)
         self.assertEqual(s.requests_per_minute, 30)
 
-        begin = time.time()
-        while time.time() <= (begin + 1):
-            s.urlopen("http://localhost:5000/")
-            requests += 1
-        self.assert_(requests <= 2)
+        # mock to quickly return a dummy response
+        mock_do_request = mock.Mock(return_value=(
+            scrapelib.Response('', '', None, None), 'ok'))
+        mock_sleep = mock.Mock()
 
-        s.requests_per_minute = 500
-        requests = 0
-        begin = time.time()
-        while time.time() <= (begin + 1):
-            s.urlopen("http://localhost:5000/")
-            requests += 1
-        self.assert_(requests > 5)
+        # check that sleep is called
+        with mock.patch('time.sleep', mock_sleep):
+            with mock.patch.object(s, '_do_request', mock_do_request):
+                s.urlopen('http://dummy/')
+                s.urlopen('http://dummy/')
+                s.urlopen('http://dummy/')
+                self.assert_(mock_sleep.call_count == 2)
+                # should have slept for ~2 seconds
+                self.assert_(1.8 <= mock_sleep.call_args[0][0] <= 2.2)
+                self.assert_(mock_do_request.call_count == 3)
+
+        # unthrottled, should be able to fit in lots of calls
+        s.requests_per_minute = 0
+        mock_do_request.reset_mock()
+        mock_sleep.reset_mock()
+
+        with mock.patch('time.sleep', mock_sleep):
+            with mock.patch.object(s, '_do_request', mock_do_request):
+                s.urlopen('http://dummy/')
+                s.urlopen('http://dummy/')
+                s.urlopen('http://dummy/')
+                self.assert_(mock_sleep.call_count == 0)
+                self.assert_(mock_do_request.call_count == 3)
 
     def test_user_agent(self):
-        resp = self.s.urlopen("http://localhost:5000/ua")
-        self.assertEqual(resp, scrapelib._user_agent)
+        resp = self.s.urlopen(HTTPBIN + 'user-agent')
+        ua = json.loads(resp)['user-agent']
+        self.assertEqual(ua, scrapelib._user_agent)
 
         self.s.user_agent = 'a different agent'
-        resp = self.s.urlopen("http://localhost:5000/ua")
-        self.assertEqual(resp, 'a different agent')
+        resp = self.s.urlopen(HTTPBIN + 'user-agent')
+        ua = json.loads(resp)['user-agent']
+        self.assertEqual(ua, 'a different agent')
 
     def test_default_to_http(self):
-        self.assertEqual('Hello world!',
-                         self.s.urlopen("localhost:5000/"))
+
+        def do_request(url, *args, **kwargs):
+            return scrapelib.Response(url, url), ''
+        mock_do_request = mock.Mock(wraps=do_request)
+
+        with mock.patch.object(self.s, '_do_request', mock_do_request):
+            self.assertEqual('http://dummy/',
+                             self.s.urlopen("dummy/").response.url)
 
     def test_follow_robots(self):
-        self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
-                          "http://localhost:5000/p/s.html")
-        self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
-                          "http://localhost:5000/p/a/t/h/")
+        self.s.follow_robots = True
 
-        self.s.follow_robots = False
-        self.assertEqual("secret",
-                         self.s.urlopen("http://localhost:5000/p/s.html"))
-        self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
-                          "http://localhost:5000/p/a/t/h/")
+        def do_request(url, *args, **kwargs):
+            return scrapelib.Response(url, url, code=200), ''
+
+        with mock.patch.object(self.s, '_do_request', do_request):
+
+            # set a fake robots.txt for http://dummy
+            parser = robotparser.RobotFileParser()
+            parser.parse(['User-agent: *', 'Disallow: /private/', 'Allow: /'])
+            self.s._robot_parsers['http://dummy/robots.txt'] = parser
+
+            # anything behind private fails
+            self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
+                              "http://dummy/private/secret.html")
+            # but others work
+            self.assertEqual(200,
+                             self.s.urlopen("http://dummy/").response.code)
+
+            # turn off follow_robots, everything works
+            self.s.follow_robots = False
+            self.assertEqual(200,
+             self.s.urlopen("http://dummy/private/secret.html").response.code)
 
     def test_error_context(self):
-        def raises():
-            with self.s.urlopen("http://localhost:5000/"):
-                raise Exception('test')
+        def do_request(url, *args, **kwargs):
+            return scrapelib.Response(url, url), ''
+        mock_do_request = mock.Mock(wraps=do_request)
 
-        self.assertRaises(Exception, raises)
+        with mock.patch.object(self.s, '_do_request', mock_do_request):
+            def raises():
+                with self.s.urlopen("http://dummy/"):
+                    raise Exception('test')
+
+            self.assertRaises(Exception, raises)
         self.assertTrue(os.path.isfile(os.path.join(
-            self.error_dir, "http:,,localhost:5000,")))
+            self.error_dir, "http:,,dummy,")))
 
     def test_404(self):
         self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
-                          "http://localhost:5000/does/not/exist")
+                          HTTPBIN + 'status/404')
 
         self.s.raise_errors = False
-        resp = self.s.urlopen("http://localhost:5000/does/not/exist")
+        resp = self.s.urlopen(HTTPBIN + 'status/404')
         self.assertEqual(404, resp.response.code)
 
     def test_500(self):
         self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
-                          "http://localhost:5000/500")
+                          HTTPBIN + 'status/500')
 
         self.s.raise_errors = False
-        resp = self.s.urlopen("http://localhost:5000/500")
+        resp = self.s.urlopen(HTTPBIN + 'status/500')
         self.assertEqual(resp.response.code, 500)
 
     def test_follow_redirect(self):
-        resp = self.s.urlopen("http://localhost:5000/redirect")
-        self.assertEqual("http://localhost:5000/", resp.response.url)
-        self.assertEqual("http://localhost:5000/redirect",
-                         resp.response.requested_url)
+        redirect_url = HTTPBIN + 'redirect/1'
+        final_url = HTTPBIN + 'get'
+
+        resp = self.s.urlopen(redirect_url)
+        self.assertEqual(final_url, resp.response.url)
+        self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(200, resp.response.code)
 
         self.s.follow_redirects = False
-        resp = self.s.urlopen("http://localhost:5000/redirect")
-        self.assertEqual("http://localhost:5000/redirect",
-                         resp.response.url)
-        self.assertEqual("http://localhost:5000/redirect",
-                         resp.response.requested_url)
+        resp = self.s.urlopen(redirect_url)
+        self.assertEqual(redirect_url, resp.response.url)
+        self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(302, resp.response.code)
 
     def test_caching(self):
-        resp = self.s.urlopen("http://localhost:5000/")
+        self._setup_cache()
+
+        resp = self.s.urlopen(HTTPBIN + 'status/200')
         self.assertFalse(resp.response.fromcache)
-        resp = self.s.urlopen("http://localhost:5000/")
+        resp = self.s.urlopen(HTTPBIN + 'status/200')
         self.assert_(resp.response.fromcache)
 
         self.s.use_cache_first = False
-        resp = self.s.urlopen("http://localhost:5000/")
+        resp = self.s.urlopen(HTTPBIN + 'status/200')
         self.assertFalse(resp.response.fromcache)
 
     def test_urlretrieve(self):
-        fname, resp = self.s.urlretrieve("http://localhost:5000/")
-        with open(fname) as f:
-            self.assertEqual(f.read(), "Hello world!")
-            self.assertEqual(200, resp.code)
-        os.remove(fname)
+        # assume urlopen works fine
+        content = self.s._wrap_result(scrapelib.Response('', '', code=200),
+                                      'in your file')
+        fake_urlopen = mock.Mock(return_value=content)
 
-        (fh, set_fname) = tempfile.mkstemp()
-        fname, resp = self.s.urlretrieve("http://localhost:5000/",
-                                         set_fname)
-        self.assertEqual(fname, set_fname)
-        with open(set_fname) as f:
-            self.assertEqual(f.read(), "Hello world!")
-            self.assertEqual(200, resp.code)
-        os.remove(set_fname)
+        with mock.patch.object(self.s, 'urlopen', fake_urlopen):
+            fname, resp = self.s.urlretrieve("http://dummy/")
+            with open(fname) as f:
+                self.assertEqual(f.read(), 'in your file')
+                self.assertEqual(200, resp.code)
+            os.remove(fname)
+
+            (fh, set_fname) = tempfile.mkstemp()
+            fname, resp = self.s.urlretrieve("http://dummy/",
+                                             set_fname)
+            self.assertEqual(fname, set_fname)
+            with open(set_fname) as f:
+                self.assertEqual(f.read(), 'in your file')
+                self.assertEqual(200, resp.code)
+            os.remove(set_fname)
 
     # TODO: on these retry tests it'd be nice to ensure that it tries
     # 3 times for 500 and once for 404
@@ -245,54 +258,41 @@ class ScraperTest(unittest.TestCase):
     def test_retry(self):
         s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
 
-        # On the first call return a 500
-        # On subsequent calls pass through to httplib2.Http.request
-        count = []
-        orig_request = httplib2.Http().request
-        def side_effect(*args, **kwargs):
-            res, content = orig_request(*args, **kwargs)
-            if not count:
-                res.status = 500
-            count.append(1)
-            return res, content
-
+        # On the first call return a 500, then a 200
+        side_effect = [
+            (httplib2.Response({'status': 500}), 'failure!'),
+            (httplib2.Response({'status': 200}), 'success!')
+        ]
 
         mock_request = mock.Mock(side_effect=side_effect)
 
         with mock.patch.object(httplib2.Http, 'request', mock_request):
-            # one failure, then success
-            resp, content = s._do_request('http://localhost:5000/',
-                                          'GET', None, {})
-        self.assertEqual(len(count), 2)
+            resp, content = s._do_request('http://dummy/', 'GET', None, {})
+        self.assertEqual(mock_request.call_count, 2)
 
         # 500 always
-        resp, content = s._do_request('http://localhost:5000/500',
+        resp, content = s._do_request(HTTPBIN + 'status/500',
                                       'GET', None, {})
         self.assertEqual(resp.code, 500)
 
     def test_retry_404(self):
         s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
 
-        # On the first call return a 404
-        # On subsequent calls pass through to httplib2.Http.request
-        count = []
-        orig_request = httplib2.Http().request
-        def side_effect(*args, **kwargs):
-            res, content = orig_request(*args, **kwargs)
-            if not count:
-                res.status = 404
-            count.append(1)
-            return res, content
+        # On the first call return a 404, then a 200
+        side_effect = [
+            (httplib2.Response({'status': 404}), 'failure!'),
+            (httplib2.Response({'status': 200}), 'success!')
+        ]
 
         mock_request = mock.Mock(side_effect=side_effect)
 
         with mock.patch.object(httplib2.Http, 'request', mock_request):
             resp, content = s._do_request('http://localhost:5000/',
                                           'GET', None, {}, retry_on_404=True)
-        self.assertEqual(len(count), 2)
+        self.assertEqual(mock_request.call_count, 2)
 
         # 404
-        resp, content = s._do_request('http://localhost:5000/404',
+        resp, content = s._do_request(HTTPBIN + 'status/404',
                                       'GET', None, {})
         self.assertEqual(resp.code, 404)
 
@@ -304,23 +304,28 @@ class ScraperTest(unittest.TestCase):
         # On subsequent calls pass through to httplib2.Http.request
         def side_effect(*args, **kwargs):
             if count:
-                return orig_request(*args, **kwargs)
+                return httplib2.Response({'status': 200}), 'success!'
             count.append(1)
             raise socket.timeout('timed out :(')
 
         mock_request = mock.Mock(side_effect=side_effect)
 
         with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.1)
-            self.assertRaises(socket.timeout, self.s.urlopen,
-                              "http://localhost:5000/")
+            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001, 
+                                  follow_robots=False)
+            # try only once, get the error
+            self.assertRaises(socket.timeout, self.s.urlopen, "http://dummy/")
+            self.assertEqual(mock_request.call_count, 1)
 
         mock_request.reset_mock()
         count = []
         with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.1)
-            resp = s.urlopen("http://localhost:5000/")
-            self.assertEqual(resp, "Hello world!")
+            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                                  follow_robots=False)
+            resp = s.urlopen("http://dummy/")
+            # get the result, take two tries
+            self.assertEqual(resp, "success!")
+            self.assertEqual(mock_request.call_count, 2)
 
     def test_disable_compression(self):
         s = scrapelib.Scraper(disable_compression=True)
@@ -352,10 +357,4 @@ class ScraperTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    process = Process(target=run_server)
-    process.start()
-    time.sleep(0.1)
-    try:
-        unittest.main()
-    finally:
-        process.terminate()
+    unittest.main()
