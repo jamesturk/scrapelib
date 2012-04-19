@@ -304,7 +304,6 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(resp.code, 404)
 
     def test_socket_retry(self):
-        orig_request = httplib2.Http().request
         count = []
 
         # On the first call raise socket.timeout

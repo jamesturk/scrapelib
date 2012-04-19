@@ -9,19 +9,25 @@ import json
 import httplib2
 
 if sys.version_info[0] < 3:
+    PY3K = False
     from urllib2 import Request as urllib_Request
     from urllib2 import urlopen as urllib_urlopen
     from urllib2 import URLError as urllib_URLError
     import urlparse
     import robotparser
-    import cookielib
+    from cookielib import CookieJar
+    _str_type = unicode
+    _str_types = basestring
 else:
+    PY3K = True
     from urllib.request import Request as urllib_Request
     from urllib.request import urlopen as urllib_urlopen
     from urllib.error import URLError as urllib_URLError
     from urllib import parse as urlparse
     from urllib import robotparser
-    from http import cookiejar as cookielib
+    from http.cookiejar import CookieJar
+    _str_type = str
+    _str_types = (str, bytes)
 
 __version__ = '0.6.0-dev'
 _user_agent = 'scrapelib %s' % __version__
@@ -85,32 +91,18 @@ class ErrorManager(object):
         return False
 
 
-class ResultStr(str, ErrorManager):
+class ResultStr(_str_type, ErrorManager):
     """
-    Wrapper for non-unicode responses.  Can treat identically to a ``str``
+    Wrapper for responses.  Can treat identically to a ``str``
     o get body of response, additional headers, etc. available via ``response``
     attribute (instance of :class:`Response`).
     """
-    def __new__(cls, scraper, response, str):
-        self = str.__new__(cls, str)
+    def __new__(cls, scraper, response, s):
+        self = _str_type.__new__(cls, s)
         self._scraper = scraper
         self.response = response
         return self
-
-if sys.version_info[0] < 3:
-    class ResultUnicode(unicode, ErrorManager):
-        """
-        Wrapper for unicode responses.  Can treat identically to a ``unicode``
-        string to get body of response, additional headers, etc. available via
-        ``response`` attribute (instance of :class:`Response`).
-        """
-        def __new__(cls, scraper, response, str):
-            self = unicode.__new__(cls, str)
-            self._scraper = scraper
-            self.response = response
-            return self
-else:
-    ResultUnicode = ResultStr
+ResultUnicode = ResultStr
 
 
 class Headers(dict):
@@ -156,6 +148,12 @@ class Headers(dict):
             return [name + ": " + header]
         except KeyError:
             return []
+
+    def get_all(self, name, default=None):
+        if name in self:
+            return [self[name]]
+        else:
+            return default
 
     def getheaders(self, name):
         try:
@@ -287,7 +285,7 @@ class Scraper(object):
             self.save_errors = False
 
         self.accept_cookies = accept_cookies
-        self._cookie_jar = cookielib.CookieJar()
+        self._cookie_jar = CookieJar()
 
         self.disable_compression = disable_compression
 
@@ -358,10 +356,7 @@ class Scraper(object):
         if self.raise_errors and response.code >= 400:
             raise HTTPError(response, body)
 
-        if sys.version_info[0] < 3 and isinstance(body, unicode):
-            return ResultUnicode(self, response, body)
-
-        if isinstance(body, str):
+        if isinstance(body, _str_types):
             return ResultStr(self, response, body)
 
         raise ValueError('expected body string')
@@ -454,8 +449,7 @@ class Scraper(object):
     def urlopen(self, url, method='GET', body=None, retry_on_404=False,
                 use_cache_first=None):
         """
-            Make an HTTP request and return a
-            :class:`ResultStr` or :class:`ResultUnicode` object.
+            Make an HTTP request and return a :class:`ResultStr` object.
 
             If an error is encountered may raise any of the scrapelib
             `exceptions`_.
