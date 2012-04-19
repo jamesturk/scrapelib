@@ -614,7 +614,7 @@ class Scraper(object):
             n += 1
             path = base_path + "-%d" % n
 
-        with open(path, 'w') as fp:
+        with open(path, 'wb') as fp:
             json.dump(out, fp, ensure_ascii=False)
 
 _default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
