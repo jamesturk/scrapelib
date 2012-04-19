@@ -3,3 +3,5 @@
 *~
 build/
 errors/
+dist/
+scrapelib.egg-info/
