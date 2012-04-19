@@ -5,6 +5,7 @@ import json
 import time
 import socket
 import tempfile
+import robotparser
 from multiprocessing import Process
 
 if sys.version_info[1] < 7:
@@ -32,20 +33,6 @@ app.config.shaky_404_fail = False
 def index():
     resp = app.make_response("Hello world!")
     return resp
-
-
-@app.route('/p/s.html')
-def secret():
-    return "secret"
-
-
-@app.route('/robots.txt')
-def robots():
-    return """
-    User-agent: *
-    Disallow: /p/
-    Allow: /
-    """
 
 
 @app.route('/shaky')
@@ -208,16 +195,28 @@ class ScraperTest(unittest.TestCase):
 
     def test_follow_robots(self):
         self.s.follow_robots = True
-        self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
-                          "http://localhost:5000/p/s.html")
-        self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
-                          "http://localhost:5000/p/a/t/h/")
 
-        self.s.follow_robots = False
-        self.assertEqual("secret",
-                         self.s.urlopen("http://localhost:5000/p/s.html"))
-        self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
-                          "http://localhost:5000/p/a/t/h/")
+        def do_request(url, *args, **kwargs):
+            return scrapelib.Response(url, url, code=200), ''
+
+        with mock.patch.object(self.s, '_do_request', do_request):
+
+            # set a fake robots.txt for http://dummy
+            parser = robotparser.RobotFileParser()
+            parser.parse(['User-agent: *', 'Disallow: /private/', 'Allow: /'])
+            self.s._robot_parsers['http://dummy/robots.txt'] = parser
+
+            # anything behind private fails
+            self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
+                              "http://dummy/private/secret.html")
+            # but others work
+            self.assertEqual(200,
+                             self.s.urlopen("http://dummy/").response.code)
+
+            # turn off follow_robots, everything works
+            self.s.follow_robots = False
+            self.assertEqual(200,
+             self.s.urlopen("http://dummy/private/secret.html").response.code)
 
     def test_error_context(self):
         def do_request(url, *args, **kwargs):
