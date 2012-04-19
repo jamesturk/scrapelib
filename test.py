@@ -34,26 +34,9 @@ def index():
     return resp
 
 
-@app.route('/ua')
-def ua():
-    resp = app.make_response(flask.request.headers['user-agent'])
-    resp.headers['cache-control'] = 'no-cache'
-    return resp
-
-
 @app.route('/p/s.html')
 def secret():
     return "secret"
-
-
-@app.route('/redirect')
-def redirect():
-    return flask.redirect(flask.url_for('index'))
-
-
-@app.route('/500')
-def fivehundred():
-    flask.abort(500)
 
 
 @app.route('/robots.txt')
@@ -220,8 +203,8 @@ class ScraperTest(unittest.TestCase):
         mock_do_request = mock.Mock(wraps=do_request)
 
         with mock.patch.object(self.s, '_do_request', mock_do_request):
-            self.assertEqual('http://dummy',
-                             self.s.urlopen("dummy").response.url)
+            self.assertEqual('http://dummy/',
+                             self.s.urlopen("dummy/").response.url)
 
     def test_follow_robots(self):
         self.s.follow_robots = True
@@ -247,62 +230,68 @@ class ScraperTest(unittest.TestCase):
 
     def test_404(self):
         self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
-                          "http://localhost:5000/does/not/exist")
+                          HTTPBIN + 'status/404')
 
         self.s.raise_errors = False
-        resp = self.s.urlopen("http://localhost:5000/does/not/exist")
+        resp = self.s.urlopen(HTTPBIN + 'status/404')
         self.assertEqual(404, resp.response.code)
 
     def test_500(self):
         self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
-                          "http://localhost:5000/500")
+                          HTTPBIN + 'status/500')
 
         self.s.raise_errors = False
-        resp = self.s.urlopen("http://localhost:5000/500")
+        resp = self.s.urlopen(HTTPBIN + 'status/500')
         self.assertEqual(resp.response.code, 500)
 
     def test_follow_redirect(self):
-        resp = self.s.urlopen("http://localhost:5000/redirect")
-        self.assertEqual("http://localhost:5000/", resp.response.url)
-        self.assertEqual("http://localhost:5000/redirect",
-                         resp.response.requested_url)
+        redirect_url = HTTPBIN + 'redirect/1'
+        final_url = HTTPBIN + 'get'
+
+        resp = self.s.urlopen(redirect_url)
+        self.assertEqual(final_url, resp.response.url)
+        self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(200, resp.response.code)
 
         self.s.follow_redirects = False
-        resp = self.s.urlopen("http://localhost:5000/redirect")
-        self.assertEqual("http://localhost:5000/redirect",
-                         resp.response.url)
-        self.assertEqual("http://localhost:5000/redirect",
-                         resp.response.requested_url)
+        resp = self.s.urlopen(redirect_url)
+        self.assertEqual(redirect_url, resp.response.url)
+        self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(302, resp.response.code)
 
     def test_caching(self):
         self._setup_cache()
 
-        resp = self.s.urlopen("http://localhost:5000/")
+        resp = self.s.urlopen(HTTPBIN + 'status/200')
         self.assertFalse(resp.response.fromcache)
-        resp = self.s.urlopen("http://localhost:5000/")
+        resp = self.s.urlopen(HTTPBIN + 'status/200')
         self.assert_(resp.response.fromcache)
 
         self.s.use_cache_first = False
-        resp = self.s.urlopen("http://localhost:5000/")
+        resp = self.s.urlopen(HTTPBIN + 'status/200')
         self.assertFalse(resp.response.fromcache)
 
     def test_urlretrieve(self):
-        fname, resp = self.s.urlretrieve("http://localhost:5000/")
-        with open(fname) as f:
-            self.assertEqual(f.read(), "Hello world!")
-            self.assertEqual(200, resp.code)
-        os.remove(fname)
+        # assume urlopen works fine
+        content = self.s._wrap_result(scrapelib.Response('', '', code=200),
+                                      'in your file')
+        fake_urlopen = mock.Mock(return_value=content)
 
-        (fh, set_fname) = tempfile.mkstemp()
-        fname, resp = self.s.urlretrieve("http://localhost:5000/",
-                                         set_fname)
-        self.assertEqual(fname, set_fname)
-        with open(set_fname) as f:
-            self.assertEqual(f.read(), "Hello world!")
-            self.assertEqual(200, resp.code)
-        os.remove(set_fname)
+        with mock.patch.object(self.s, 'urlopen', fake_urlopen):
+            fname, resp = self.s.urlretrieve("http://dummy/")
+            with open(fname) as f:
+                self.assertEqual(f.read(), 'in your file')
+                self.assertEqual(200, resp.code)
+            os.remove(fname)
+
+            (fh, set_fname) = tempfile.mkstemp()
+            fname, resp = self.s.urlretrieve("http://dummy/",
+                                             set_fname)
+            self.assertEqual(fname, set_fname)
+            with open(set_fname) as f:
+                self.assertEqual(f.read(), 'in your file')
+                self.assertEqual(200, resp.code)
+            os.remove(set_fname)
 
     # TODO: on these retry tests it'd be nice to ensure that it tries
     # 3 times for 500 and once for 404
@@ -316,7 +305,7 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(content, 'shaky success!')
 
         # 500 always
-        resp, content = s._do_request('http://localhost:5000/500',
+        resp, content = s._do_request(HTTPBIN + 'status/500',
                                       'GET', None, {})
         self.assertEqual(resp.code, 500)
 
@@ -329,7 +318,7 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(content, 'shaky404 success!')
 
         # 404
-        resp, content = s._do_request('http://localhost:5000/404',
+        resp, content = s._do_request(HTTPBIN + 'status/404',
                                       'GET', None, {})
         self.assertEqual(resp.code, 404)
 
