@@ -6,6 +6,8 @@ import logging
 import tempfile
 import datetime
 import json
+
+import chardet
 import httplib2
 
 if sys.version_info[0] < 3:
@@ -99,7 +101,8 @@ class ResultStr(_str_type, ErrorManager):
     """
     def __new__(cls, scraper, response, s):
         if isinstance(s, bytes):
-            s = s.decode()
+            encoding = chardet.detect(s)['encoding']
+            s = s.decode(encoding)
         self = _str_type.__new__(cls, s)
         self._scraper = scraper
         self.response = response
