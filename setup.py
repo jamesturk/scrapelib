@@ -11,7 +11,7 @@ else:
     required.append('chardet')
 
 setup(name="scrapelib",
-      version='0.6.0',
+      version='0.6.1',
       py_modules=['scrapelib'],
       author="James Turk",
       author_email='jturk@sunlightfoundation.com',
