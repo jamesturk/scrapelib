@@ -98,6 +98,8 @@ class ResultStr(_str_type, ErrorManager):
     attribute (instance of :class:`Response`).
     """
     def __new__(cls, scraper, response, s):
+        if isinstance(s, bytes):
+            s = s.decode()
         self = _str_type.__new__(cls, s)
         self._scraper = scraper
         self.response = response
