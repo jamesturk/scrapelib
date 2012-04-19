@@ -108,7 +108,7 @@ class ScraperTest(unittest.TestCase):
 
         # mock to quickly return a dummy response
         mock_do_request = mock.Mock(return_value=(
-            scrapelib.Response('', '', None, None), 'ok'))
+            scrapelib.Response('', '', code=200), 'ok'))
         mock_sleep = mock.Mock()
 
         # check that sleep is called
@@ -148,7 +148,7 @@ class ScraperTest(unittest.TestCase):
     def test_default_to_http(self):
 
         def do_request(url, *args, **kwargs):
-            return scrapelib.Response(url, url), ''
+            return scrapelib.Response(url, url, code=200), ''
         mock_do_request = mock.Mock(wraps=do_request)
 
         with mock.patch.object(self.s, '_do_request', mock_do_request):
@@ -182,7 +182,7 @@ class ScraperTest(unittest.TestCase):
 
     def test_error_context(self):
         def do_request(url, *args, **kwargs):
-            return scrapelib.Response(url, url), ''
+            return scrapelib.Response(url, url, code=200), ''
         mock_do_request = mock.Mock(wraps=do_request)
 
         with mock.patch.object(self.s, '_do_request', mock_do_request):
@@ -352,8 +352,8 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(headers['url'], 'http://google.com')
 
         # Make sure it gets called freshly each time
-        headers = s._make_headers('example.com')
-        self.assertEqual(headers['url'], 'example.com')
+        headers = s._make_headers('http://example.com')
+        self.assertEqual(headers['url'], 'http://example.com')
 
     def test_ftp_method_restrictions(self):
         # only http(s) supports non-'GET' requests
