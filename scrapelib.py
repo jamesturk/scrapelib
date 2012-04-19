@@ -102,7 +102,7 @@ class ResultStr(_str_type, ErrorManager):
     def __new__(cls, scraper, response, s):
         if isinstance(s, bytes):
             encoding = chardet.detect(s)['encoding']
-            s = s.decode(encoding)
+            s = s.decode(encoding or 'utf8')
         self = _str_type.__new__(cls, s)
         self._scraper = scraper
         self.response = response
