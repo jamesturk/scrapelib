@@ -29,7 +29,7 @@ Requirements
 
 python >= 2.6
 
-httplib2 optional but highly recommended.
+httplib2
 
 Installation
 ============

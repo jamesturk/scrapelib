@@ -4,7 +4,7 @@ scrapelib changelog
 0.6.0
 -----
     * remove urllib2 fallback for HTTP
-
+    * rework entire test suite to not rely on Flask
 
 0.5.8
 -----
