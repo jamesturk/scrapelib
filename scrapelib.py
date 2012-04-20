@@ -602,7 +602,7 @@ class Scraper(object):
 
         out = {'exception': repr(exception),
                'url': url,
-               'body': body,
+               'body': body.bytes,
                'when': str(datetime.datetime.now())}
 
         base_path = os.path.join(self.error_dir, url.replace('/', ','))

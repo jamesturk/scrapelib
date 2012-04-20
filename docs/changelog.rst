@@ -1,11 +1,17 @@
 scrapelib changelog
 ===================
 
+0.6.2
+-----
+**20 April 2012**
+    * bugfix for POST-redirects
+    * drastically improved test coverage
+
 0.6.1
 -----
 **19 April 2012**
     * add .bytes attribute to ResultStr
-    * fix bug related to bytes in urlretrieve
+    * bugfix related to bytes in urlretrieve
 
 0.6.0
 -----
