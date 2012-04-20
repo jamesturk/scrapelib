@@ -7,9 +7,8 @@ import tempfile
 import datetime
 import json
 
-import chardet
-import httplib2
-
+import requests
+Headers = requests.structures.CaseInsensitiveDict
 
 if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import Request as urllib_Request
@@ -74,11 +73,12 @@ class HTTPError(ScrapeError):
     raise_errors option is true.
     """
 
-    def __init__(self, response, body):
-        message = '%s while retrieving %s' % (response.code, response.url)
+    def __init__(self, response, body=None):
+        message = '%s while retrieving %s' % (response.status_code,
+                                              response.url)
         super(HTTPError, self).__init__(message)
         self.response = response
-        self.body = body
+        self.body = body or self.response.text
 
 
 class ErrorManager(object):
@@ -94,130 +94,23 @@ class ErrorManager(object):
 class ResultStr(_str_type, ErrorManager):
     """
     Wrapper for responses.  Can treat identically to a ``str``
-    o get body of response, additional headers, etc. available via ``response``
-    attribute (instance of :class:`Response`).
+    to get body of response, additional headers, etc. available via
+    ``response`` attribute.
     """
-    def __new__(cls, scraper, response, s):
-        if isinstance(s, bytes):
-            encoding = chardet.detect(s)['encoding'] or 'utf8'
-            _bytes = s
-            s = s.decode(encoding, 'ignore')
-        else:
-            _bytes = bytes(s, 'utf8')
-            encoding = 'utf8'
-        self = _str_type.__new__(cls, s)
+    def __new__(cls, scraper, response, requested_url, fromcache=False):
+        self = _str_type.__new__(cls, response.text)
         self._scraper = scraper
+        self.bytes = response.content
+        self.encoding = response.encoding
         self.response = response
-        self.bytes = _bytes
-        self.encoding = encoding
+        # augment self.response
+        #   manually set: requested_url, fromcache
+        #   aliases: code -> status_code
+        self.response.requested_url = requested_url
+        self.response.fromcache = fromcache
+        self.response.code = self.response.status_code
         return self
 ResultUnicode = ResultStr
-
-
-class Headers(dict):
-    """
-    Dictionary-like object for storing response headers in a
-    case-insensitive way (keeping with the HTTP spec).
-
-    Accessed as the ``headers`` attribute of :class:`Response`.
-    """
-    def __init__(self, d={}):
-        super(Headers, self).__init__()
-        for k, v in d.items():
-            self[k] = v
-
-    def __getitem__(self, key):
-        return super(Headers, self).__getitem__(key.lower())
-
-    def __setitem__(self, key, value):
-        super(Headers, self).__setitem__(key.lower(), value)
-
-    def __delitem__(self, key):
-        return super(Headers, self).__delitem__(key.lower())
-
-    def __contains__(self, key):
-        return super(Headers, self).__contains__(key.lower())
-
-    def __eq__(self, other):
-        if len(self) != len(other):
-            return False
-
-        for k, v in other.items():
-            if self[k] != v:
-                return False
-
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def getallmatchingheaders(self, name):
-        try:
-            header = self[name]
-            return [name + ": " + header]
-        except KeyError:
-            return []
-
-    def get_all(self, name, default=None):
-        if name in self:
-            return [self[name]]
-        else:
-            return default
-
-    def getheaders(self, name):
-        try:
-            return [self[name]]
-        except KeyError:
-            return []
-
-
-class Response(object):
-    """
-    Details about a server response.
-
-    Has the following attributes:
-
-    :attr:`url`
-        actual URL of the response (after redirects)
-    :attr:`requested_url`
-        original URL requested
-    :attr:`code`
-        HTTP response code (not set for FTP requests)
-    :attr:`protocol`
-        protocol used: http, https, or ftp
-    :attr:`fromcache`
-        True iff responsse was retrieved from local cache
-    :attr:`headers`
-        :class:`Headers` instance containing response headers
-    """
-
-    def __init__(self, url, requested_url, protocol='http', code=None,
-                 fromcache=False, headers={}):
-        """
-        :param url: the actual URL of the response (after following any
-          redirects)
-        :param requested_url: the original URL requested
-        :param code: response code (if HTTP)
-        :param fromcache: response was retrieved from local cache
-        """
-        self.url = url
-        self.requested_url = requested_url
-        self.protocol = protocol
-        self.code = code
-        self.fromcache = fromcache
-        self.headers = Headers(headers)
-
-    def info(self):
-        return self.headers
-
-    @classmethod
-    def from_httplib2_response(self, url, resp):
-        return Response(resp.get('content-location') or url,
-                        url,
-                        code=resp.status,
-                        fromcache=resp.fromcache,
-                        protocol=urlparse.urlparse(url).scheme,
-                        headers=resp)
 
 
 class Scraper(object):
@@ -239,7 +132,6 @@ class Scraper(object):
     :param follow_robots: respect robots.txt files (default: True)
     :param error_dir: if not None, store scraped documents for which
         an error was encountered.  (TODO: document with blocks)
-    :param accept_cookies: set to False to disable HTTP cookie support
     :param disable_compression: set to True to not accept compressed content
     :param use_cache_first: set to True to always make an attempt to use cached
         data, before even making a HEAD request to check if content is stale
@@ -260,7 +152,6 @@ class Scraper(object):
                  requests_per_minute=60,
                  follow_robots=True,
                  error_dir=None,
-                 accept_cookies=True,
                  disable_compression=False,
                  use_cache_first=False,
                  raise_errors=True,
@@ -270,7 +161,6 @@ class Scraper(object):
                  retry_wait_seconds=5,
                  cache_obj=None,
                  **kwargs):
-        self.user_agent = user_agent
         self.headers = headers
         # make timeout of 0 mean timeout of None
         if timeout == 0:
@@ -293,8 +183,7 @@ class Scraper(object):
         else:
             self.save_errors = False
 
-        self.accept_cookies = accept_cookies
-        self._cookie_jar = CookieJar()
+        # TODO: check for accept_cookies
 
         self.disable_compression = disable_compression
 
@@ -304,9 +193,10 @@ class Scraper(object):
         self._cache_obj = cache_dir
         if cache_obj:
             self._cache_obj = cache_obj
-        self._http = httplib2.Http(self._cache_obj, timeout=timeout)
+        self._session = requests.Session(timeout=timeout)
 
         self.follow_redirects = follow_redirects
+        self.user_agent = user_agent
 
         self.retry_attempts = max(retry_attempts, 0)
         self.retry_wait_seconds = retry_wait_seconds
@@ -344,32 +234,23 @@ class Scraper(object):
         else:
             headers = self.headers
 
-        if self.accept_cookies:
-            # CookieJar expects a urllib2.Request-like object
-            req = urllib_Request(url, headers=headers)
-            self._cookie_jar.add_cookie_header(req)
-            headers = req.headers
-            headers.update(req.unredirected_hdrs)
-
         headers = Headers(headers)
 
-        if 'User-Agent' not in headers:
-            headers['User-Agent'] = self.user_agent
+        if 'user-agent' not in headers:
+            headers['user-agent'] = self.user_agent
 
-        if self.disable_compression and 'Accept-Encoding' not in headers:
-            headers['Accept-Encoding'] = 'text/*'
+        if self.disable_compression and 'accept-encoding' not in headers:
+            headers['accept-encoding'] = 'text/*'
 
         return headers
 
     @property
     def follow_redirects(self):
-        if self._http:
-            return self._http.follow_redirects
+        return self._session.allow_redirects
 
     @follow_redirects.setter
     def follow_redirects(self, value):
-        if self._http:
-            self._http.follow_redirects = value
+        self._session.allow_redirects = value
 
     @property
     def requests_per_minute(self):
@@ -387,63 +268,6 @@ class Scraper(object):
             self._requests_per_minute = 0
             self._request_frequency = 0.0
             self._last_request = 0
-
-    def _do_request(self, url, method, body, headers, retry_on_404=False):
-
-        # the retry loop
-        tries = 0
-        exception_raised = None
-
-        while tries <= self.retry_attempts:
-            exception_raised = None
-
-            if url.startswith('http'):
-                try:
-                    resp, content = self._http.request(url, method, body=body,
-                                                       headers=headers)
-                    # return on a success/redirect/404
-                    if resp.status < 400 or (resp.status == 404
-                                             and not retry_on_404):
-                        break
-                except socket.error as e:
-                    exception_raised = e
-                except AttributeError as e:
-                    if (str(e) ==
-                        "'NoneType' object has no attribute 'makefile'"):
-                        # when this error occurs, re-establish the connection
-                        self._http = httplib2.Http(self._cache_obj,
-                                                   timeout=self.timeout)
-                        exception_raised = e
-                    else:
-                        raise
-            else:
-                if method != 'GET':
-                    raise HTTPMethodUnavailableError(
-                        "non-HTTP(S) requests do not support method '%s'" %
-                        method, method)
-                try:
-                    resp = urllib_urlopen(url, timeout=self.timeout)
-                    return Response(url, url, code=200, fromcache=False,
-                                    protocol='ftp', headers={}), resp.read()
-                except urllib_URLError as e:
-                    exception_raised = e
-                    # FTP 550 ~ HTTP 404
-                    if '550' in str(e) and not retry_on_404:
-                        raise e
-
-            # if we're going to retry, sleep first
-            tries += 1
-            if tries <= self.retry_attempts:
-                # twice as long each time
-                wait = self.retry_wait_seconds * (2 ** (tries - 1))
-                _log.debug('sleeping for %s seconds before retry' % wait)
-                time.sleep(wait)
-
-        # out of the loop, either an exception was raised or we had a success
-        if exception_raised:
-            raise exception_raised
-        else:
-            return Response.from_httplib2_response(url, resp), content
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False,
                 use_cache_first=None):
@@ -475,25 +299,19 @@ class Scraper(object):
             self._throttle()
 
         method = method.upper()
-        if method == 'POST' and body is None:
-            body = ''
 
         # Default to HTTP requests
         if not "://" in url:
             _log.warning("no URL scheme provided, assuming HTTP")
             url = "http://" + url
 
-        parsed_url = urlparse.urlparse(url)
-
         headers = self._make_headers(url)
         user_agent = headers['User-Agent']
 
         _log.info("{0} - {1}".format(method, url))
 
-        # start with blank response & content
-        our_resp = content = None
-
-        # robots.txt, POST, cache-control are http-only
+        # robots.txt is http-only
+        parsed_url = urlparse.urlparse(url)
         if parsed_url.scheme in ('http', 'https'):
             if self.follow_robots and not self._robot_allowed(user_agent,
                                                               parsed_url):
@@ -501,66 +319,60 @@ class Scraper(object):
                     "User-Agent '%s' not allowed at '%s'" % (
                         user_agent, url), url, user_agent)
 
-            # make sure POSTs have x-www-form-urlencoded content type
-            if method == 'POST' and 'Content-Type' not in headers:
-                headers['Content-Type'] = ('application/'
-                                           'x-www-form-urlencoded')
+        # the retry loop
+        tries = 0
+        exception_raised = None
 
-            # optionally try a dummy request to cache only
-            if use_cache_first and 'Cache-Control' not in headers:
-                headers['cache-control'] = 'only-if-cached'
+        while tries <= self.retry_attempts:
+            exception_raised = None
 
-                resp, content = self._http.request(url, method,
-                                                   body=body,
-                                                   headers=headers)
+            if url.startswith('http'):
+                try:
+                    resp = self._session.request(method, url, data=body,
+                                                 headers=headers)
+                    result = ResultStr(self, resp, url)
+                    # break from loop on a success/redirect/404
+                    if resp.status_code < 400 or (resp.status_code == 404
+                                                  and not retry_on_404):
+                        break
+                except requests.Timeout as e:
+                    exception_raised = e
+            else:
+                if method != 'GET':
+                    raise HTTPMethodUnavailableError(
+                        "non-HTTP(S) requests do not support method '%s'" %
+                        method, method)
+                try:
+                    real_resp = urllib_urlopen(url, timeout=self.timeout)
+                    # we're going to fake a requests.Response with this
+                    resp = requests.Response()
+                    resp.status_code = 200
+                    resp.url = url
+                    resp.headers = {}
+                    resp._content = real_resp.read()
+                    result = ResultStr(self, resp, url)
+                    break
+                except urllib_URLError as e:
+                    exception_raised = e
+                    # FTP 550 ~ HTTP 404
+                    if '550' in str(e) and not retry_on_404:
+                        raise e
 
-                # a 504 means it wasn't found, clear the content
-                if resp.status == 504:
-                    headers.pop('cache-control')
-                    content = None
-                else:
-                    # we have our response
-                    our_resp = Response.from_httplib2_response(url, resp)
+            # if we're going to retry, sleep first
+            tries += 1
+            if tries <= self.retry_attempts:
+                # twice as long each time
+                wait = self.retry_wait_seconds * (2 ** (tries - 1))
+                _log.debug('sleeping for %s seconds before retry' % wait)
+                time.sleep(wait)
 
-        # do request if we didn't get it from cache earlier
-        if not our_resp:
-            our_resp, content = self._do_request(url, method, body,
-                                                 headers,
-                                                 retry_on_404=retry_on_404)
-
-            # important to accept cookies before redirect handling
-            if self.accept_cookies:
-                fake_req = urllib_Request(url, headers=headers)
-                self._cookie_jar.extract_cookies(our_resp, fake_req)
-
-            # needed because httplib2 follows the HTTP spec a bit *too*
-            # closely and won't issue a GET following a POST (incorrect
-            # but expected and often relied-upon behavior)
-            if (our_resp.code in (301, 302, 303, 307) and
-                self.follow_redirects):
-
-                if our_resp.headers['location'].startswith('http'):
-                    redirect = our_resp.headers['location']
-                else:
-                    # relative redirect
-                    redirect = urlparse.urljoin(parsed_url.scheme +
-                                                "://" +
-                                                parsed_url.netloc +
-                                                parsed_url.path,
-                                                our_resp.headers['location'])
-                _log.debug('redirecting to %s' % redirect)
-
-                # just return the result of a urlopen to new url
-                resp = self.urlopen(redirect)
-                resp.response.requested_url = url
-                return resp
-
-        # response exception/ResultStr
-        # return our_resp wrapped in content
-        if self.raise_errors and our_resp.code >= 400:
-            raise HTTPError(our_resp, content)
-
-        return ResultStr(self, our_resp, content)
+        # out of the loop, either an exception was raised or we had a success
+        if exception_raised:
+            raise exception_raised
+        elif self.raise_errors and resp.status_code >= 400:
+            raise HTTPError(resp)
+        else:
+            return result
 
     def urlretrieve(self, url, filename=None, method='GET', body=None):
         """

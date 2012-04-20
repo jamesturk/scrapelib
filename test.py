@@ -15,48 +15,22 @@ else:
     from io import StringIO
 
 import mock
-import httplib2
+import requests
 import scrapelib
 
 HTTPBIN = 'http://httpbin.org/'
 
+class FakeResponse(object):
+    def __init__(self, url, code, content, encoding='utf-8', headers=None):
+        self.url = url
+        self.status_code = code
+        self.text = self.content = content
+        self.encoding = encoding
+        self.headers = headers or {}
 
-class HeaderTest(unittest.TestCase):
-    def test_keys(self):
-        h = scrapelib.Headers()
-        h['A'] = '1'
-
-        self.assertEqual(h['A'], '1')
-
-        self.assertEqual(h.getallmatchingheaders('A'), ["A: 1"])
-        self.assertEqual(h.getallmatchingheaders('b'), [])
-        self.assertEqual(h.getheaders('A'), ['1'])
-        self.assertEqual(h.getheaders('b'), [])
-
-        # should be case-insensitive
-        self.assertEqual(h['a'], '1')
-        h['a'] = '2'
-        self.assertEqual(h['A'], '2')
-
-        self.assertTrue('a' in h)
-        self.assertTrue('A' in h)
-
-        del h['A']
-        self.assertTrue('a' not in h)
-        self.assertTrue('A' not in h)
-
-    def test_equality(self):
-        h1 = scrapelib.Headers()
-        h1['Accept-Encoding'] = '*'
-
-        h2 = scrapelib.Headers()
-        self.assertNotEqual(h1, h2)
-
-        h2['accept-encoding'] = 'not'
-        self.assertNotEqual(h1, h2)
-
-        h2['accept-encoding'] = '*'
-        self.assertEqual(h1, h2)
+def request_200(method, url, *args, **kwargs):
+    return FakeResponse(url, 200, 'ok')
+mock_200 = mock.Mock(wraps=request_200)
 
 
 class ScraperTest(unittest.TestCase):
@@ -92,6 +66,7 @@ class ScraperTest(unittest.TestCase):
         s = scrapelib.Scraper(timeout=0)
         assert s.timeout is None
 
+
     def test_get(self):
         resp = self.s.urlopen(HTTPBIN + 'get?woo=woo')
         self.assertEqual(resp.response.code, 200)
@@ -105,50 +80,37 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(resp_json['headers']['Content-Type'],
                          'application/x-www-form-urlencoded')
 
-    def test_bytes(self):
-        raw_bytes = b'\xb5\xb5'
-        mock_do_request = mock.Mock(return_value=(
-            scrapelib.Response('', '', code=200), raw_bytes))
-
-        # check that sleep is called
-        with mock.patch.object(self.s, '_do_request', mock_do_request):
-            resp = self.s.urlopen('http://dummy/bin/')
-            self.assertEqual(resp.response.code, 200)
-            self.assertEqual(resp.bytes, raw_bytes)
-
     def test_request_throttling(self):
         s = scrapelib.Scraper(requests_per_minute=30, follow_robots=False,
                               accept_cookies=False)
         self.assertEqual(s.requests_per_minute, 30)
 
-        # mock to quickly return a dummy response
-        mock_do_request = mock.Mock(return_value=(
-            scrapelib.Response('', '', code=200), 'ok'))
         mock_sleep = mock.Mock()
+        mock_200.reset_mock()
 
         # check that sleep is called
         with mock.patch('time.sleep', mock_sleep):
-            with mock.patch.object(s, '_do_request', mock_do_request):
+            with mock.patch.object(s._session, 'request', mock_200):
                 s.urlopen('http://dummy/')
                 s.urlopen('http://dummy/')
                 s.urlopen('http://dummy/')
                 self.assertTrue(mock_sleep.call_count == 2)
                 # should have slept for ~2 seconds
                 self.assertTrue(1.8 <= mock_sleep.call_args[0][0] <= 2.2)
-                self.assertTrue(mock_do_request.call_count == 3)
+                self.assertEqual(mock_200.call_count, 3)
 
         # unthrottled, should be able to fit in lots of calls
         s.requests_per_minute = 0
-        mock_do_request.reset_mock()
+        mock_200.reset_mock()
         mock_sleep.reset_mock()
 
         with mock.patch('time.sleep', mock_sleep):
-            with mock.patch.object(s, '_do_request', mock_do_request):
+            with mock.patch.object(s._session, 'request', mock_200):
                 s.urlopen('http://dummy/')
                 s.urlopen('http://dummy/')
                 s.urlopen('http://dummy/')
                 self.assertTrue(mock_sleep.call_count == 0)
-                self.assertTrue(mock_do_request.call_count == 3)
+                self.assertTrue(mock_200.call_count == 3)
 
     def test_user_agent(self):
         resp = self.s.urlopen(HTTPBIN + 'user-agent')
@@ -161,23 +123,14 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(ua, 'a different agent')
 
     def test_default_to_http(self):
-
-        def do_request(url, *args, **kwargs):
-            return scrapelib.Response(url, url, code=200), ''
-        mock_do_request = mock.Mock(wraps=do_request)
-
-        with mock.patch.object(self.s, '_do_request', mock_do_request):
+        with mock.patch.object(self.s._session, 'request', mock_200):
             self.assertEqual('http://dummy/',
                              self.s.urlopen("dummy/").response.url)
 
     def test_follow_robots(self):
         self.s.follow_robots = True
 
-        def do_request(url, *args, **kwargs):
-            return scrapelib.Response(url, url, code=200), ''
-
-        with mock.patch.object(self.s, '_do_request', do_request):
-
+        with mock.patch.object(self.s._session, 'request', mock_200):
             # set a fake robots.txt for http://dummy
             parser = robotparser.RobotFileParser()
             parser.parse(['User-agent: *', 'Disallow: /private/', 'Allow: /'])
@@ -193,14 +146,10 @@ class ScraperTest(unittest.TestCase):
             # turn off follow_robots, everything works
             self.s.follow_robots = False
             self.assertEqual(200,
-             self.s.urlopen("http://dummy/private/secret.html").response.code)
+            self.s.urlopen("http://dummy/private/secret.html").response.code)
 
     def test_error_context(self):
-        def do_request(url, *args, **kwargs):
-            return scrapelib.Response(url, url, code=200), ''
-        mock_do_request = mock.Mock(wraps=do_request)
-
-        with mock.patch.object(self.s, '_do_request', mock_do_request):
+        with mock.patch.object(self.s._session, 'request', mock_200):
             def raises():
                 with self.s.urlopen("http://dummy/"):
                     raise Exception('test')
@@ -223,7 +172,7 @@ class ScraperTest(unittest.TestCase):
 
         self.s.raise_errors = False
         resp = self.s.urlopen(HTTPBIN + 'status/500')
-        self.assertEqual(resp.response.code, 500)
+        self.assertEqual(500, resp.response.code)
 
     def test_follow_redirect(self):
         redirect_url = HTTPBIN + 'redirect/1'
@@ -234,52 +183,23 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(200, resp.response.code)
 
-        self.s.follow_redirects = False
-        resp = self.s.urlopen(redirect_url)
-        self.assertEqual(redirect_url, resp.response.url)
-        self.assertEqual(redirect_url, resp.response.requested_url)
-        self.assertEqual(302, resp.response.code)
+    #def test_caching(self):
+    #    self._setup_cache()
 
-    def test_post_redirect(self):
-        orig_request = self.s._do_request
-        def do_request(url, *args, **kwargs):
-            if 'dummy' in url:
-                return scrapelib.Response(url, url, code=301,
-                  headers={'location':HTTPBIN + 'status/200'}), ''
-            else:
-                return orig_request(url, *args, **kwargs)
-        mock_do_request = mock.Mock(wraps=do_request)
+    #    resp = self.s.urlopen(HTTPBIN + 'status/200')
+    #    self.assertFalse(resp.response.fromcache)
+    #    resp = self.s.urlopen(HTTPBIN + 'status/200')
+    #    self.assertTrue(resp.response.fromcache)
 
-        with mock.patch.object(self.s, '_do_request', mock_do_request):
-            resp = self.s.urlopen('http://dummy/')
-            assert resp.response.code == 200
-            assert resp.response.url == HTTPBIN + 'status/200'
-            assert resp.response.requested_url == 'http://dummy/'
-        assert mock_do_request.call_count == 2
-
-    def test_caching(self):
-        self._setup_cache()
-
-        resp = self.s.urlopen(HTTPBIN + 'status/200')
-        self.assertFalse(resp.response.fromcache)
-        resp = self.s.urlopen(HTTPBIN + 'status/200')
-        self.assertTrue(resp.response.fromcache)
-
-        self.s.use_cache_first = False
-        resp = self.s.urlopen(HTTPBIN + 'status/200')
-        self.assertFalse(resp.response.fromcache)
+    #    self.s.use_cache_first = False
+    #    resp = self.s.urlopen(HTTPBIN + 'status/200')
+    #    self.assertFalse(resp.response.fromcache)
 
     def test_urlretrieve(self):
-        # assume urlopen works fine
-        content = scrapelib.ResultStr(self.s,
-                                      scrapelib.Response('', '', code=200),
-                                      'in your file')
-        fake_urlopen = mock.Mock(return_value=content)
-
-        with mock.patch.object(self.s, 'urlopen', fake_urlopen):
+        with mock.patch.object(self.s._session, 'request', mock_200):
             fname, resp = self.s.urlretrieve("http://dummy/")
             with open(fname) as f:
-                self.assertEqual(f.read(), 'in your file')
+                self.assertEqual(f.read(), 'ok')
                 self.assertEqual(200, resp.code)
             os.remove(fname)
 
@@ -288,131 +208,118 @@ class ScraperTest(unittest.TestCase):
                                              set_fname)
             self.assertEqual(fname, set_fname)
             with open(set_fname) as f:
-                self.assertEqual(f.read(), 'in your file')
+                self.assertEqual(f.read(), 'ok')
                 self.assertEqual(200, resp.code)
             os.remove(set_fname)
 
-    # TODO: on these retry tests it'd be nice to ensure that it tries
-    # 3 times for 500 and once for 404
+    ## TODO: on these retry tests it'd be nice to ensure that it tries
+    ## 3 times for 500 and once for 404
 
     def test_retry(self):
-        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
+        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.001,
+                              follow_robots=False, raise_errors=False)
 
         # On the first call return a 500, then a 200
-        side_effect = [
-            (httplib2.Response({'status': 500}), 'failure!'),
-            (httplib2.Response({'status': 200}), 'success!')
-        ]
+        mock_request = mock.Mock(side_effect=[
+            FakeResponse('http://dummy/', 500, 'failure!'),
+            FakeResponse('http://dummy/', 200, 'success!')
+        ])
 
-        mock_request = mock.Mock(side_effect=side_effect)
-
-        with mock.patch.object(httplib2.Http, 'request', mock_request):
-            resp, content = s._do_request('http://dummy/', 'GET', None, {})
+        with mock.patch.object(s._session, 'request', mock_request):
+            resp = s.urlopen('http://dummy/')
         self.assertEqual(mock_request.call_count, 2)
 
         # 500 always
-        resp, content = s._do_request(HTTPBIN + 'status/500',
-                                      'GET', None, {})
-        self.assertEqual(resp.code, 500)
+        mock_request = mock.Mock(return_value=
+             FakeResponse('http://dummy/', 500, 'failure!')
+        )
+
+        with mock.patch.object(s._session, 'request', mock_request):
+            resp = s.urlopen('http://dummy/')
+        self.assertEqual(resp.response.code, 500)
+        self.assertEqual(mock_request.call_count, 4)
+
 
     def test_retry_404(self):
-        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.1)
+        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.001,
+                              follow_robots=False, raise_errors=False)
 
         # On the first call return a 404, then a 200
-        side_effect = [
-            (httplib2.Response({'status': 404}), 'failure!'),
-            (httplib2.Response({'status': 200}), 'success!')
-        ]
+        mock_request = mock.Mock(side_effect=[
+            FakeResponse('http://dummy/', 404, 'failure!'),
+            FakeResponse('http://dummy/', 200, 'success!')
+        ])
 
-        mock_request = mock.Mock(side_effect=side_effect)
-
-        with mock.patch.object(httplib2.Http, 'request', mock_request):
-            resp, content = s._do_request('http://localhost:5000/',
-                                          'GET', None, {}, retry_on_404=True)
+        with mock.patch.object(s._session, 'request', mock_request):
+            resp = s.urlopen('http://dummy/', retry_on_404=True)
         self.assertEqual(mock_request.call_count, 2)
 
-        # 404
-        resp, content = s._do_request(HTTPBIN + 'status/404',
-                                      'GET', None, {})
-        self.assertEqual(resp.code, 404)
+        # 404 always
+        mock_request = mock.Mock(return_value=
+             FakeResponse('http://dummy/', 404, 'failure!')
+        )
 
-    def test_socket_retry(self):
+        # retry on 404 true, 4 tries
+        with mock.patch.object(s._session, 'request', mock_request):
+            resp = s.urlopen('http://dummy/', retry_on_404=True)
+        self.assertEqual(resp.response.code, 404)
+        self.assertEqual(mock_request.call_count, 4)
+
+
+        # retry on 404 false, just one more try
+        with mock.patch.object(s._session, 'request', mock_request):
+            resp = s.urlopen('http://dummy/', retry_on_404=False)
+        self.assertEqual(resp.response.code, 404)
+        self.assertEqual(mock_request.call_count, 5)
+
+
+    def test_timeout_retry(self):
         count = []
 
-        # On the first call raise socket.timeout
-        # On subsequent calls pass through to httplib2.Http.request
+        # On the first call raise timeout
         def side_effect(*args, **kwargs):
             if count:
-                return httplib2.Response({'status': 200}), 'success!'
+                return FakeResponse('http://dummy/', 200, 'success!')
             count.append(1)
-            raise socket.timeout('timed out :(')
+            raise requests.Timeout('timed out :(')
 
         mock_request = mock.Mock(side_effect=side_effect)
 
-        with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001, 
-                                  follow_robots=False)
+        s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001,
+                              follow_robots=False)
+
+        with mock.patch.object(s._session, 'request', mock_request):
+            # first, try without retries
             # try only once, get the error
-            self.assertRaises(socket.timeout, self.s.urlopen, "http://dummy/")
+            self.assertRaises(requests.Timeout, s.urlopen,
+                              "http://dummy/")
             self.assertEqual(mock_request.call_count, 1)
 
+        # reset and try again with retries
         mock_request.reset_mock()
         count = []
-        with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
-                                  follow_robots=False)
+        s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                              follow_robots=False)
+        with mock.patch.object(s._session, 'request', mock_request):
             resp = s.urlopen("http://dummy/")
             # get the result, take two tries
             self.assertEqual(resp, "success!")
             self.assertEqual(mock_request.call_count, 2)
-
-    def test_httplib2_nasty_workaround(self):
-        """ test workaround for httplib2 breakage """
-        count = []
-
-        # On the first call raise socket.timeout
-        # On subsequent calls pass through to httplib2.Http.request
-        def side_effect(*args, **kwargs):
-            if count:
-                return httplib2.Response({'status': 200}), 'success!'
-            count.append(1)
-            raise AttributeError("'NoneType' object has no attribute "
-                                 "'makefile'")
-
-        mock_request = mock.Mock(side_effect=side_effect)
-
-        with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001, 
-                                  follow_robots=False)
-            # try only once, get the error
-            self.assertRaises(AttributeError, self.s.urlopen, "http://dummy/")
-            self.assertEqual(mock_request.call_count, 1)
-
-        mock_request.reset_mock()
-        count = []
-        with mock.patch.object(httplib2.Http, 'request', mock_request):
-            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
-                                  follow_robots=False)
-            resp = s.urlopen("http://dummy/")
-            # get the result, take two tries
-            self.assertEqual(resp, "success!")
-            self.assertEqual(mock_request.call_count, 2)
-
 
     def test_disable_compression(self):
         s = scrapelib.Scraper(disable_compression=True)
 
-        headers = s._make_headers("http://google.com")
+        headers = s._make_headers("http://dummy/")
         self.assertEqual(headers['accept-encoding'], 'text/*')
 
         # A supplied Accept-Encoding headers overrides the
         # disable_compression option
         s.headers['accept-encoding'] = '*'
-        headers = s._make_headers('http://google.com')
+        headers = s._make_headers('http://dummy/')
         self.assertEqual(headers['accept-encoding'], '*')
 
     def test_callable_headers(self):
-        s = scrapelib.Scraper(headers=lambda url: {'URL': url})
+        s = scrapelib.Scraper(headers=lambda url: {'url': url})
 
         headers = s._make_headers('http://google.com')
         self.assertEqual(headers['url'], 'http://google.com')
@@ -426,6 +333,7 @@ class ScraperTest(unittest.TestCase):
 
         with mock.patch('scrapelib.urllib_urlopen', urlopen):
             r = self.s.urlopen('ftp://dummy/')
+            assert r.response.code == 200
             assert r == "ftp success!"
 
     def test_ftp_retries(self):
