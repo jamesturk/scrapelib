@@ -240,6 +240,23 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(302, resp.response.code)
 
+    def test_post_redirect(self):
+        orig_request = self.s._do_request
+        def do_request(url, *args, **kwargs):
+            if 'dummy' in url:
+                return scrapelib.Response(url, url, code=301,
+                  headers={'location':HTTPBIN + 'status/200'}), ''
+            else:
+                return orig_request(url, *args, **kwargs)
+        mock_do_request = mock.Mock(wraps=do_request)
+
+        with mock.patch.object(self.s, '_do_request', mock_do_request):
+            resp = self.s.urlopen('http://dummy/')
+            assert resp.response.code == 200
+            assert resp.response.url == HTTPBIN + 'status/200'
+            assert resp.response.requested_url == 'http://dummy/'
+        assert mock_do_request.call_count == 2
+
     def test_caching(self):
         self._setup_cache()
 
