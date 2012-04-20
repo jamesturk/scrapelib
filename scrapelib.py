@@ -363,7 +363,6 @@ class Scraper(object):
     def follow_redirects(self):
         if self._http:
             return self._http.follow_redirects
-        return False
 
     @follow_redirects.setter
     def follow_redirects(self, value):

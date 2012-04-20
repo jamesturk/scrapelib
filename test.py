@@ -339,6 +339,39 @@ class ScraperTest(unittest.TestCase):
             self.assertEqual(resp, "success!")
             self.assertEqual(mock_request.call_count, 2)
 
+    def test_httplib2_nasty_workaround(self):
+        """ test workaround for httplib2 breakage """
+        count = []
+
+        # On the first call raise socket.timeout
+        # On subsequent calls pass through to httplib2.Http.request
+        def side_effect(*args, **kwargs):
+            if count:
+                return httplib2.Response({'status': 200}), 'success!'
+            count.append(1)
+            raise AttributeError("'NoneType' object has no attribute "
+                                 "'makefile'")
+
+        mock_request = mock.Mock(side_effect=side_effect)
+
+        with mock.patch.object(httplib2.Http, 'request', mock_request):
+            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001, 
+                                  follow_robots=False)
+            # try only once, get the error
+            self.assertRaises(AttributeError, self.s.urlopen, "http://dummy/")
+            self.assertEqual(mock_request.call_count, 1)
+
+        mock_request.reset_mock()
+        count = []
+        with mock.patch.object(httplib2.Http, 'request', mock_request):
+            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                                  follow_robots=False)
+            resp = s.urlopen("http://dummy/")
+            # get the result, take two tries
+            self.assertEqual(resp, "success!")
+            self.assertEqual(mock_request.call_count, 2)
+
+
     def test_disable_compression(self):
         s = scrapelib.Scraper(disable_compression=True)
 
