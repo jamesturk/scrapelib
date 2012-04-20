@@ -4,12 +4,6 @@ from setuptools import setup
 
 long_description = open('README.rst').read()
 
-required = ['httplib2>=0.7.0']
-if sys.version_info[0] > 2:
-    required.append('chardet2')
-else:
-    required.append('chardet')
-
 setup(name="scrapelib",
       version='0.6.2',
       py_modules=['scrapelib'],
@@ -29,7 +23,7 @@ setup(name="scrapelib",
                    ("Topic :: Software Development :: Libraries :: "
                     "Python Modules"),
                    ],
-      install_requires=required,
+      install_requires=['requests'],
       entry_points="""
 [console_scripts]
 scrapeshell = scrapelib:scrapeshell
