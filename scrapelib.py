@@ -135,31 +135,31 @@ class Scraper(object):
         data, before even making a HEAD request to check if content is stale
     :param raise_errors: set to True to raise a :class:`HTTPError`
         on 4xx or 5xx response
-    :param follow_redirects: set to False to disable redirect following
     :param timeout: socket timeout in seconds (default: None)
     :param retry_attempts: number of times to retry if timeout occurs or
         page returns a (non-404) error
     :param retry_wait_seconds: number of seconds to retry after first failure,
         subsequent retries will double this wait
-    :param cache_obj: object to use for non-file based cache.  scrapelib
-        provides :class:`MongoCache` for this purpose
     """
-    def __init__(self, user_agent=_user_agent,
-                 cache_dir=None,
-                 headers={},
+    def __init__(self,
+                 user_agent=_user_agent,
+                 headers=None,
                  requests_per_minute=60,
                  follow_robots=True,
                  error_dir=None,
                  disable_compression=False,
                  use_cache_first=False,
                  raise_errors=True,
-                 follow_redirects=True,
                  timeout=None,
                  retry_attempts=0,
                  retry_wait_seconds=5,
+                 # deprecated options
+                 accept_cookies=None,
+                 follow_redirects=None,
                  cache_obj=None,
-                 **kwargs):
-        self.headers = headers
+                 cache_dir=None,
+                ):
+        self.headers = headers or {}
         # make timeout of 0 mean timeout of None
         if timeout == 0:
             timeout = None
@@ -181,7 +181,14 @@ class Scraper(object):
         else:
             self.save_errors = False
 
-        # TODO: check for accept_cookies
+        if accept_cookies:
+            warnings.warn('accept_cookies is deprecated', DeprecationWarning)
+        if follow_redirects:
+            warnings.warn('follow_redirects is deprecated', DeprecationWarning)
+        if cache_obj:
+            warnings.warn('cache_obj is deprecated', DeprecationWarning)
+        if cache_dir:
+            warnings.warn('cache_obj is deprecated', DeprecationWarning)
 
         self.disable_compression = disable_compression
 
