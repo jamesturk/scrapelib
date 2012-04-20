@@ -85,6 +85,11 @@ class ScraperTest(unittest.TestCase):
             os.remove(path)
         os.rmdir(self.error_dir)
 
+    def test_constructor(self):
+        # timeout=0 means None
+        s = scrapelib.Scraper(timeout=0)
+        assert s.timeout is None
+
     def test_get(self):
         resp = self.s.urlopen(HTTPBIN + 'get?woo=woo')
         self.assertEqual(resp.response.code, 200)
