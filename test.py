@@ -96,6 +96,14 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(resp.response.code, 200)
         self.assertEqual(json.loads(resp)['args']['woo'], 'woo')
 
+    def test_post(self):
+        resp = self.s.urlopen(HTTPBIN + 'post', 'POST', 'woo=woo')
+        self.assertEqual(resp.response.code, 200)
+        resp_json = json.loads(resp)
+        self.assertEqual(resp_json['form']['woo'], 'woo')
+        self.assertEqual(resp_json['headers']['Content-Type'],
+                         'application/x-www-form-urlencoded')
+
     def test_bytes(self):
         raw_bytes = b'\xb5\xb5'
         mock_do_request = mock.Mock(return_value=(
