@@ -29,7 +29,7 @@ else:                               # pragma: no cover
     from http.cookiejar import CookieJar
     _str_type = str
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 _user_agent = 'scrapelib {0}'.format( __version__)
 
 

@@ -6,6 +6,7 @@ scrapelib changelog
 **20 April 2012**
     * bugfix for POST-redirects
     * drastically improved test coverage
+    * add encoding to ResultStr
 
 0.6.1
 -----
