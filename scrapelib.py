@@ -99,15 +99,17 @@ class ResultStr(_str_type, ErrorManager):
     """
     def __new__(cls, scraper, response, s):
         if isinstance(s, bytes):
-            encoding = chardet.detect(s)['encoding']
+            encoding = chardet.detect(s)['encoding'] or 'utf8'
             _bytes = s
-            s = s.decode(encoding or 'utf8', 'ignore')
+            s = s.decode(encoding, 'ignore')
         else:
             _bytes = bytes(s, 'utf8')
+            encoding = 'utf8'
         self = _str_type.__new__(cls, s)
         self._scraper = scraper
         self.response = response
         self.bytes = _bytes
+        self.encoding = encoding
         return self
 ResultUnicode = ResultStr
 
