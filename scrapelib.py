@@ -538,14 +538,14 @@ class Scraper(object):
                 self.follow_redirects):
 
                 if our_resp.headers['location'].startswith('http'):
-                    redirect = resp['location']
+                    redirect = our_resp.headers['location']
                 else:
                     # relative redirect
                     redirect = urlparse.urljoin(parsed_url.scheme +
                                                 "://" +
                                                 parsed_url.netloc +
                                                 parsed_url.path,
-                                                resp['location'])
+                                                our_resp.headers['location'])
                 _log.debug('redirecting to %s' % redirect)
 
                 # just return the result of a urlopen to new url
