@@ -16,7 +16,6 @@ if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import URLError as urllib_URLError
     import urlparse
     import robotparser
-    from cookielib import CookieJar
     _str_type = unicode
 else:                               # pragma: no cover
     PY3K = True
@@ -25,7 +24,6 @@ else:                               # pragma: no cover
     from urllib.error import URLError as urllib_URLError
     from urllib import parse as urlparse
     from urllib import robotparser
-    from http.cookiejar import CookieJar
     _str_type = str
 
 __version__ = '0.6.2'
@@ -337,7 +335,7 @@ class Scraper(object):
                         break
                 except requests.Timeout as e:
                     exception_raised = e
-            else:
+            else:  # FTP using urllib2
                 if method != 'GET':
                     raise HTTPMethodUnavailableError(
                         "non-HTTP(S) requests do not support method '%s'" %

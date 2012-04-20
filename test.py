@@ -6,13 +6,12 @@ import time
 import socket
 import tempfile
 import unittest
+from io import BytesIO
 
 if sys.version_info[0] < 3:
     import robotparser
-    from StringIO import StringIO
 else:
     from urllib import robotparser
-    from io import StringIO
 
 import mock
 import requests
@@ -24,12 +23,13 @@ class FakeResponse(object):
     def __init__(self, url, code, content, encoding='utf-8', headers=None):
         self.url = url
         self.status_code = code
-        self.text = self.content = content
+        self.content = content
+        self.text = str(content)
         self.encoding = encoding
         self.headers = headers or {}
 
 def request_200(method, url, *args, **kwargs):
-    return FakeResponse(url, 200, 'ok')
+    return FakeResponse(url, 200, b'ok')
 mock_200 = mock.Mock(wraps=request_200)
 
 
@@ -73,7 +73,7 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(json.loads(resp)['args']['woo'], 'woo')
 
     def test_post(self):
-        resp = self.s.urlopen(HTTPBIN + 'post', 'POST', 'woo=woo')
+        resp = self.s.urlopen(HTTPBIN + 'post', 'POST', b'woo=woo')
         self.assertEqual(resp.response.code, 200)
         resp_json = json.loads(resp)
         self.assertEqual(resp_json['form']['woo'], 'woo')
@@ -329,7 +329,7 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(headers['url'], 'http://example.com')
 
     def test_ftp_uses_urllib2(self):
-        urlopen = mock.Mock(return_value=StringIO("ftp success!"))
+        urlopen = mock.Mock(return_value=BytesIO(b"ftp success!"))
 
         with mock.patch('scrapelib.urllib_urlopen', urlopen):
             r = self.s.urlopen('ftp://dummy/')
@@ -342,7 +342,7 @@ class ScraperTest(unittest.TestCase):
         # On the first call raise URLError, then work
         def side_effect(*args, **kwargs):
             if count:
-                return StringIO("ftp success!")
+                return BytesIO(b"ftp success!")
             count.append(1)
             raise scrapelib.urllib_URLError('550: ftp failure!')
 
