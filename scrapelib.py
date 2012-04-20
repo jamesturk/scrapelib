@@ -421,7 +421,7 @@ class Scraper(object):
                         method, method)
                 try:
                     resp = urllib_urlopen(url, timeout=self.timeout)
-                    return Response(url, url, code=None, fromcache=False,
+                    return Response(url, url, code=200, fromcache=False,
                                     protocol='ftp', headers={}), resp.read()
                 except urllib_URLError as e:
                     exception_raised = e

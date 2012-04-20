@@ -6,12 +6,13 @@ import time
 import socket
 import tempfile
 import unittest
-from StringIO import StringIO
 
 if sys.version_info[0] < 3:
     import robotparser
+    from StringIO import StringIO
 else:
     from urllib import robotparser
+    from io import StringIO
 
 import mock
 import httplib2
