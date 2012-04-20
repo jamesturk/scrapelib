@@ -6,6 +6,7 @@ import time
 import socket
 import tempfile
 import unittest
+from StringIO import StringIO
 
 if sys.version_info[0] < 3:
     import robotparser
@@ -394,10 +395,57 @@ class ScraperTest(unittest.TestCase):
         headers = s._make_headers('http://example.com')
         self.assertEqual(headers['url'], 'http://example.com')
 
+    def test_ftp_uses_urllib2(self):
+        urlopen = mock.Mock(return_value=StringIO("ftp success!"))
+
+        with mock.patch('scrapelib.urllib_urlopen', urlopen):
+            r = self.s.urlopen('ftp://dummy/')
+            assert r == "ftp success!"
+
+    def test_ftp_retries(self):
+        count = []
+
+        # On the first call raise URLError, then work
+        def side_effect(*args, **kwargs):
+            if count:
+                return StringIO("ftp success!")
+            count.append(1)
+            raise scrapelib.urllib_URLError('550: ftp failure!')
+
+        mock_urlopen = mock.Mock(side_effect=side_effect)
+
+        # retry on, retry_on_404 on (will retry due to 550 code)
+        with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
+            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                                  follow_robots=False)
+            r = s.urlopen('ftp://dummy/', retry_on_404=True)
+            assert r == "ftp success!"
+        self.assertEquals(mock_urlopen.call_count, 2)
+
+        # retry off, retry_on_404 on (shouldn't matter)
+        count = []
+        mock_urlopen.reset_mock()
+        with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
+            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001,
+                                  follow_robots=False)
+            self.assertRaises(scrapelib.urllib_URLError,
+                              s.urlopen, 'ftp://dummy/', retry_on_404=True)
+        self.assertEquals(mock_urlopen.call_count, 1)
+
+        # retry on, retry_on_404 off
+        count = []
+        mock_urlopen.reset_mock()
+        with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
+            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                                  follow_robots=False)
+            self.assertRaises(scrapelib.urllib_URLError,
+                              s.urlopen, 'ftp://dummy/')
+        self.assertEquals(mock_urlopen.call_count, 1)
+
     def test_ftp_method_restrictions(self):
         # only http(s) supports non-'GET' requests
         self.assertRaises(scrapelib.HTTPMethodUnavailableError,
-                          lambda: self.s.urlopen("ftp://google.com",
+                          lambda: self.s.urlopen("ftp://dummy/",
                                                  method='POST'))
 
 
