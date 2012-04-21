@@ -3,7 +3,6 @@ import sys
 import glob
 import json
 import time
-import socket
 import tempfile
 import unittest
 from io import BytesIO
