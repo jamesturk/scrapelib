@@ -154,9 +154,9 @@ class Scraper(object):
                  timeout=None,
                  retry_attempts=0,
                  retry_wait_seconds=5,
+                 follow_redirects=True,
                  # deprecated options
                  accept_cookies=None,
-                 follow_redirects=None,
                  cache_obj=None,
                  cache_dir=None,
                 ):
@@ -184,8 +184,6 @@ class Scraper(object):
 
         if accept_cookies:
             warnings.warn('accept_cookies is deprecated', DeprecationWarning)
-        if follow_redirects:
-            warnings.warn('follow_redirects is deprecated', DeprecationWarning)
         if cache_obj:
             warnings.warn('cache_obj is deprecated', DeprecationWarning)
         if cache_dir:
@@ -249,14 +247,6 @@ class Scraper(object):
             headers['accept-encoding'] = 'text/*'
 
         return headers
-
-    @property
-    def follow_redirects(self):
-        return self._session.allow_redirects
-
-    @follow_redirects.setter
-    def follow_redirects(self, value):
-        self._session.allow_redirects = value
 
     @property
     def requests_per_minute(self):
@@ -334,8 +324,9 @@ class Scraper(object):
 
             if url.startswith('http'):
                 try:
-                    resp = self._session.request(method, url, data=body,
-                                                 headers=headers)
+                    resp = self._session.request(method, url,
+                         data=body, headers=headers,
+                         allow_redirects=self.follow_redirects)
                     result = ResultStr(self, resp, url)
                     # break from loop on a success/redirect/404
                     if resp.status_code < 400 or (resp.status_code == 404
