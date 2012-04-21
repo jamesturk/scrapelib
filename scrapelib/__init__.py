@@ -110,7 +110,6 @@ class ResultStr(_str_type, ErrorManager):
         return self
 ResultUnicode = ResultStr
 
-
 class Scraper(object):
     """
     Scraper is the most important class provided by scrapelib (and generally

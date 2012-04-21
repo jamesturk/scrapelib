@@ -14,7 +14,9 @@ else:
 
 import mock
 import requests
-import scrapelib
+from .. import (Scraper, HTTPError, HTTPMethodUnavailableError,
+                RobotExclusionError, urllib_URLError)
+from .. import _user_agent as default_user_agent
 
 HTTPBIN = 'http://httpbin.org/'
 
@@ -37,19 +39,18 @@ class ScraperTest(unittest.TestCase):
     def _setup_cache(self):
         self.cache_dir = tempfile.mkdtemp()
         self.error_dir = tempfile.mkdtemp()
-        self.s = scrapelib.Scraper(requests_per_minute=0,
-                                   error_dir=self.error_dir,
-                                   cache_dir=self.cache_dir,
-                                   use_cache_first=True)
+        self.s = Scraper(requests_per_minute=0,
+                         error_dir=self.error_dir,
+                         cache_dir=self.cache_dir,
+                         use_cache_first=True)
 
 
     def setUp(self):
         self.cache_dir = tempfile.mkdtemp()
         self.error_dir = tempfile.mkdtemp()
-        self.s = scrapelib.Scraper(requests_per_minute=0,
-                                   error_dir=self.error_dir,
-                                   follow_robots=False
-                                  )
+        self.s = Scraper(requests_per_minute=0,
+                         error_dir=self.error_dir,
+                         follow_robots=False)
 
     def tearDown(self):
         if hasattr(self, 'cache_dir'):
@@ -62,7 +63,7 @@ class ScraperTest(unittest.TestCase):
 
     def test_constructor(self):
         # timeout=0 means None
-        s = scrapelib.Scraper(timeout=0)
+        s = Scraper(timeout=0)
         assert s.timeout is None
 
 
@@ -80,8 +81,8 @@ class ScraperTest(unittest.TestCase):
                          'application/x-www-form-urlencoded')
 
     def test_request_throttling(self):
-        s = scrapelib.Scraper(requests_per_minute=30, follow_robots=False,
-                              accept_cookies=False)
+        s = Scraper(requests_per_minute=30, follow_robots=False,
+                    accept_cookies=False)
         self.assertEqual(s.requests_per_minute, 30)
 
         mock_sleep = mock.Mock()
@@ -114,7 +115,7 @@ class ScraperTest(unittest.TestCase):
     def test_user_agent(self):
         resp = self.s.urlopen(HTTPBIN + 'user-agent')
         ua = json.loads(resp)['user-agent']
-        self.assertEqual(ua, scrapelib._user_agent)
+        self.assertEqual(ua, default_user_agent)
 
         self.s.user_agent = 'a different agent'
         resp = self.s.urlopen(HTTPBIN + 'user-agent')
@@ -136,7 +137,7 @@ class ScraperTest(unittest.TestCase):
             self.s._robot_parsers['http://dummy/robots.txt'] = parser
 
             # anything behind private fails
-            self.assertRaises(scrapelib.RobotExclusionError, self.s.urlopen,
+            self.assertRaises(RobotExclusionError, self.s.urlopen,
                               "http://dummy/private/secret.html")
             # but others work
             self.assertEqual(200,
@@ -158,7 +159,7 @@ class ScraperTest(unittest.TestCase):
             self.error_dir, "http:,,dummy,")))
 
     def test_404(self):
-        self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
+        self.assertRaises(HTTPError, self.s.urlopen,
                           HTTPBIN + 'status/404')
 
         self.s.raise_errors = False
@@ -166,7 +167,7 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(404, resp.response.code)
 
     def test_500(self):
-        self.assertRaises(scrapelib.HTTPError, self.s.urlopen,
+        self.assertRaises(HTTPError, self.s.urlopen,
                           HTTPBIN + 'status/500')
 
         self.s.raise_errors = False
@@ -221,8 +222,8 @@ class ScraperTest(unittest.TestCase):
     ## 3 times for 500 and once for 404
 
     def test_retry(self):
-        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.001,
-                              follow_robots=False, raise_errors=False)
+        s = Scraper(retry_attempts=3, retry_wait_seconds=0.001,
+                    follow_robots=False, raise_errors=False)
 
         # On the first call return a 500, then a 200
         mock_request = mock.Mock(side_effect=[
@@ -246,8 +247,8 @@ class ScraperTest(unittest.TestCase):
 
 
     def test_retry_404(self):
-        s = scrapelib.Scraper(retry_attempts=3, retry_wait_seconds=0.001,
-                              follow_robots=False, raise_errors=False)
+        s = Scraper(retry_attempts=3, retry_wait_seconds=0.001,
+                    follow_robots=False, raise_errors=False)
 
         # On the first call return a 404, then a 200
         mock_request = mock.Mock(side_effect=[
@@ -290,8 +291,8 @@ class ScraperTest(unittest.TestCase):
 
         mock_request = mock.Mock(side_effect=side_effect)
 
-        s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001,
-                              follow_robots=False)
+        s = Scraper(retry_attempts=0, retry_wait_seconds=0.001,
+                    follow_robots=False)
 
         with mock.patch.object(s._session, 'request', mock_request):
             # first, try without retries
@@ -303,8 +304,8 @@ class ScraperTest(unittest.TestCase):
         # reset and try again with retries
         mock_request.reset_mock()
         count = []
-        s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
-                              follow_robots=False)
+        s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                    follow_robots=False)
         with mock.patch.object(s._session, 'request', mock_request):
             resp = s.urlopen("http://dummy/")
             # get the result, take two tries
@@ -312,7 +313,7 @@ class ScraperTest(unittest.TestCase):
             self.assertEqual(mock_request.call_count, 2)
 
     def test_disable_compression(self):
-        s = scrapelib.Scraper(disable_compression=True)
+        s = Scraper(disable_compression=True)
 
         headers = s._make_headers("http://dummy/")
         self.assertEqual(headers['accept-encoding'], 'text/*')
@@ -324,7 +325,7 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(headers['accept-encoding'], '*')
 
     def test_callable_headers(self):
-        s = scrapelib.Scraper(headers=lambda url: {'url': url})
+        s = Scraper(headers=lambda url: {'url': url})
 
         headers = s._make_headers('http://google.com')
         self.assertEqual(headers['url'], 'http://google.com')
@@ -349,14 +350,14 @@ class ScraperTest(unittest.TestCase):
             if count:
                 return BytesIO(b"ftp success!")
             count.append(1)
-            raise scrapelib.urllib_URLError('550: ftp failure!')
+            raise urllib_URLError('550: ftp failure!')
 
         mock_urlopen = mock.Mock(side_effect=side_effect)
 
         # retry on, retry_on_404 on (will retry due to 550 code)
         with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
-            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
-                                  follow_robots=False)
+            s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                        follow_robots=False)
             r = s.urlopen('ftp://dummy/', retry_on_404=True)
             assert r == "ftp success!"
         self.assertEquals(mock_urlopen.call_count, 2)
@@ -365,9 +366,9 @@ class ScraperTest(unittest.TestCase):
         count = []
         mock_urlopen.reset_mock()
         with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
-            s = scrapelib.Scraper(retry_attempts=0, retry_wait_seconds=0.001,
-                                  follow_robots=False)
-            self.assertRaises(scrapelib.urllib_URLError,
+            s = Scraper(retry_attempts=0, retry_wait_seconds=0.001,
+                        follow_robots=False)
+            self.assertRaises(urllib_URLError,
                               s.urlopen, 'ftp://dummy/', retry_on_404=True)
         self.assertEquals(mock_urlopen.call_count, 1)
 
@@ -375,15 +376,15 @@ class ScraperTest(unittest.TestCase):
         count = []
         mock_urlopen.reset_mock()
         with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
-            s = scrapelib.Scraper(retry_attempts=2, retry_wait_seconds=0.001,
-                                  follow_robots=False)
-            self.assertRaises(scrapelib.urllib_URLError,
+            s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
+                        follow_robots=False)
+            self.assertRaises(urllib_URLError,
                               s.urlopen, 'ftp://dummy/')
         self.assertEquals(mock_urlopen.call_count, 1)
 
     def test_ftp_method_restrictions(self):
         # only http(s) supports non-'GET' requests
-        self.assertRaises(scrapelib.HTTPMethodUnavailableError,
+        self.assertRaises(HTTPMethodUnavailableError,
                           lambda: self.s.urlopen("ftp://dummy/",
                                                  method='POST'))
 
