@@ -1,10 +1,11 @@
 """
-    module includes some basic caching support for requests
+    module providing caching support for requests
 
-    use CachingSession in place of requests.Session
+    use CachingSession in place of requests.Session to take advantage
 """
 import re
 import os
+import glob
 import hashlib
 import requests
 
@@ -20,14 +21,16 @@ class CachingSession(requests.Session):
                  config=None,
                  prefetch=False,
                  verify=True,
-                 cert=None):
+                 cert=None,
+                 cache_storage=None,
+                ):
         super(CachingSession, self).__init__(headers, cookies, auth, timeout,
                                              proxies, hooks, params, config,
                                              prefetch, verify, cert)
-        self.cache = MemoryCache()
+        self.cache_storage = cache_storage
 
 
-    def request_to_key(self, method, url, **kwargs):
+    def key_for_request(self, method, url, **kwargs):
         """ Return a cache key from a given set of request parameters.
 
             Default behavior is to return a complete URL for all GET
@@ -41,7 +44,6 @@ class CachingSession(requests.Session):
         return requests.Request(url=url,
                                 params=kwargs.get('params', {})).full_url
 
-
     def should_cache_response(self, response):
         """ Check if a given Response object should be cached.
 
@@ -53,15 +55,22 @@ class CachingSession(requests.Session):
     def request(self, method, url, **kwargs):
         """ Override, wraps Session.request in caching.
 
-            Cache is only used if request_to_key returns a valid key
+            Cache is only used if key_for_request returns a valid key
             and should_cache_response was true as well.
         """
-        resp = None
+        # short circuit if cache isn't configured
+        if not self.cache_storage:
+            resp = super(CachingSession, self).request(method, url, **kwargs)
+            resp.fromcache = False
+            return resp
 
-        request_key = self.request_to_key(method, url, **kwargs)
+        resp = None
+        method = method.lower()
+
+        request_key = self.key_for_request(method, url, **kwargs)
 
         if request_key:
-            resp = self.cache.get(request_key)
+            resp = self.cache_storage.get(request_key)
 
         if resp:
             resp.fromcache = True
@@ -69,7 +78,8 @@ class CachingSession(requests.Session):
             resp = super(CachingSession, self).request(method, url, **kwargs)
             # save to cache if request and response meet criteria
             if request_key and self.should_cache_response(resp):
-                self.cache.set(request_key, resp)
+                self.cache_storage.set(request_key, resp)
+            resp.fromcache = False
 
         return resp
 
@@ -79,7 +89,7 @@ class MemoryCache(object):
         self.cache = {}
 
     def get(self, key):
-        return self.cache.get(url, None)
+        return self.cache.get(key, None)
 
     def set(self, key, response):
         self.cache[key] = response
@@ -100,7 +110,10 @@ class FileCache(object):
         return ','.join((key[:self._maxlen], md5))
 
     def __init__(self, cache_dir):
-        self.cache_dir = cache_dir
+        # normalize path
+        self.cache_dir = os.path.join(os.getcwd(), cache_dir)
+        # create directory
+        os.path.isdir(self.cache_dir) or os.makedirs(self.cache_dir)
 
     def get(self, orig_key):
         resp = requests.Response()
@@ -144,3 +157,9 @@ class FileCache(object):
             # one blank line
             f.write(b'\n')
             f.write(response.content)
+
+    def clear(self):
+        # only delete things that end w/ a md5, less dangerous this way
+        cache_glob = '*,' + '[0-9a-f]'*32
+        for fname in glob.glob(os.path.join(self.cache_dir, cache_glob)):
+            os.remove(fname)
