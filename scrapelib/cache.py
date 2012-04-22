@@ -133,7 +133,7 @@ class FileCache(object):
                     else:
                         break
                 # skip a line, everything after that is good
-                resp._content = '\n'.join(lines[num + 1:])
+                resp._content = ('\n'.join(lines[num + 1:])).encode('utf8')
 
             # status will be in headers but isn't a real header
             resp.status_code = int(resp.headers.pop('status'))
