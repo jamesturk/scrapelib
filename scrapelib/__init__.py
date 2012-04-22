@@ -8,7 +8,7 @@ import time
 import warnings
 
 import requests
-from .cache import CachingSession
+from .cache import CachingSession, FileCache
 
 # for backwards-compatibility w/ scrapelib <= 0.6
 Headers = requests.structures.CaseInsensitiveDict
@@ -98,17 +98,16 @@ class ResultStr(_str_type, ErrorManager):
     to get body of response, additional headers, etc. available via
     ``response`` attribute.
     """
-    def __new__(cls, scraper, response, requested_url, fromcache=False):
+    def __new__(cls, scraper, response, requested_url):
         self = _str_type.__new__(cls, response.text)
         self._scraper = scraper
         self.bytes = response.content
         self.encoding = response.encoding
         self.response = response
         # augment self.response
-        #   manually set: requested_url, fromcache
+        #   manually set: requested_url
         #   aliases: code -> status_code
         self.response.requested_url = requested_url
-        self.response.fromcache = fromcache
         self.response.code = self.response.status_code
         return self
 
@@ -131,8 +130,6 @@ class Scraper(object):
     :param error_dir: if not None, store scraped documents for which
         an error was encountered.  (TODO: document with blocks)
     :param disable_compression: set to True to not accept compressed content
-    :param use_cache_first: set to True to always make an attempt to use cached
-        data, before even making a HEAD request to check if content is stale
     :param raise_errors: set to True to raise a :class:`HTTPError`
         on 4xx or 5xx response
     :param timeout: socket timeout in seconds (default: None)
@@ -148,7 +145,6 @@ class Scraper(object):
                  follow_robots=True,
                  error_dir=None,
                  disable_compression=False,
-                 use_cache_first=False,
                  raise_errors=True,
                  timeout=None,
                  retry_attempts=0,
@@ -156,6 +152,7 @@ class Scraper(object):
                  follow_redirects=True,
                  cache_obj=None,
                  # deprecated options
+                 use_cache_first=None,
                  accept_cookies=None,
                  cache_dir=None,
                 ):
@@ -182,14 +179,21 @@ class Scraper(object):
             self.save_errors = False
 
         if accept_cookies:
-            warnings.warn('accept_cookies is deprecated', DeprecationWarning)
-        if cache_dir:
-            warnings.warn('cache_dir is deprecated', DeprecationWarning)
+            warnings.warn('accept_cookies is a no-op as of scrapelib 0.7',
+                          DeprecationWarning)
+        if use_cache_first:
+            warnings.warn('use_cache_first is a no-op as of scrapelib 0.7',
+                          DeprecationWarning)
 
         self.disable_compression = disable_compression
-
-        self.use_cache_first = use_cache_first
         self.raise_errors = raise_errors
+
+        if cache_dir:
+            warnings.warn('cache_dir is deprecated', DeprecationWarning)
+            if cache_obj:
+                raise ValueError('cannot specify cache_obj and cache_dir')
+            else:
+                cache_obj = FileCache(cache_dir)
 
         self._session = CachingSession(timeout=timeout,
                                        cache_storage=cache_obj)
@@ -260,8 +264,7 @@ class Scraper(object):
             self._request_frequency = 0.0
             self._last_request = 0
 
-    def urlopen(self, url, method='GET', body=None, retry_on_404=False,
-                use_cache_first=None):
+    def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
             Make an HTTP request and return a :class:`ResultStr` object.
 
@@ -276,17 +279,8 @@ class Scraper(object):
                 encountered, this should only be used on pages known to exist
                 if retries are not enabled this parameter does nothing
                 (default: False)
-            :param use_cache_first: set to True to make an attempt to use
-                cached data, before even making a HEAD request to check if
-                content is stale (overrides self.use_cache_first)
-
         """
-        # allow overriding self.use_cache_first
-        if use_cache_first is None:
-            use_cache_first = self.use_cache_first
-
-        # don't throttle use_cache_first requests
-        if self._throttled and not use_cache_first:
+        if self._throttled:
             self._throttle()
 
         method = method.upper()

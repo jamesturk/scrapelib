@@ -17,6 +17,7 @@ import requests
 from .. import (Scraper, HTTPError, HTTPMethodUnavailableError,
                 RobotExclusionError, urllib_URLError)
 from .. import _user_agent as default_user_agent
+from ..cache import FileCache
 
 HTTPBIN = 'http://httpbin.org/'
 
@@ -36,17 +37,7 @@ mock_200 = mock.Mock(wraps=request_200)
 
 class ScraperTest(unittest.TestCase):
 
-    def _setup_cache(self):
-        self.cache_dir = tempfile.mkdtemp()
-        self.error_dir = tempfile.mkdtemp()
-        self.s = Scraper(requests_per_minute=0,
-                         error_dir=self.error_dir,
-                         cache_dir=self.cache_dir,
-                         use_cache_first=True)
-
-
     def setUp(self):
-        self.cache_dir = tempfile.mkdtemp()
         self.error_dir = tempfile.mkdtemp()
         self.s = Scraper(requests_per_minute=0,
                          error_dir=self.error_dir,
@@ -189,17 +180,16 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(302, resp.response.code)
 
-    #def test_caching(self):
-    #    self._setup_cache()
+    def test_caching(self):
+        self.cache_dir = tempfile.mkdtemp()
+        s = Scraper(requests_per_minute=0,
+                    cache_obj=FileCache(self.cache_dir))
 
-    #    resp = self.s.urlopen(HTTPBIN + 'status/200')
-    #    self.assertFalse(resp.response.fromcache)
-    #    resp = self.s.urlopen(HTTPBIN + 'status/200')
-    #    self.assertTrue(resp.response.fromcache)
+        resp = s.urlopen(HTTPBIN + 'status/200')
+        self.assertFalse(resp.response.fromcache)
+        resp = s.urlopen(HTTPBIN + 'status/200')
+        self.assertTrue(resp.response.fromcache)
 
-    #    self.s.use_cache_first = False
-    #    resp = self.s.urlopen(HTTPBIN + 'status/200')
-    #    self.assertFalse(resp.response.fromcache)
 
     def test_urlretrieve(self):
         with mock.patch.object(self.s._session, 'request', mock_200):
