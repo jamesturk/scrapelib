@@ -1,4 +1,4 @@
-from nose.tools import assert_equal, assert_in, assert_is_none
+from nose.tools import assert_equal, assert_true, assert_is_none
 
 import requests
 from ..cache import CachingSession, MemoryCache, FileCache
@@ -52,7 +52,7 @@ def test_simple_cache_request():
     resp = cs.request('get', url)
     assert_equal(resp.fromcache, False)
 
-    assert_in(url, cs.cache_storage.cache)
+    assert_true(url in cs.cache_storage.cache)
 
     # second response comes from cache
     cached_resp = cs.request('get', url)
