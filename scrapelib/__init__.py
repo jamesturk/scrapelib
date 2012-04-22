@@ -178,17 +178,17 @@ class Scraper(object):
         else:
             self.save_errors = False
 
-        if accept_cookies:
-            warnings.warn('accept_cookies is a no-op as of scrapelib 0.7',
-                          DeprecationWarning)
-        if use_cache_first:
-            warnings.warn('use_cache_first is a no-op as of scrapelib 0.7',
-                          DeprecationWarning)
-
         self.disable_compression = disable_compression
         self.raise_errors = raise_errors
 
-        if cache_dir:
+        # deprecations from 0.7, remove in 0.8
+        if accept_cookies:          # pragma: no cover
+            warnings.warn('accept_cookies is a no-op as of scrapelib 0.7',
+                          DeprecationWarning)
+        if use_cache_first:         # pragma: no cover
+            warnings.warn('use_cache_first is a no-op as of scrapelib 0.7',
+                          DeprecationWarning)
+        if cache_dir:               # pragma: no cover
             warnings.warn('cache_dir is deprecated', DeprecationWarning)
             if cache_obj:
                 raise ValueError('cannot specify cache_obj and cache_dir')

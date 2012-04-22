@@ -37,34 +37,20 @@ mock_200 = mock.Mock(wraps=request_200)
 
 class ScraperTest(unittest.TestCase):
 
-    def setUp(self):
-        self.error_dir = tempfile.mkdtemp()
-        self.s = Scraper(requests_per_minute=0,
-                         error_dir=self.error_dir,
-                         follow_robots=False)
-
-    def tearDown(self):
-        if hasattr(self, 'cache_dir'):
-            for path in glob.iglob(os.path.join(self.cache_dir, "*")):
-                os.remove(path)
-            os.rmdir(self.cache_dir)
-        for path in glob.iglob(os.path.join(self.error_dir, "*")):
-            os.remove(path)
-        os.rmdir(self.error_dir)
-
     def test_constructor(self):
         # timeout=0 means None
         s = Scraper(timeout=0)
         assert s.timeout is None
 
-
     def test_get(self):
-        resp = self.s.urlopen(HTTPBIN + 'get?woo=woo')
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+        resp = s.urlopen(HTTPBIN + 'get?woo=woo')
         self.assertEqual(resp.response.code, 200)
         self.assertEqual(json.loads(resp)['args']['woo'], 'woo')
 
     def test_post(self):
-        resp = self.s.urlopen(HTTPBIN + 'post', 'POST', b'woo=woo')
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+        resp = s.urlopen(HTTPBIN + 'post', 'POST', b'woo=woo')
         self.assertEqual(resp.response.code, 200)
         resp_json = json.loads(resp)
         self.assertEqual(resp_json['form']['woo'], 'woo')
@@ -104,104 +90,137 @@ class ScraperTest(unittest.TestCase):
                 self.assertTrue(mock_200.call_count == 3)
 
     def test_user_agent(self):
-        resp = self.s.urlopen(HTTPBIN + 'user-agent')
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+        resp = s.urlopen(HTTPBIN + 'user-agent')
         ua = json.loads(resp)['user-agent']
         self.assertEqual(ua, default_user_agent)
 
-        self.s.user_agent = 'a different agent'
-        resp = self.s.urlopen(HTTPBIN + 'user-agent')
+        s.user_agent = 'a different agent'
+        resp = s.urlopen(HTTPBIN + 'user-agent')
         ua = json.loads(resp)['user-agent']
         self.assertEqual(ua, 'a different agent')
 
     def test_default_to_http(self):
-        with mock.patch.object(self.s._session, 'request', mock_200):
-            self.assertEqual('http://dummy/',
-                             self.s.urlopen("dummy/").response.url)
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+        with mock.patch.object(s._session, 'request', mock_200):
+            self.assertEqual('http://dummy/', s.urlopen("dummy/").response.url)
 
     def test_follow_robots(self):
-        self.s.follow_robots = True
+        s = Scraper(requests_per_minute=0, follow_robots=True)
 
-        with mock.patch.object(self.s._session, 'request', mock_200):
+        with mock.patch.object(s._session, 'request', mock_200):
+            # check that a robots.txt is created
+            s.urlopen(HTTPBIN)
+            assert HTTPBIN + 'robots.txt' in s._robot_parsers
+
             # set a fake robots.txt for http://dummy
             parser = robotparser.RobotFileParser()
             parser.parse(['User-agent: *', 'Disallow: /private/', 'Allow: /'])
-            self.s._robot_parsers['http://dummy/robots.txt'] = parser
+            s._robot_parsers['http://dummy/robots.txt'] = parser
 
             # anything behind private fails
-            self.assertRaises(RobotExclusionError, self.s.urlopen,
+            self.assertRaises(RobotExclusionError, s.urlopen,
                               "http://dummy/private/secret.html")
             # but others work
-            self.assertEqual(200,
-                             self.s.urlopen("http://dummy/").response.code)
+            self.assertEqual(200, s.urlopen("http://dummy/").response.code)
 
             # turn off follow_robots, everything works
-            self.s.follow_robots = False
+            s.follow_robots = False
             self.assertEqual(200,
-            self.s.urlopen("http://dummy/private/secret.html").response.code)
+                s.urlopen("http://dummy/private/secret.html").response.code)
 
     def test_error_context(self):
-        with mock.patch.object(self.s._session, 'request', mock_200):
+        # create error dir
+        error_dir = tempfile.mkdtemp()
+        s = Scraper(requests_per_minute=0, follow_robots=False,
+                    error_dir=error_dir)
+
+        with mock.patch.object(s._session, 'request', mock_200):
             def raises():
-                with self.s.urlopen("http://dummy/"):
+                with s.urlopen("http://dummy/"):
                     raise Exception('test')
+
+            # try a file name collision
+            try:
+                with s.urlopen('http://dummy/'):
+                    raise Exception('test 2')
+            except:
+                pass
 
             self.assertRaises(Exception, raises)
         self.assertTrue(os.path.isfile(os.path.join(
-            self.error_dir, "http:,,dummy,")))
+            error_dir, "http:,,dummy,")))
+        self.assertTrue(os.path.isfile(os.path.join(
+            error_dir, "http:,,dummy,-1")))
+
+        # tear down error dir
+        for path in glob.iglob(os.path.join(error_dir, "*")):
+            os.remove(path)
+        os.rmdir(error_dir)
 
     def test_404(self):
-        self.assertRaises(HTTPError, self.s.urlopen,
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+        self.assertRaises(HTTPError, s.urlopen,
                           HTTPBIN + 'status/404')
 
-        self.s.raise_errors = False
-        resp = self.s.urlopen(HTTPBIN + 'status/404')
+        s.raise_errors = False
+        resp = s.urlopen(HTTPBIN + 'status/404')
         self.assertEqual(404, resp.response.code)
 
     def test_500(self):
-        self.assertRaises(HTTPError, self.s.urlopen,
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+
+        self.assertRaises(HTTPError, s.urlopen,
                           HTTPBIN + 'status/500')
 
-        self.s.raise_errors = False
-        resp = self.s.urlopen(HTTPBIN + 'status/500')
+        s.raise_errors = False
+        resp = s.urlopen(HTTPBIN + 'status/500')
         self.assertEqual(500, resp.response.code)
 
     def test_follow_redirect(self):
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+
         redirect_url = HTTPBIN + 'redirect/1'
         final_url = HTTPBIN + 'get'
 
-        resp = self.s.urlopen(redirect_url)
+        resp = s.urlopen(redirect_url)
         self.assertEqual(final_url, resp.response.url)
         self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(200, resp.response.code)
 
-        self.s.follow_redirects = False
-        resp = self.s.urlopen(redirect_url)
+        s.follow_redirects = False
+        resp = s.urlopen(redirect_url)
         self.assertEqual(redirect_url, resp.response.url)
         self.assertEqual(redirect_url, resp.response.requested_url)
         self.assertEqual(302, resp.response.code)
 
     def test_caching(self):
-        self.cache_dir = tempfile.mkdtemp()
-        s = Scraper(requests_per_minute=0,
-                    cache_obj=FileCache(self.cache_dir))
+        cache_dir = tempfile.mkdtemp()
+        s = Scraper(requests_per_minute=0, follow_robots=False,
+                    cache_obj=FileCache(cache_dir))
 
         resp = s.urlopen(HTTPBIN + 'status/200')
         self.assertFalse(resp.response.fromcache)
         resp = s.urlopen(HTTPBIN + 'status/200')
         self.assertTrue(resp.response.fromcache)
 
+        for path in glob.iglob(os.path.join(cache_dir, "*")):
+            os.remove(path)
+        os.rmdir(cache_dir)
+
 
     def test_urlretrieve(self):
-        with mock.patch.object(self.s._session, 'request', mock_200):
-            fname, resp = self.s.urlretrieve("http://dummy/")
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+
+        with mock.patch.object(s._session, 'request', mock_200):
+            fname, resp = s.urlretrieve("http://dummy/")
             with open(fname) as f:
                 self.assertEqual(f.read(), 'ok')
                 self.assertEqual(200, resp.code)
             os.remove(fname)
 
             (fh, set_fname) = tempfile.mkstemp()
-            fname, resp = self.s.urlretrieve("http://dummy/",
-                                             set_fname)
+            fname, resp = s.urlretrieve("http://dummy/", set_fname)
             self.assertEqual(fname, set_fname)
             with open(set_fname) as f:
                 self.assertEqual(f.read(), 'ok')
@@ -325,10 +344,11 @@ class ScraperTest(unittest.TestCase):
         self.assertEqual(headers['url'], 'http://example.com')
 
     def test_ftp_uses_urllib2(self):
+        s = Scraper(requests_per_minute=0, follow_robots=False)
         urlopen = mock.Mock(return_value=BytesIO(b"ftp success!"))
 
         with mock.patch('scrapelib.urllib_urlopen', urlopen):
-            r = self.s.urlopen('ftp://dummy/')
+            r = s.urlopen('ftp://dummy/')
             assert r.response.code == 200
             assert r == "ftp success!"
 
@@ -373,10 +393,11 @@ class ScraperTest(unittest.TestCase):
         self.assertEquals(mock_urlopen.call_count, 1)
 
     def test_ftp_method_restrictions(self):
+        s = Scraper(requests_per_minute=0, follow_robots=False)
+
         # only http(s) supports non-'GET' requests
         self.assertRaises(HTTPMethodUnavailableError,
-                          lambda: self.s.urlopen("ftp://dummy/",
-                                                 method='POST'))
+                          lambda: s.urlopen("ftp://dummy/", method='POST'))
 
 
 if __name__ == '__main__':
