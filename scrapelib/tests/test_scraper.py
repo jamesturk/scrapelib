@@ -124,8 +124,8 @@ def test_follow_robots():
         s._robot_parsers['http://dummy/robots.txt'] = parser
 
         # anything behind private fails
-        with assert_raises(RobotExclusionError):
-            s.urlopen("http://dummy/private/secret.html")
+        assert_raises(RobotExclusionError, s.urlopen,
+                      "http://dummy/private/secret.html")
         # but others work
         assert_equal(200, s.urlopen("http://dummy/").response.code)
 
@@ -165,8 +165,7 @@ def test_error_context():
 
 def test_404():
     s = Scraper(requests_per_minute=0, follow_robots=False)
-    with assert_raises(HTTPError):
-        s.urlopen(HTTPBIN + 'status/404')
+    assert_raises(HTTPError, s.urlopen, HTTPBIN + 'status/404')
 
     s.raise_errors = False
     resp = s.urlopen(HTTPBIN + 'status/404')
@@ -176,8 +175,7 @@ def test_404():
 def test_500():
     s = Scraper(requests_per_minute=0, follow_robots=False)
 
-    with assert_raises(HTTPError):
-        s.urlopen(HTTPBIN + 'status/500')
+    assert_raises(HTTPError, s.urlopen, HTTPBIN + 'status/500')
 
     s.raise_errors = False
     resp = s.urlopen(HTTPBIN + 'status/500')
@@ -312,8 +310,7 @@ def test_timeout_retry():
     with mock.patch.object(s._session, 'request', mock_request):
         # first, try without retries
         # try only once, get the error
-        with assert_raises(requests.Timeout):
-            s.urlopen("http://dummy/")
+        assert_raises(requests.Timeout, s.urlopen, "http://dummy/")
         assert_equal(mock_request.call_count, 1)
 
     # reset and try again with retries
@@ -388,8 +385,8 @@ def test_ftp_retries():
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=0, retry_wait_seconds=0.001,
                     follow_robots=False)
-        with assert_raises(urllib_URLError):
-            s.urlopen('ftp://dummy/', retry_on_404=True)
+        assert_raises(urllib_URLError, s.urlopen, 'ftp://dummy/',
+                      retry_on_404=True)
     assert_equal(mock_urlopen.call_count, 1)
 
     # retry on, retry_on_404 off
@@ -398,8 +395,7 @@ def test_ftp_retries():
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
                     follow_robots=False)
-        with assert_raises(urllib_URLError):
-            s.urlopen('ftp://dummy/')
+        assert_raises(urllib_URLError, s.urlopen, 'ftp://dummy/')
     assert_equal(mock_urlopen.call_count, 1)
 
 
@@ -407,5 +403,5 @@ def test_ftp_method_restrictions():
     s = Scraper(requests_per_minute=0, follow_robots=False)
 
     # only http(s) supports non-'GET' requests
-    with assert_raises(HTTPMethodUnavailableError):
-        s.urlopen("ftp://dummy/", method='POST')
+    assert_raises(HTTPMethodUnavailableError, s.urlopen, "ftp://dummy/",
+                  method='POST')
