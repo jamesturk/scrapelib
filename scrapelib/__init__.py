@@ -8,6 +8,9 @@ import time
 import warnings
 
 import requests
+from .cache import CachingSession
+
+# for backwards-compatibility w/ scrapelib <= 0.6
 Headers = requests.structures.CaseInsensitiveDict
 
 if sys.version_info[0] < 3:         # pragma: no cover
@@ -108,7 +111,7 @@ class ResultStr(_str_type, ErrorManager):
         self.response.fromcache = fromcache
         self.response.code = self.response.status_code
         return self
-ResultUnicode = ResultStr
+
 
 class Scraper(object):
     """
@@ -122,8 +125,6 @@ class Scraper(object):
 
     :param user_agent: the value to send as a User-Agent header on
         HTTP requests (default is "scrapelib |release|")
-    :param cache_dir: if not None, http caching will be enabled with
-        cached pages stored under the supplied path
     :param requests_per_minute: maximum requests per minute (0 for
         unlimited, defaults to 60)
     :param follow_robots: respect robots.txt files (default: True)
@@ -153,9 +154,9 @@ class Scraper(object):
                  retry_attempts=0,
                  retry_wait_seconds=5,
                  follow_redirects=True,
+                 cache_obj=None,
                  # deprecated options
                  accept_cookies=None,
-                 cache_obj=None,
                  cache_dir=None,
                 ):
         self.headers = headers or {}
@@ -182,20 +183,16 @@ class Scraper(object):
 
         if accept_cookies:
             warnings.warn('accept_cookies is deprecated', DeprecationWarning)
-        if cache_obj:
-            warnings.warn('cache_obj is deprecated', DeprecationWarning)
         if cache_dir:
-            warnings.warn('cache_obj is deprecated', DeprecationWarning)
+            warnings.warn('cache_dir is deprecated', DeprecationWarning)
 
         self.disable_compression = disable_compression
 
         self.use_cache_first = use_cache_first
         self.raise_errors = raise_errors
 
-        self._cache_obj = cache_dir
-        if cache_obj:
-            self._cache_obj = cache_obj
-        self._session = requests.Session(timeout=timeout)
+        self._session = CachingSession(timeout=timeout,
+                                       cache_storage=cache_obj)
 
         self.follow_redirects = follow_redirects
         self.user_agent = user_agent
