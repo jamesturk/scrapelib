@@ -104,7 +104,7 @@ class FileCache(object):
 
     def _clean_key(self, key):
         # strip scheme
-        md5 = hashlib.md5(key).hexdigest()
+        md5 = hashlib.md5(key.encode('utf8')).hexdigest()
         key = self._prefix.sub('', key)
         key = self._illegal.sub(',', key)
         return ','.join((key[:self._maxlen], md5))
@@ -147,8 +147,9 @@ class FileCache(object):
         path = os.path.join(self.cache_dir, key)
 
         with open(path, 'wb') as f:
-            f.write('status: {0}\n'.format(response.status_code))
-            for h, v in response.headers.iteritems():
+            status_str = 'status: {0}\n'.format(response.status_code)
+            f.write(status_str.encode('utf8'))
+            for h, v in response.headers.items():
                 # header: value\n
                 f.write(h.encode('utf8'))
                 f.write(b': ')

@@ -70,7 +70,7 @@ def _test_cache_storage(storage_obj):
     resp = requests.Response()
     resp.headers['x-num'] = 'one'
     resp.status_code = 200
-    resp._content = 'content is king'
+    resp._content = b'content is king'
     storage_obj.set('one', resp)
     cached_resp = storage_obj.get('one')
     assert_equal(resp.headers, {'x-num': 'one'})
