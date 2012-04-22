@@ -9,6 +9,7 @@ import glob
 import hashlib
 import requests
 
+
 class CachingSession(requests.Session):
     def __init__(self,
                  headers=None,
@@ -28,7 +29,6 @@ class CachingSession(requests.Session):
                                              proxies, hooks, params, config,
                                              prefetch, verify, cert)
         self.cache_storage = cache_storage
-
 
     def key_for_request(self, method, url, **kwargs):
         """ Return a cache key from a given set of request parameters.
@@ -128,11 +128,12 @@ class FileCache(object):
                     # set headers
                     header = self._header_re.match(line)
                     if header:
-                        resp.headers[header.group(1)] = header.group(2).strip('\r')
+                        resp.headers[header.group(1)] = \
+                                header.group(2).strip('\r')
                     else:
                         break
                 # skip a line, everything after that is good
-                resp._content = '\n'.join(lines[num+1:])
+                resp._content = '\n'.join(lines[num + 1:])
 
             # status will be in headers but isn't a real header
             resp.status_code = int(resp.headers.pop('status'))
@@ -161,6 +162,6 @@ class FileCache(object):
 
     def clear(self):
         # only delete things that end w/ a md5, less dangerous this way
-        cache_glob = '*,' + '[0-9a-f]'*32
+        cache_glob = '*,' + ('[0-9a-f]' * 32)
         for fname in glob.glob(os.path.join(self.cache_dir, cache_glob)):
             os.remove(fname)

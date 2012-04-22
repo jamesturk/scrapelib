@@ -6,6 +6,7 @@ from ..cache import CachingSession, MemoryCache, FileCache
 DUMMY_URL = 'http://dummy/'
 HTTPBIN = 'http://httpbin.org/'
 
+
 def test_default_key_for_request():
     cs = CachingSession()
 
@@ -16,12 +17,12 @@ def test_default_key_for_request():
     # simple get method
     assert_equal(cs.key_for_request('get', DUMMY_URL), DUMMY_URL)
     # now with params
-    assert_equal(cs.key_for_request('get', DUMMY_URL, params={'foo':'bar'}),
-                 DUMMY_URL+'?foo=bar')
+    assert_equal(cs.key_for_request('get', DUMMY_URL, params={'foo': 'bar'}),
+                 DUMMY_URL + '?foo=bar')
     # params in both places
-    assert_equal(cs.key_for_request('get', DUMMY_URL+'?abc=def',
-                                    params={'foo':'bar'}),
-                 DUMMY_URL+'?abc=def&foo=bar')
+    assert_equal(cs.key_for_request('get', DUMMY_URL + '?abc=def',
+                                    params={'foo': 'bar'}),
+                 DUMMY_URL + '?abc=def&foo=bar')
 
 
 def test_default_should_cache_response():
@@ -73,9 +74,9 @@ def _test_cache_storage(storage_obj):
     resp._content = b'content is king'
     storage_obj.set('one', resp)
     cached_resp = storage_obj.get('one')
-    assert_equal(resp.headers, {'x-num': 'one'})
-    assert_equal(resp.status_code, 200)
-    assert_equal(resp.text, 'content is king')
+    assert_equal(cached_resp.headers, {'x-num': 'one'})
+    assert_equal(cached_resp.status_code, 200)
+    assert_equal(cached_resp.text, 'content is king')
 
 
 def test_memory_cache():
