@@ -1,4 +1,4 @@
-from nose.tools import assert_equal, assert_true, assert_is_none
+from nose.tools import assert_equal, assert_true
 
 import requests
 from ..cache import CachingSession, MemoryCache, FileCache
@@ -64,7 +64,7 @@ def test_simple_cache_request():
 
 def _test_cache_storage(storage_obj):
     # unknown key returns None
-    assert_is_none(storage_obj.get('one'))
+    assert_equal(storage_obj.get('one') is None)
 
     # set 'one'
     resp = requests.Response()
