@@ -69,7 +69,7 @@ class CachingSession(requests.Session):
             resp = super(CachingSession, self).request(method, url, **kwargs)
             # save to cache if request and response meet criteria
             if request_key and self.should_cache_response(resp):
-                self.cache.set(method, url, resp)
+                self.cache.set(request_key, resp)
 
         return resp
 
@@ -108,23 +108,39 @@ class FileCache(object):
         key = self._clean_key(orig_key)
         path = os.path.join(self.cache_dir, key)
 
-        with open(path) as f:
-            lines = f.readlines()
-            for num, line in enumerate(lines):
-                # set headers
-                header = self._header_re.match(line)
-                if header:
-                    resp.headers[header.group(1)] = header.group(2).strip('\r')
-                else:
-                    break
-            # skip a line, everything after that is good
-            resp._content = '\n'.join(lines[num+1:])
+        try:
+            with open(path) as f:
+                lines = f.readlines()
+                for num, line in enumerate(lines):
+                    # set headers
+                    header = self._header_re.match(line)
+                    if header:
+                        resp.headers[header.group(1)] = header.group(2).strip('\r')
+                    else:
+                        break
+                # skip a line, everything after that is good
+                resp._content = '\n'.join(lines[num+1:])
 
-        resp.status_code = int(headers['status'])
-        resp.url = headers['content-location'] or orig_key
-        #TODO: resp.request = request
-        return resp
+            # status will be in headers but isn't a real header
+            resp.status_code = int(resp.headers.pop('status'))
+            resp.url = resp.headers['content-location'] or orig_key
+            #TODO: resp.request = request
+            return resp
+        except IOError:
+            return None
 
     def set(self, key, response):
-        if method == 'get':
-            self.cache[key] = response
+        key = self._clean_key(key)
+        path = os.path.join(self.cache_dir, key)
+
+        with open(path, 'wb') as f:
+            f.write('status: {0}\n'.format(response.status_code))
+            for h, v in response.headers.iteritems():
+                # header: value\n
+                f.write(h.encode('utf8'))
+                f.write(b': ')
+                f.write(v.encode('utf8'))
+                f.write(b'\n')
+            # one blank line
+            f.write(b'\n')
+            f.write(response.content)
