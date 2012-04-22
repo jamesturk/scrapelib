@@ -64,7 +64,7 @@ def test_simple_cache_request():
 
 def _test_cache_storage(storage_obj):
     # unknown key returns None
-    assert_equal(storage_obj.get('one') is None)
+    assert_true(storage_obj.get('one') is None)
 
     # set 'one'
     resp = requests.Response()
