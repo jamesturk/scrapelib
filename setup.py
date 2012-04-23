@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 
 long_description = open('README.rst').read()
 
@@ -12,6 +12,7 @@ setup(name="scrapelib",
       license="BSD",
       url="http://github.com/sunlightlabs/scrapelib",
       long_description=long_description,
+      packages=find_packages(),
       description="a library for scraping things",
       platforms=["any"],
       classifiers=["Development Status :: 4 - Beta",
