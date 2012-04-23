@@ -203,7 +203,7 @@ def test_follow_redirect():
 def test_caching():
     cache_dir = tempfile.mkdtemp()
     s = Scraper(requests_per_minute=0, follow_robots=False,
-                cache_obj=FileCache(cache_dir))
+                cache_obj=FileCache(cache_dir), cache_write_only=False)
 
     resp = s.urlopen(HTTPBIN + 'status/200')
     assert not resp.response.fromcache

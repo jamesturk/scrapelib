@@ -137,6 +137,8 @@ class Scraper(object):
         page returns a (non-404) error
     :param retry_wait_seconds: number of seconds to retry after first failure,
         subsequent retries will double this wait
+    :param cache_write_only: will write to cache but not read from it, useful
+        for building up a cache but not relying on it
     """
     def __init__(self,
                  user_agent=_user_agent,
@@ -151,6 +153,7 @@ class Scraper(object):
                  retry_wait_seconds=5,
                  follow_redirects=True,
                  cache_obj=None,
+                 cache_write_only=True,
                  # deprecated options
                  use_cache_first=None,
                  accept_cookies=None,
@@ -196,7 +199,9 @@ class Scraper(object):
                 cache_obj = FileCache(cache_dir)
 
         self._session = CachingSession(timeout=timeout,
-                                       cache_storage=cache_obj)
+                           cache_storage=cache_obj,
+                           config={'cache_write_only': cache_write_only}
+                                      )
 
         self.follow_redirects = follow_redirects
         self.user_agent = user_agent
