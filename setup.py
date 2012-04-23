@@ -5,7 +5,7 @@ from setuptools import setup
 long_description = open('README.rst').read()
 
 setup(name="scrapelib",
-      version='0.7.0-dev',
+      version='0.7.0',
       py_modules=['scrapelib'],
       author="James Turk",
       author_email='jturk@sunlightfoundation.com',

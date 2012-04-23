@@ -3,12 +3,13 @@ scrapelib changelog
 
 0.7.0
 -----
+**23 April 2012**
     * rewritten internals to use requests, dropping httplib2
-    * as a result of rewrite, caching behavior is no longer compliant with the
-      HTTP specification but is more useful and configurable
+    * as a result of rewrite, caching behavior no longer attempts to be
+      compliant with the HTTP specification but is much more configurable
     * added cache_write_only option
     * deprecation of accept_cookies, use_cache_first, cache_dir parameter
-    * improved test coverage
+    * improved tests
     * improved Python 3 support
 
 0.6.2
