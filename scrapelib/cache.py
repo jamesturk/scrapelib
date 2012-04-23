@@ -69,7 +69,7 @@ class CachingSession(requests.Session):
 
         request_key = self.key_for_request(method, url, **kwargs)
 
-        if request_key:
+        if request_key and not self.config.get('cache_write_only'):
             resp = self.cache_storage.get(request_key)
 
         if resp:

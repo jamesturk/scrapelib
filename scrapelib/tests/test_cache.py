@@ -60,6 +60,23 @@ def test_simple_cache_request():
     assert_equal(resp.text, cached_resp.text)
     assert_equal(cached_resp.fromcache, True)
 
+def test_cache_write_only():
+    cs = CachingSession(cache_storage=MemoryCache(),
+                        config={'cache_write_only': True}
+                       )
+    url = HTTPBIN + 'get'
+
+    # first response not from cache
+    resp = cs.request('get', url)
+    assert_equal(resp.fromcache, False)
+
+    # response was written to cache
+    assert_true(url in cs.cache_storage.cache)
+
+    # but second response doesn't come from cache
+    cached_resp = cs.request('get', url)
+    assert_equal(cached_resp.fromcache, False)
+
 
 # test storages #####
 
