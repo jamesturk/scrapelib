@@ -269,6 +269,13 @@ class Scraper(object):
             self._request_frequency = 0.0
             self._last_request = 0
 
+    def accept_response(self, response):
+        return response.status_code < 400
+
+    def _accept_response_allow_404s(self, response):
+        # accepts anything below 400 and also 404s
+        return response.status_code < 400 or response.status_code == 404
+
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
             Make an HTTP request and return a :class:`ResultStr` object.
@@ -322,10 +329,16 @@ class Scraper(object):
                          data=body, headers=headers,
                          allow_redirects=self.follow_redirects)
                     result = ResultStr(self, resp, url)
-                    # break from loop on a success/redirect/404
-                    if resp.status_code < 400 or (resp.status_code == 404
-                                                  and not retry_on_404):
+
+                    # break from loop on an accepted response
+                    # (or 404 if retry_on_404 is off)
+                    if not retry_on_404:
+                        accept_resp = self._accept_response_allow_404s
+                    else:
+                        accept_resp = self.accept_response
+                    if accept_resp(resp):
                         break
+
                 except (requests.HTTPError, requests.ConnectionError,
                         requests.Timeout) as e:
                     exception_raised = e
