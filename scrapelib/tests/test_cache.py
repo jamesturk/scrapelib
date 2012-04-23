@@ -1,3 +1,4 @@
+import sys
 from nose.tools import assert_equal, assert_true
 
 import requests
@@ -84,16 +85,24 @@ def _test_cache_storage(storage_obj):
     # unknown key returns None
     assert_true(storage_obj.get('one') is None)
 
+    _content_as_bytes = b"here's unicode: \xe2\x98\x83"
+    if sys.version_info[0] < 3:
+        _content_as_unicode = unicode("here's unicode: \u2603",
+                                      'unicode_escape')
+    else:
+        _content_as_unicode = "here's unicode: \u2603"
+
     # set 'one'
     resp = requests.Response()
     resp.headers['x-num'] = 'one'
     resp.status_code = 200
-    resp._content = b'content is king'
+    resp._content = _content_as_bytes
     storage_obj.set('one', resp)
     cached_resp = storage_obj.get('one')
     assert_equal(cached_resp.headers, {'x-num': 'one'})
     assert_equal(cached_resp.status_code, 200)
-    assert_equal(cached_resp.text, 'content is king')
+    cached_resp.encoding = 'utf8'
+    assert_equal(cached_resp.text, _content_as_unicode)
 
 
 def test_memory_cache():

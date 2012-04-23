@@ -122,18 +122,18 @@ class FileCache(object):
         path = os.path.join(self.cache_dir, key)
 
         try:
-            with open(path) as f:
+            with open(path, 'rb') as f:
                 lines = f.readlines()
                 for num, line in enumerate(lines):
                     # set headers
-                    header = self._header_re.match(line)
+                    header = self._header_re.match(line.decode('utf8'))
                     if header:
                         resp.headers[header.group(1)] = \
                                 header.group(2).strip('\r')
                     else:
                         break
                 # skip a line, everything after that is good
-                resp._content = ('\n'.join(lines[num + 1:])).encode('utf8')
+                resp._content = (b'\n'.join(lines[num + 1:]))
 
             # status will be in headers but isn't a real header
             resp.status_code = int(resp.headers.pop('status'))

@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+0.7.1
+-----
+    * retry on more requests errors
+    * fix for unicode cached content
+
 0.7.0
 -----
 **23 April 2012**
