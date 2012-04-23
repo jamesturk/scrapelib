@@ -326,7 +326,8 @@ class Scraper(object):
                     if resp.status_code < 400 or (resp.status_code == 404
                                                   and not retry_on_404):
                         break
-                except requests.Timeout as e:
+                except (requests.HTTPError, requests.ConnectionError,
+                        requests.Timeout) as e:
                     exception_raised = e
             else:  # FTP using urllib2
                 if method != 'GET':

@@ -293,6 +293,7 @@ def test_retry_404():
 
 
 def test_timeout_retry():
+    # TODO: make this work with the other requests exceptions
     count = []
 
     # On the first call raise timeout
