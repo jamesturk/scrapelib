@@ -5,7 +5,7 @@ scrapelib changelog
 -----
     * retry on more requests errors
     * fix for unicode cached content
-    * addition of accept_response hook
+    * addition of overridable accept_response hook
 
 0.7.0
 -----

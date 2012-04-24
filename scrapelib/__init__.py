@@ -270,8 +270,7 @@ class Scraper(object):
             self._last_request = 0
 
     def accept_response(self, response, **kwargs):
-        return response.status_code < 400 or (
-            response.status_code == 404 and not self._retry_on_404)
+        return response.status_code < 400
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
@@ -328,8 +327,8 @@ class Scraper(object):
                     result = ResultStr(self, resp, url)
 
                     # break from loop on an accepted response
-                    self._retry_on_404 = retry_on_404
-                    if self.accept_response(resp):
+                    if self.accept_response(resp) or (resp.status_code == 404
+                                                      and not retry_on_404):
                         break
 
                 except (requests.HTTPError, requests.ConnectionError,
@@ -367,7 +366,7 @@ class Scraper(object):
         # out of the loop, either an exception was raised or we had a success
         if exception_raised:
             raise exception_raised
-        elif self.raise_errors and resp.status_code >= 400:
+        elif self.raise_errors and not self.accept_response(resp):
             raise HTTPError(resp)
         else:
             return result
