@@ -269,12 +269,9 @@ class Scraper(object):
             self._request_frequency = 0.0
             self._last_request = 0
 
-    def accept_response(self, response):
-        return response.status_code < 400
-
-    def _accept_response_allow_404s(self, response):
-        # accepts anything below 400 and also 404s
-        return response.status_code < 400 or response.status_code == 404
+    def accept_response(self, response, **kwargs):
+        return response.status_code < 400 or (
+            response.status_code == 404 and not self._retry_on_404)
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
@@ -331,12 +328,8 @@ class Scraper(object):
                     result = ResultStr(self, resp, url)
 
                     # break from loop on an accepted response
-                    # (or 404 if retry_on_404 is off)
-                    if not retry_on_404:
-                        accept_resp = self._accept_response_allow_404s
-                    else:
-                        accept_resp = self.accept_response
-                    if accept_resp(resp):
+                    self._retry_on_404 = retry_on_404
+                    if self.accept_response(resp):
                         break
 
                 except (requests.HTTPError, requests.ConnectionError,
