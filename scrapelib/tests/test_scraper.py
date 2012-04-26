@@ -14,7 +14,7 @@ import mock
 from nose.tools import assert_equal, assert_raises
 import requests
 from .. import (Scraper, HTTPError, HTTPMethodUnavailableError,
-                RobotExclusionError, urllib_URLError)
+                RobotExclusionError, urllib_URLError, FTPError)
 from .. import _user_agent as default_user_agent
 from ..cache import FileCache
 
@@ -364,11 +364,11 @@ def test_ftp_retries():
         if count:
             return BytesIO(b"ftp success!")
         count.append(1)
-        raise urllib_URLError('550: ftp failure!')
+        raise urllib_URLError('ftp failure!')
 
     mock_urlopen = mock.Mock(side_effect=side_effect)
 
-    # retry on, retry_on_404 on (will retry due to 550 code)
+    # retry on
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
                     follow_robots=False)
@@ -382,17 +382,8 @@ def test_ftp_retries():
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=0, retry_wait_seconds=0.001,
                     follow_robots=False)
-        assert_raises(urllib_URLError, s.urlopen, 'ftp://dummy/',
+        assert_raises(FTPError, s.urlopen, 'ftp://dummy/',
                       retry_on_404=True)
-    assert_equal(mock_urlopen.call_count, 1)
-
-    # retry on, retry_on_404 off
-    count = []
-    mock_urlopen.reset_mock()
-    with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
-        s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
-                    follow_robots=False)
-        assert_raises(urllib_URLError, s.urlopen, 'ftp://dummy/')
     assert_equal(mock_urlopen.call_count, 1)
 
 

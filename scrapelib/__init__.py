@@ -81,6 +81,11 @@ class HTTPError(ScrapeError):
         self.response = response
         self.body = body or self.response.text
 
+class FTPError(requests.HTTPError, ScrapeError):
+    def __init__(self, url):
+        message = 'error while retrieving %s' % url
+        super(FTPError, self).__init__(message)
+
 
 class ErrorManager(object):
     def __enter__(self):
@@ -182,9 +187,30 @@ class RobotsTxtSession(requests.Session):
 
         return super(RobotsTxtSession, self).request(method, url, **kwargs)
 
+class FTPSession(requests.Session):
+    def request(self, method, url, **kwargs):
+        if url.startswith('ftp://'):
+            if method.lower() != 'get':
+                raise HTTPMethodUnavailableError(
+                    "non-HTTP(S) requests do not support method '%s'" %
+                    method, method)
+            try:
+                real_resp = urllib_urlopen(url, timeout=self.timeout)
+                # we're going to fake a requests.Response with this
+                resp = requests.Response()
+                resp.status_code = 200
+                resp.url = url
+                resp.headers = {}
+                resp._content = real_resp.read()
+                return resp
+            except urllib_URLError as e:
+                raise FTPError(url)
+        else:
+            return super(FTPSession, self).request(method, url, **kwargs)
 
 # compose sessions
-class ScrapelibSession(RobotsTxtSession, ThrottledSession, CachingSession):
+class ScrapelibSession(RobotsTxtSession, ThrottledSession, CachingSession,
+                       FTPSession):
     pass
 
 class Scraper(object):
@@ -242,11 +268,7 @@ class Scraper(object):
 
         self.error_dir = error_dir
         if self.error_dir:
-            try:
-                os.makedirs(error_dir)
-            except OSError as e:
-                if e.errno != 17:
-                    raise
+            os.path.isdir(error_dir) or os.makedirs(error_dir)
             self.save_errors = True
         else:
             self.save_errors = False
@@ -356,41 +378,20 @@ class Scraper(object):
         while tries <= self.retry_attempts:
             exception_raised = None
 
-            if url.startswith('http'):
-                try:
-                    resp = self._session.request(method, url,
-                         data=body, headers=headers,
-                         allow_redirects=self.follow_redirects)
-                    result = ResultStr(self, resp, url)
+            try:
+                resp = self._session.request(method, url,
+                     data=body, headers=headers,
+                     allow_redirects=self.follow_redirects)
+                result = ResultStr(self, resp, url)
 
-                    # break from loop on an accepted response
-                    if self.accept_response(resp) or (resp.status_code == 404
-                                                      and not retry_on_404):
-                        break
-
-                except (requests.HTTPError, requests.ConnectionError,
-                        requests.Timeout) as e:
-                    exception_raised = e
-            else:  # FTP using urllib2
-                if method != 'GET':
-                    raise HTTPMethodUnavailableError(
-                        "non-HTTP(S) requests do not support method '%s'" %
-                        method, method)
-                try:
-                    real_resp = urllib_urlopen(url, timeout=self.timeout)
-                    # we're going to fake a requests.Response with this
-                    resp = requests.Response()
-                    resp.status_code = 200
-                    resp.url = url
-                    resp.headers = {}
-                    resp._content = real_resp.read()
-                    result = ResultStr(self, resp, url)
+                # break from loop on an accepted response
+                if self.accept_response(resp) or (resp.status_code == 404
+                                                  and not retry_on_404):
                     break
-                except urllib_URLError as e:
-                    exception_raised = e
-                    # FTP 550 ~ HTTP 404
-                    if '550' in str(e) and not retry_on_404:
-                        raise e
+
+            except (requests.HTTPError, requests.ConnectionError,
+                    requests.Timeout) as e:
+                exception_raised = e
 
             # if we're going to retry, sleep first
             tries += 1
@@ -467,7 +468,7 @@ class Scraper(object):
 _default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
 
 
-def urlopen(url, method='GET', body=None):
+def urlopen(url, method='GET', body=None):  # pragma: no cover
     return _default_scraper.urlopen(url, method, body)
 
 
