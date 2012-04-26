@@ -6,6 +6,8 @@ scrapelib changelog
     * retry on more requests errors
     * fix for unicode cached content
     * addition of overridable accept_response hook
+    * implement various requests enhancements piecemeal for ease of reuse
+    * breaking change: no longer accept URLs without a scheme
 
 0.7.0
 -----
