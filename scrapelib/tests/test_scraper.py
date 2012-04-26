@@ -68,22 +68,24 @@ def test_request_throttling():
 
     # check that sleep is called on call 2 & 3
     with mock.patch('time.sleep', mock_sleep):
-        s.urlopen(HTTPBIN + 'status/200')
-        s.urlopen(HTTPBIN + 'status/200')
-        s.urlopen(HTTPBIN + 'status/200')
-        assert_equal(mock_sleep.call_count, 2)
-        # should have slept for ~2 seconds
-        assert 1.8 <= mock_sleep.call_args[0][0] <= 2.2
+        with mock.patch.object(requests.Session, 'request', mock_200):
+            s.urlopen('http://dummy/')
+            s.urlopen('http://dummy/')
+            s.urlopen('http://dummy/')
+            assert_equal(mock_sleep.call_count, 2)
+            # should have slept for ~2 seconds
+            assert 1.8 <= mock_sleep.call_args[0][0] <= 2.2
 
     # unthrottled, sleep shouldn't be called
     s.requests_per_minute = 0
     mock_sleep.reset_mock()
 
     with mock.patch('time.sleep', mock_sleep):
-        s.urlopen(HTTPBIN + 'status/200')
-        s.urlopen(HTTPBIN + 'status/200')
-        s.urlopen(HTTPBIN + 'status/200')
-        assert_equal(mock_sleep.call_count, 0)
+        with mock.patch.object(requests.Session, 'request', mock_200):
+            s.urlopen('http://dummy/')
+            s.urlopen('http://dummy/')
+            s.urlopen('http://dummy/')
+            assert_equal(mock_sleep.call_count, 0)
 
 
 def test_user_agent():
@@ -107,15 +109,15 @@ def test_default_to_http():
 def test_follow_robots():
     s = Scraper(requests_per_minute=0, follow_robots=True)
 
-    with mock.patch.object(s._session, 'request', mock_200):
+    with mock.patch.object(requests.Session, 'request', mock_200):
         # check that a robots.txt is created
         s.urlopen(HTTPBIN)
-        assert HTTPBIN + 'robots.txt' in s._robot_parsers
+        assert HTTPBIN + 'robots.txt' in s._session._robot_parsers
 
         # set a fake robots.txt for http://dummy
         parser = robotparser.RobotFileParser()
         parser.parse(['User-agent: *', 'Disallow: /private/', 'Allow: /'])
-        s._robot_parsers['http://dummy/robots.txt'] = parser
+        s._session._robot_parsers['http://dummy/robots.txt'] = parser
 
         # anything behind private fails
         assert_raises(RobotExclusionError, s.urlopen,

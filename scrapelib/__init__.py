@@ -144,9 +144,47 @@ class ThrottledSession(requests.Session):
             self._throttle()
         return super(ThrottledSession, self).request(method, url, **kwargs)
 
+class RobotsTxtSession(requests.Session):
+
+    def __init__(self, *args, **kwargs):
+        super(RobotsTxtSession, self).__init__(*args, **kwargs)
+        self._robot_parsers = {}
+
+    def _robot_allowed(self, user_agent, parsed_url):
+        print user_agent, parsed_url
+        _log.info("checking robots permission for %s" % parsed_url.geturl())
+        robots_url = urlparse.urljoin(parsed_url.scheme + "://" +
+                                      parsed_url.netloc, "robots.txt")
+
+        try:
+            parser = self._robot_parsers[robots_url]
+            _log.info("using cached copy of %s" % robots_url)
+        except KeyError:
+            _log.info("grabbing %s" % robots_url)
+            parser = robotparser.RobotFileParser()
+            parser.set_url(robots_url)
+            parser.read()
+            self._robot_parsers[robots_url] = parser
+
+        return parser.can_fetch(user_agent, parsed_url.geturl())
+
+    def request(self, method, url, **kwargs):
+        parsed_url = urlparse.urlparse(url)
+        user_agent = (kwargs.get('headers', {}).get('user-agent') or
+                      self.headers.get('headers', {}).get('user-agent'))
+        # robots.txt is http-only
+        if (parsed_url.scheme in ('http', 'https') and
+            self.config.get('obey_robots_txt', False) and
+            not self._robot_allowed(user_agent, parsed_url)):
+            raise RobotExclusionError(
+                "User-Agent '%s' not allowed at '%s'" % (
+                    user_agent, url), url, user_agent)
+
+        return super(RobotsTxtSession, self).request(method, url, **kwargs)
+
 
 # compose sessions
-class ScrapelibSession(ThrottledSession, CachingSession):
+class ScrapelibSession(RobotsTxtSession, ThrottledSession, CachingSession):
     pass
 
 class Scraper(object):
@@ -202,9 +240,6 @@ class Scraper(object):
             timeout = None
         self.timeout = timeout
 
-        self.follow_robots = follow_robots
-        self._robot_parsers = {}
-
         self.error_dir = error_dir
         if self.error_dir:
             try:
@@ -240,27 +275,12 @@ class Scraper(object):
 
         self.requests_per_minute = requests_per_minute
         self.follow_redirects = follow_redirects
+        self.follow_robots = follow_robots
         self.user_agent = user_agent
 
         self.retry_attempts = max(retry_attempts, 0)
         self.retry_wait_seconds = retry_wait_seconds
 
-    def _robot_allowed(self, user_agent, parsed_url):
-        _log.info("checking robots permission for %s" % parsed_url.geturl())
-        robots_url = urlparse.urljoin(parsed_url.scheme + "://" +
-                                      parsed_url.netloc, "robots.txt")
-
-        try:
-            parser = self._robot_parsers[robots_url]
-            _log.info("using cached copy of %s" % robots_url)
-        except KeyError:
-            _log.info("grabbing %s" % robots_url)
-            parser = robotparser.RobotFileParser()
-            parser.set_url(robots_url)
-            parser.read()
-            self._robot_parsers[robots_url] = parser
-
-        return parser.can_fetch(user_agent, parsed_url.geturl())
 
     def _make_headers(self, url):
         if callable(self.headers):
@@ -269,9 +289,6 @@ class Scraper(object):
             headers = self.headers
 
         headers = Headers(headers)
-
-        if 'user-agent' not in headers:
-            headers['user-agent'] = self.user_agent
 
         if self.disable_compression and 'accept-encoding' not in headers:
             headers['accept-encoding'] = 'text/*'
@@ -285,6 +302,22 @@ class Scraper(object):
     @requests_per_minute.setter
     def requests_per_minute(self, value):
         self._session.requests_per_minute = value
+
+    @property
+    def user_agent(self):
+        return self._session.headers['user-agent']
+
+    @user_agent.setter
+    def user_agent(self, value):
+        self._session.headers['user-agent'] = value
+
+    @property
+    def follow_robots(self):
+        return self._session.config.get('obey_robots_txt', False)
+
+    @follow_robots.setter
+    def follow_robots(self, value):
+        self._session.config['obey_robots_txt'] = value
 
     def accept_response(self, response, **kwargs):
         return response.status_code < 400
@@ -313,18 +346,8 @@ class Scraper(object):
             url = "http://" + url
 
         headers = self._make_headers(url)
-        user_agent = headers['User-Agent']
 
         _log.info("{0} - {1}".format(method, url))
-
-        # robots.txt is http-only
-        parsed_url = urlparse.urlparse(url)
-        if parsed_url.scheme in ('http', 'https'):
-            if self.follow_robots and not self._robot_allowed(user_agent,
-                                                              parsed_url):
-                raise RobotExclusionError(
-                    "User-Agent '%s' not allowed at '%s'" % (
-                        user_agent, url), url, user_agent)
 
         # the retry loop
         tries = 0
