@@ -61,6 +61,7 @@ def test_simple_cache_request():
     assert_equal(resp.text, cached_resp.text)
     assert_equal(cached_resp.fromcache, True)
 
+
 def test_cache_write_only():
     cs = CachingSession(cache_storage=MemoryCache(),
                         config={'cache_write_only': True}

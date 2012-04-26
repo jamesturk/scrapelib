@@ -14,7 +14,6 @@ from .cache import CachingSession, FileCache
 Headers = requests.structures.CaseInsensitiveDict
 
 if sys.version_info[0] < 3:         # pragma: no cover
-    from urllib2 import Request as urllib_Request
     from urllib2 import urlopen as urllib_urlopen
     from urllib2 import URLError as urllib_URLError
     import urlparse
@@ -22,7 +21,6 @@ if sys.version_info[0] < 3:         # pragma: no cover
     _str_type = unicode
 else:                               # pragma: no cover
     PY3K = True
-    from urllib.request import Request as urllib_Request
     from urllib.request import urlopen as urllib_urlopen
     from urllib.error import URLError as urllib_URLError
     from urllib import parse as urlparse
@@ -151,6 +149,7 @@ class ThrottledSession(requests.Session):
             self._throttle()
         return super(ThrottledSession, self).request(method, url, **kwargs)
 
+
 class RobotsTxtSession(requests.Session):
 
     def __init__(self, *args, **kwargs):
@@ -205,7 +204,7 @@ class FTPSession(requests.Session):
                 resp.headers = {}
                 resp._content = real_resp.read()
                 return resp
-            except urllib_URLError as e:
+            except urllib_URLError:
                 raise FTPError(url)
         else:
             return super(FTPSession, self).request(method, url, **kwargs)
@@ -250,6 +249,7 @@ class RetrySession(requests.Session):
         else:
             return resp
 
+
 # compose sessions, order matters
 class ScrapelibSession(RobotsTxtSession,    # first, check robots.txt
                        ThrottledSession,    # throttle requests
@@ -258,6 +258,7 @@ class ScrapelibSession(RobotsTxtSession,    # first, check robots.txt
                        FTPSession           # do FTP & HTTP
                       ):
     pass
+
 
 class Scraper(object):
     """
@@ -347,7 +348,6 @@ class Scraper(object):
         self.user_agent = user_agent
         self.retry_attempts = max(retry_attempts, 0)
         self.retry_wait_seconds = retry_wait_seconds
-
 
     def _make_headers(self, url):
         if callable(self.headers):
