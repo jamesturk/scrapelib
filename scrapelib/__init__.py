@@ -12,6 +12,7 @@ from .cache import CachingSession, FileCache
 
 # for backwards-compatibility w/ scrapelib <= 0.6
 Headers = requests.structures.CaseInsensitiveDict
+ScrapeError = requests.RequestException
 
 if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import urlopen as urllib_urlopen
@@ -39,11 +40,7 @@ _log = logging.getLogger('scrapelib')
 _log.addHandler(NullHandler())
 
 
-class ScrapeError(Exception):
-    pass
-
-
-class RobotExclusionError(ScrapeError):
+class RobotExclusionError(requests.RequestException):
     """
     Raised when an attempt is made to access a page denied by
     the host's robots.txt file.
@@ -55,7 +52,7 @@ class RobotExclusionError(ScrapeError):
         self.user_agent = user_agent
 
 
-class HTTPMethodUnavailableError(ScrapeError):
+class HTTPMethodUnavailableError(requests.RequestException):
     """
     Raised when the supplied HTTP method is invalid or not supported
     by the HTTP backend.
@@ -66,7 +63,7 @@ class HTTPMethodUnavailableError(ScrapeError):
         self.method = method
 
 
-class HTTPError(ScrapeError):
+class HTTPError(requests.HTTPError):
     """
     Raised when urlopen encounters a 4xx or 5xx error code and the
     raise_errors option is true.
@@ -80,7 +77,7 @@ class HTTPError(ScrapeError):
         self.body = body or self.response.text
 
 
-class FTPError(requests.HTTPError, ScrapeError):
+class FTPError(requests.HTTPError):
     def __init__(self, url):
         message = 'error while retrieving %s' % url
         super(FTPError, self).__init__(message)
