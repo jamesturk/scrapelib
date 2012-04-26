@@ -131,7 +131,7 @@ def test_error_context():
     s = Scraper(requests_per_minute=0, follow_robots=False,
                 error_dir=error_dir)
 
-    with mock.patch.object(s._session, 'request', mock_200):
+    with mock.patch.object(requests.Session, 'request', mock_200):
         # try twice to test file name collision
         try:
             with s.urlopen("http://dummy/"):
@@ -208,7 +208,7 @@ def test_caching():
 def test_urlretrieve():
     s = Scraper(requests_per_minute=0, follow_robots=False)
 
-    with mock.patch.object(s._session, 'request', mock_200):
+    with mock.patch.object(requests.Session, 'request', mock_200):
         fname, resp = s.urlretrieve("http://dummy/")
         with open(fname) as f:
             assert_equal(f.read(), 'ok')
@@ -237,7 +237,7 @@ def test_retry():
         FakeResponse('http://dummy/', 200, 'success!')
     ])
 
-    with mock.patch.object(s._session, 'request', mock_request):
+    with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/')
     assert_equal(mock_request.call_count, 2)
 
@@ -245,7 +245,7 @@ def test_retry():
     mock_request = mock.Mock(return_value=FakeResponse('http://dummy/', 500,
                                                        'failure!'))
 
-    with mock.patch.object(s._session, 'request', mock_request):
+    with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/')
     assert_equal(resp.response.code, 500)
     assert_equal(mock_request.call_count, 4)
@@ -261,22 +261,23 @@ def test_retry_404():
         FakeResponse('http://dummy/', 200, 'success!')
     ])
 
-    with mock.patch.object(s._session, 'request', mock_request):
+    with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/', retry_on_404=True)
     assert_equal(mock_request.call_count, 2)
+    assert_equal(resp.response.code, 200)
 
     # 404 always
     mock_request = mock.Mock(return_value=FakeResponse('http://dummy/', 404,
                                                        'failure!'))
 
     # retry on 404 true, 4 tries
-    with mock.patch.object(s._session, 'request', mock_request):
+    with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/', retry_on_404=True)
     assert_equal(resp.response.code, 404)
     assert_equal(mock_request.call_count, 4)
 
     # retry on 404 false, just one more try
-    with mock.patch.object(s._session, 'request', mock_request):
+    with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/', retry_on_404=False)
     assert_equal(resp.response.code, 404)
     assert_equal(mock_request.call_count, 5)
@@ -298,7 +299,7 @@ def test_timeout_retry():
     s = Scraper(retry_attempts=0, retry_wait_seconds=0.001,
                 follow_robots=False)
 
-    with mock.patch.object(s._session, 'request', mock_request):
+    with mock.patch.object(requests.Session, 'request', mock_request):
         # first, try without retries
         # try only once, get the error
         assert_raises(requests.Timeout, s.urlopen, "http://dummy/")
@@ -309,7 +310,7 @@ def test_timeout_retry():
     count = []
     s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
                 follow_robots=False)
-    with mock.patch.object(s._session, 'request', mock_request):
+    with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen("http://dummy/")
         # get the result, take two tries
         assert_equal(resp, "success!")

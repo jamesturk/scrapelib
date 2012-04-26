@@ -29,7 +29,7 @@ else:                               # pragma: no cover
     from urllib import robotparser
     _str_type = str
 
-__version__ = '0.7.0'
+__version__ = '0.7.1-dev'
 _user_agent = 'scrapelib {0}'.format(__version__)
 
 
@@ -81,6 +81,7 @@ class HTTPError(ScrapeError):
         self.response = response
         self.body = body or self.response.text
 
+
 class FTPError(requests.HTTPError, ScrapeError):
     def __init__(self, url):
         message = 'error while retrieving %s' % url
@@ -115,6 +116,7 @@ class ResultStr(_str_type, ErrorManager):
         self.response.requested_url = requested_url
         self.response.code = self.response.status_code
         return self
+
 
 class ThrottledSession(requests.Session):
     def _throttle(self):
@@ -156,7 +158,6 @@ class RobotsTxtSession(requests.Session):
         self._robot_parsers = {}
 
     def _robot_allowed(self, user_agent, parsed_url):
-        print user_agent, parsed_url
         _log.info("checking robots permission for %s" % parsed_url.geturl())
         robots_url = urlparse.urljoin(parsed_url.scheme + "://" +
                                       parsed_url.netloc, "robots.txt")
@@ -187,6 +188,7 @@ class RobotsTxtSession(requests.Session):
 
         return super(RobotsTxtSession, self).request(method, url, **kwargs)
 
+
 class FTPSession(requests.Session):
     def request(self, method, url, **kwargs):
         if url.startswith('ftp://'):
@@ -208,9 +210,53 @@ class FTPSession(requests.Session):
         else:
             return super(FTPSession, self).request(method, url, **kwargs)
 
-# compose sessions
-class ScrapelibSession(RobotsTxtSession, ThrottledSession, CachingSession,
-                       FTPSession):
+
+class RetrySession(requests.Session):
+
+    def accept_response(self, response, **kwargs):
+        return response.status_code < 400
+
+    def request(self, method, url, retry_on_404=False, **kwargs):
+        # the retry loop
+        tries = 0
+        exception_raised = None
+
+        while tries <= self.config.get('retry_attempts', 0):
+            exception_raised = None
+
+            try:
+                resp = super(RetrySession, self).request(method, url, **kwargs)
+                # break from loop on an accepted response
+                if self.accept_response(resp) or (resp.status_code == 404
+                                                  and not retry_on_404):
+                    break
+
+            except (requests.HTTPError, requests.ConnectionError,
+                    requests.Timeout) as e:
+                exception_raised = e
+
+            # if we're going to retry, sleep first
+            tries += 1
+            if tries <= self.config.get('retry_attempts', 0):
+                # twice as long each time
+                wait = (self.config.get('retry_wait_seconds', 10) *
+                        (2 ** (tries - 1)))
+                _log.debug('sleeping for %s seconds before retry' % wait)
+                time.sleep(wait)
+
+        # out of the loop, either an exception was raised or we had a success
+        if exception_raised:
+            raise exception_raised
+        else:
+            return resp
+
+# compose sessions, order matters
+class ScrapelibSession(RobotsTxtSession,    # first, check robots.txt
+                       ThrottledSession,    # throttle requests
+                       CachingSession,      # cache responses
+                       RetrySession,        # do retries
+                       FTPSession           # do FTP & HTTP
+                      ):
     pass
 
 class Scraper(object):
@@ -299,7 +345,6 @@ class Scraper(object):
         self.follow_redirects = follow_redirects
         self.follow_robots = follow_robots
         self.user_agent = user_agent
-
         self.retry_attempts = max(retry_attempts, 0)
         self.retry_wait_seconds = retry_wait_seconds
 
@@ -341,8 +386,21 @@ class Scraper(object):
     def follow_robots(self, value):
         self._session.config['obey_robots_txt'] = value
 
-    def accept_response(self, response, **kwargs):
-        return response.status_code < 400
+    @property
+    def retry_attempts(self):
+        return self._session.config.get('retry_attempts', 0)
+
+    @retry_attempts.setter
+    def retry_attempts(self, value):
+        self._session.config['retry_attempts'] = value
+
+    @property
+    def retry_wait_seconds(self):
+        return self._session.config.get('retry_wait_seconds', 0)
+
+    @retry_wait_seconds.setter
+    def retry_wait_seconds(self, value):
+        self._session.config['retry_wait_seconds'] = value
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
@@ -360,49 +418,20 @@ class Scraper(object):
                 if retries are not enabled this parameter does nothing
                 (default: False)
         """
-        method = method.upper()
-
         headers = self._make_headers(url)
 
-        _log.info("{0} - {1}".format(method, url))
+        _log.info("{0} - {1}".format(method.upper(), url))
 
-        # the retry loop
-        tries = 0
-        exception_raised = None
+        resp = self._session.request(method, url,
+                                     data=body, headers=headers,
+                                     allow_redirects=self.follow_redirects,
+                                     retry_on_404=retry_on_404
+                                    )
 
-        while tries <= self.retry_attempts:
-            exception_raised = None
-
-            try:
-                resp = self._session.request(method, url,
-                     data=body, headers=headers,
-                     allow_redirects=self.follow_redirects)
-                result = ResultStr(self, resp, url)
-
-                # break from loop on an accepted response
-                if self.accept_response(resp) or (resp.status_code == 404
-                                                  and not retry_on_404):
-                    break
-
-            except (requests.HTTPError, requests.ConnectionError,
-                    requests.Timeout) as e:
-                exception_raised = e
-
-            # if we're going to retry, sleep first
-            tries += 1
-            if tries <= self.retry_attempts:
-                # twice as long each time
-                wait = self.retry_wait_seconds * (2 ** (tries - 1))
-                _log.debug('sleeping for %s seconds before retry' % wait)
-                time.sleep(wait)
-
-        # out of the loop, either an exception was raised or we had a success
-        if exception_raised:
-            raise exception_raised
-        elif self.raise_errors and not self.accept_response(resp):
+        if self.raise_errors and not self._session.accept_response(resp):
             raise HTTPError(resp)
         else:
-            return result
+            return ResultStr(self, resp, url)
 
     def urlretrieve(self, url, filename=None, method='GET', body=None):
         """
