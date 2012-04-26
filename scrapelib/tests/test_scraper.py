@@ -100,12 +100,6 @@ def test_user_agent():
     assert_equal(ua, 'a different agent')
 
 
-def test_default_to_http():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
-    with mock.patch.object(s._session, 'request', mock_200):
-        assert_equal('http://dummy/', s.urlopen("dummy/").response.url)
-
-
 def test_follow_robots():
     s = Scraper(requests_per_minute=0, follow_robots=True)
 

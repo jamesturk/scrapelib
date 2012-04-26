@@ -362,11 +362,6 @@ class Scraper(object):
         """
         method = method.upper()
 
-        # Default to HTTP requests
-        if not "://" in url:
-            _log.warning("no URL scheme provided, assuming HTTP")
-            url = "http://" + url
-
         headers = self._make_headers(url)
 
         _log.info("{0} - {1}".format(method, url))
