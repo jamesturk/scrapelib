@@ -111,6 +111,43 @@ class ResultStr(_str_type, ErrorManager):
         self.response.code = self.response.status_code
         return self
 
+class ThrottledSession(requests.Session):
+    def _throttle(self):
+        now = time.time()
+        diff = self._request_frequency - (now - self._last_request)
+        if diff > 0:
+            _log.debug("sleeping for %fs" % diff)
+            time.sleep(diff)
+            self._last_request = time.time()
+        else:
+            self._last_request = now
+
+    @property
+    def requests_per_minute(self):
+        return self._requests_per_minute
+
+    @requests_per_minute.setter
+    def requests_per_minute(self, value):
+        if value > 0:
+            self._throttled = True
+            self._requests_per_minute = value
+            self._request_frequency = 60.0 / value
+            self._last_request = 0
+        else:
+            self._throttled = False
+            self._requests_per_minute = 0
+            self._request_frequency = 0.0
+            self._last_request = 0
+
+    def request(self, method, url, **kwargs):
+        if self._throttled:
+            self._throttle()
+        return super(ThrottledSession, self).request(method, url, **kwargs)
+
+
+# compose sessions
+class ScrapelibSession(ThrottledSession, CachingSession):
+    pass
 
 class Scraper(object):
     """
@@ -168,8 +205,6 @@ class Scraper(object):
         self.follow_robots = follow_robots
         self._robot_parsers = {}
 
-        self.requests_per_minute = requests_per_minute
-
         self.error_dir = error_dir
         if self.error_dir:
             try:
@@ -198,26 +233,17 @@ class Scraper(object):
             else:
                 cache_obj = FileCache(cache_dir)
 
-        self._session = CachingSession(timeout=timeout,
+        self._session = ScrapelibSession(timeout=timeout,
                            cache_storage=cache_obj,
                            config={'cache_write_only': cache_write_only}
                                       )
 
+        self.requests_per_minute = requests_per_minute
         self.follow_redirects = follow_redirects
         self.user_agent = user_agent
 
         self.retry_attempts = max(retry_attempts, 0)
         self.retry_wait_seconds = retry_wait_seconds
-
-    def _throttle(self):
-        now = time.time()
-        diff = self._request_frequency - (now - self._last_request)
-        if diff > 0:
-            _log.debug("sleeping for %fs" % diff)
-            time.sleep(diff)
-            self._last_request = time.time()
-        else:
-            self._last_request = now
 
     def _robot_allowed(self, user_agent, parsed_url):
         _log.info("checking robots permission for %s" % parsed_url.geturl())
@@ -254,20 +280,11 @@ class Scraper(object):
 
     @property
     def requests_per_minute(self):
-        return self._requests_per_minute
+        return self._session.requests_per_minute
 
     @requests_per_minute.setter
     def requests_per_minute(self, value):
-        if value > 0:
-            self._throttled = True
-            self._requests_per_minute = value
-            self._request_frequency = 60.0 / value
-            self._last_request = 0
-        else:
-            self._throttled = False
-            self._requests_per_minute = 0
-            self._request_frequency = 0.0
-            self._last_request = 0
+        self._session.requests_per_minute = value
 
     def accept_response(self, response, **kwargs):
         return response.status_code < 400
@@ -288,9 +305,6 @@ class Scraper(object):
                 if retries are not enabled this parameter does nothing
                 (default: False)
         """
-        if self._throttled:
-            self._throttle()
-
         method = method.upper()
 
         # Default to HTTP requests

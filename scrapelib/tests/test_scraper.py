@@ -65,31 +65,25 @@ def test_request_throttling():
     assert_equal(s.requests_per_minute, 30)
 
     mock_sleep = mock.Mock()
-    mock_200.reset_mock()
 
-    # check that sleep is called
+    # check that sleep is called on call 2 & 3
     with mock.patch('time.sleep', mock_sleep):
-        with mock.patch.object(s._session, 'request', mock_200):
-            s.urlopen('http://dummy/')
-            s.urlopen('http://dummy/')
-            s.urlopen('http://dummy/')
-            assert_equal(mock_sleep.call_count, 2)
-            # should have slept for ~2 seconds
-            assert 1.8 <= mock_sleep.call_args[0][0] <= 2.2
-            assert_equal(mock_200.call_count, 3)
+        s.urlopen(HTTPBIN + 'status/200')
+        s.urlopen(HTTPBIN + 'status/200')
+        s.urlopen(HTTPBIN + 'status/200')
+        assert_equal(mock_sleep.call_count, 2)
+        # should have slept for ~2 seconds
+        assert 1.8 <= mock_sleep.call_args[0][0] <= 2.2
 
-    # unthrottled, should be able to fit in lots of calls
+    # unthrottled, sleep shouldn't be called
     s.requests_per_minute = 0
-    mock_200.reset_mock()
     mock_sleep.reset_mock()
 
     with mock.patch('time.sleep', mock_sleep):
-        with mock.patch.object(s._session, 'request', mock_200):
-            s.urlopen('http://dummy/')
-            s.urlopen('http://dummy/')
-            s.urlopen('http://dummy/')
-            assert_equal(mock_sleep.call_count, 0)
-            assert_equal(mock_200.call_count, 3)
+        s.urlopen(HTTPBIN + 'status/200')
+        s.urlopen(HTTPBIN + 'status/200')
+        s.urlopen(HTTPBIN + 'status/200')
+        assert_equal(mock_sleep.call_count, 0)
 
 
 def test_user_agent():
