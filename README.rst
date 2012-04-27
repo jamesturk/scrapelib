@@ -17,7 +17,7 @@ Advantages of using scrapelib over alternatives like httplib2 simply using
 requests as-is:
 
 * All of the power of the suberb `requests <http://python-requests.org>`_ library.
-* HTTP(S) and FTP requests via an identical API
+* HTTP, HTTPS, and FTP requests via an identical API
 * support for simple caching with pluggable cache backends
 * request throtting
 * configurable retries for non-permanent site failures
@@ -37,7 +37,7 @@ Contributors:
 Requirements
 ============
 
-* python >= 2.6 (experimental support for Python 3.2)
+* python 2.6, 2.7, or 3.2
 * requests
 
 Installation

@@ -403,7 +403,7 @@ class Scraper(object):
         # disabled: set encoding to text/*
         if value:
             self._session.headers['accept-encoding'] = 'text/*'
-        # enabled: if set to text/* pop, otherwie leave unmodified
+        # enabled: if set to text/* pop, otherwise leave unmodified
         elif self._session.headers.get('accept-encoding') == 'text/*':
             self._session.headers.pop('accept-encoding', None)
 
@@ -413,9 +413,7 @@ class Scraper(object):
         else:
             headers = self.headers
 
-        headers = Headers(headers)
-
-        return headers
+        return Headers(headers)
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """

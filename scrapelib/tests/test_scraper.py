@@ -363,11 +363,11 @@ def test_callable_headers():
     s = Scraper(headers=lambda url: {'X-Url': url})
 
     data = s.urlopen(HTTPBIN + 'headers')
-    assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN+'headers')
+    assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN + 'headers')
 
     # Make sure it gets called freshly each time
     data = s.urlopen(HTTPBIN + 'headers?shh')
-    assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN+'headers?shh')
+    assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN + 'headers?shh')
 
 
 def test_ftp_uses_urllib2():

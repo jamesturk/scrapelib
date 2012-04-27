@@ -7,6 +7,7 @@ scrapelib changelog
     * fix for unicode cached content
     * addition of overridable accept_response hook
     * implement various requests enhancements piecemeal for ease of reuse
+    * convert more Scraper parameters to properties
     * breaking change: no longer accept URLs without a scheme
 
 0.7.0
