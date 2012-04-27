@@ -3,13 +3,14 @@ scrapelib changelog
 
 0.7.1
 -----
-    * deprecation of error_dir
+**27 April 2012**
+    * breaking change: no longer accept URLs without a scheme
+    * deprecation of error_dir & context-manager mode
+    * addition of overridable accept_response hook
     * bugfix: retry on more requests errors
     * bugfix: unicode cached content no longer incorrectly encoded
-    * addition of overridable accept_response hook
-    * implement various requests enhancements piecemeal for ease of reuse
+    * implement various requests enhancements separately for ease of reuse
     * convert more Scraper parameters to properties
-    * breaking change: no longer accept URLs without a scheme
 
 0.7.0
 -----
