@@ -49,8 +49,8 @@ def test_fields():
                 retry_wait_seconds=100,
                 follow_redirects=False,
                 cache_write_only=False)
-    assert s.user_agent == 'secret-agent'
-    assert s.headers == {'test': 'ok'}
+    assert_equal(s.user_agent, 'secret-agent')
+    assert_equal(s.headers['test'], 'ok')
     assert s.requests_per_minute == 100
     assert s.follow_robots == False
     assert s.disable_compression
@@ -126,12 +126,12 @@ def test_follow_robots():
     with mock.patch.object(requests.Session, 'request', mock_200):
         # check that a robots.txt is created
         s.urlopen(HTTPBIN)
-        assert HTTPBIN + 'robots.txt' in s._session._robot_parsers
+        assert HTTPBIN + 'robots.txt' in s._robot_parsers
 
         # set a fake robots.txt for http://dummy
         parser = robotparser.RobotFileParser()
         parser.parse(['User-agent: *', 'Disallow: /private/', 'Allow: /'])
-        s._session._robot_parsers['http://dummy/robots.txt'] = parser
+        s._robot_parsers['http://dummy/robots.txt'] = parser
 
         # anything behind private fails
         assert_raises(RobotExclusionError, s.urlopen,

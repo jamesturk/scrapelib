@@ -257,7 +257,7 @@ class ScrapelibSession(RobotsTxtSession,    # first, check robots.txt
     pass
 
 
-class Scraper(object):
+class Scraper(ScrapelibSession):
     """
     Scraper is the most important class provided by scrapelib (and generally
     the only one to be instantiated directly).  It provides a large number
@@ -284,13 +284,24 @@ class Scraper(object):
         for building up a cache but not relying on it
     """
     def __init__(self,
-                 user_agent=_user_agent,
+                 # requests.Session
                  headers=None,
+                 cookies=None,
+                 auth=None,
+                 timeout=None,
+                 proxies=None,
+                 hooks=None,
+                 params=None,
+                 config=None,
+                 prefetch=False,
+                 verify=True,
+                 cert=None,
+                 # scrapelib-specific params
+                 user_agent=_user_agent,
                  requests_per_minute=60,
                  follow_robots=True,
                  disable_compression=False,
                  raise_errors=True,
-                 timeout=None,
                  retry_attempts=0,
                  retry_wait_seconds=5,
                  follow_redirects=True,
@@ -302,14 +313,31 @@ class Scraper(object):
                  accept_cookies=None,
                  cache_dir=None,
                 ):
-        self.headers = headers or {}
+
         # make timeout of 0 mean timeout of None
         if timeout == 0:
             timeout = None
-        self.timeout = timeout
+        if callable(headers):
+            self._header_func = headers
+            headers = {}
+        else:
+            self._header_func = None
 
+        super(Scraper, self).__init__(headers, cookies, auth, timeout, proxies,
+                                      hooks, params, config, prefetch, verify,
+                                      cert, cache_storage=cache_obj)
+
+        # scrapelib-specific settings
         self.raise_errors = raise_errors
         self.follow_redirects = follow_redirects
+        self.requests_per_minute = requests_per_minute
+        # properties (pass through to config/headers)
+        self.user_agent = user_agent
+        self.follow_robots = follow_robots
+        self.retry_attempts = retry_attempts
+        self.retry_wait_seconds = retry_wait_seconds
+        self.cache_write_only = cache_write_only
+        self.disable_compression = disable_compression
 
         # deprecations from 0.7, remove in 0.8
         if accept_cookies:          # pragma: no cover
@@ -328,86 +356,58 @@ class Scraper(object):
             else:
                 cache_obj = FileCache(cache_dir)
 
-        self._session = ScrapelibSession(timeout=timeout,
-                                         cache_storage=cache_obj)
-
-        # set properties after _session is instantiated
-        self.requests_per_minute = requests_per_minute
-        self.user_agent = user_agent
-        self.follow_robots = follow_robots
-        self.retry_attempts = retry_attempts
-        self.retry_wait_seconds = retry_wait_seconds
-        self.cache_write_only = cache_write_only
-        self.disable_compression = disable_compression
-
-    @property
-    def requests_per_minute(self):
-        return self._session.requests_per_minute
-
-    @requests_per_minute.setter
-    def requests_per_minute(self, value):
-        self._session.requests_per_minute = value
-
     @property
     def user_agent(self):
-        return self._session.headers['user-agent']
+        return self.headers['user-agent']
 
     @user_agent.setter
     def user_agent(self, value):
-        self._session.headers['user-agent'] = value
+        self.headers['user-agent'] = value
 
     @property
     def follow_robots(self):
-        return self._session.config.get('obey_robots_txt', False)
+        return self.config.get('obey_robots_txt', False)
 
     @follow_robots.setter
     def follow_robots(self, value):
-        self._session.config['obey_robots_txt'] = value
+        self.config['obey_robots_txt'] = value
 
     @property
     def retry_attempts(self):
-        return self._session.config.get('retry_attempts', 0)
+        return self.config.get('retry_attempts', 0)
 
     @retry_attempts.setter
     def retry_attempts(self, value):
-        self._session.config['retry_attempts'] = max(value, 0)
+        self.config['retry_attempts'] = max(value, 0)
 
     @property
     def retry_wait_seconds(self):
-        return self._session.config.get('retry_wait_seconds', 0)
+        return self.config.get('retry_wait_seconds', 0)
 
     @retry_wait_seconds.setter
     def retry_wait_seconds(self, value):
-        self._session.config['retry_wait_seconds'] = value
+        self.config['retry_wait_seconds'] = value
 
     @property
     def cache_write_only(self):
-        return self._session.config['cache_write_only']
+        return self.config['cache_write_only']
 
     @cache_write_only.setter
     def cache_write_only(self, value):
-        self._session.config['cache_write_only'] = value
+        self.config['cache_write_only'] = value
 
     @property
     def disable_compression(self):
-        return self._session.headers['accept-encoding'] == 'text/*'
+        return self.headers['accept-encoding'] == 'text/*'
 
     @disable_compression.setter
     def disable_compression(self, value):
         # disabled: set encoding to text/*
         if value:
-            self._session.headers['accept-encoding'] = 'text/*'
+            self.headers['accept-encoding'] = 'text/*'
         # enabled: if set to text/* pop, otherwise leave unmodified
-        elif self._session.headers.get('accept-encoding') == 'text/*':
-            self._session.headers.pop('accept-encoding', None)
-
-    def _make_headers(self, url):
-        if callable(self.headers):
-            headers = self.headers(url)
-        else:
-            headers = self.headers
-
-        return Headers(headers)
+        elif self.headers.get('accept-encoding') == 'text/*':
+            self.headers.pop('accept-encoding', None)
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
@@ -425,17 +425,19 @@ class Scraper(object):
                 if retries are not enabled this parameter does nothing
                 (default: False)
         """
-        headers = self._make_headers(url)
+        if self._header_func:
+            headers = Headers(self._header_func(url))
+        else:
+            headers = {}
 
         _log.info("{0} - {1}".format(method.upper(), url))
 
-        resp = self._session.request(method, url,
-                                     data=body, headers=headers,
-                                     allow_redirects=self.follow_redirects,
-                                     retry_on_404=retry_on_404
-                                    )
+        resp = self.request(method, url,
+                            data=body, headers=headers,
+                            allow_redirects=self.follow_redirects,
+                            retry_on_404=retry_on_404)
 
-        if self.raise_errors and not self._session.accept_response(resp):
+        if self.raise_errors and not self.accept_response(resp):
             raise HTTPError(resp)
         else:
             return ResultStr(self, resp, url)
