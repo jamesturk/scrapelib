@@ -319,6 +319,7 @@ class Scraper(object):
 
         self.disable_compression = disable_compression
         self.raise_errors = raise_errors
+        self.follow_redirects = follow_redirects
 
         # deprecations from 0.7, remove in 0.8
         if accept_cookies:          # pragma: no cover
@@ -335,29 +336,15 @@ class Scraper(object):
                 cache_obj = FileCache(cache_dir)
 
         self._session = ScrapelibSession(timeout=timeout,
-                           cache_storage=cache_obj,
-                           config={'cache_write_only': cache_write_only}
-                                      )
+                                         cache_storage=cache_obj)
 
+        # set properties after _session is instantiated
         self.requests_per_minute = requests_per_minute
-        self.follow_redirects = follow_redirects
-        self.follow_robots = follow_robots
         self.user_agent = user_agent
-        self.retry_attempts = max(retry_attempts, 0)
+        self.follow_robots = follow_robots
+        self.retry_attempts = retry_attempts
         self.retry_wait_seconds = retry_wait_seconds
-
-    def _make_headers(self, url):
-        if callable(self.headers):
-            headers = self.headers(url)
-        else:
-            headers = self.headers
-
-        headers = Headers(headers)
-
-        if self.disable_compression and 'accept-encoding' not in headers:
-            headers['accept-encoding'] = 'text/*'
-
-        return headers
+        self.cache_write_only = cache_write_only
 
     @property
     def requests_per_minute(self):
@@ -389,7 +376,7 @@ class Scraper(object):
 
     @retry_attempts.setter
     def retry_attempts(self, value):
-        self._session.config['retry_attempts'] = value
+        self._session.config['retry_attempts'] = max(value, 0)
 
     @property
     def retry_wait_seconds(self):
@@ -398,6 +385,27 @@ class Scraper(object):
     @retry_wait_seconds.setter
     def retry_wait_seconds(self, value):
         self._session.config['retry_wait_seconds'] = value
+
+    @property
+    def cache_write_only(self):
+        return self._session.config['cache_write_only']
+
+    @cache_write_only.setter
+    def cache_write_only(self, value):
+        self._session.config['cache_write_only'] = value
+
+    def _make_headers(self, url):
+        if callable(self.headers):
+            headers = self.headers(url)
+        else:
+            headers = self.headers
+
+        headers = Headers(headers)
+
+        if self.disable_compression and 'accept-encoding' not in headers:
+            headers['accept-encoding'] = 'text/*'
+
+        return headers
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """

@@ -36,10 +36,32 @@ def request_200(method, url, *args, **kwargs):
 mock_200 = mock.Mock(wraps=request_200)
 
 
-def test_constructor():
+def test_fields():
     # timeout=0 means None
-    s = Scraper(timeout=0)
-    assert s.timeout is None
+    s = Scraper(user_agent='secret-agent',
+                headers={'test': 'ok'},
+                requests_per_minute=100,
+                follow_robots=False,
+                error_dir='errors',
+                disable_compression=True,
+                raise_errors=False,
+                timeout=0,
+                retry_attempts=-1,  # will be 0
+                retry_wait_seconds=100,
+                follow_redirects=False,
+                cache_write_only=False)
+    assert s.user_agent == 'secret-agent'
+    assert s.headers == {'test': 'ok'}
+    assert s.requests_per_minute == 100
+    assert s.follow_robots == False
+    assert s.error_dir == 'errors'
+    assert s.disable_compression
+    assert s.raise_errors == False
+    assert s.timeout is None        # 0 becomes None
+    assert s.retry_attempts == 0    # -1 becomes 0
+    assert s.retry_wait_seconds == 100
+    assert s.follow_redirects == False
+    assert s.cache_write_only == False
 
 
 def test_get():
