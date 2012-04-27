@@ -342,25 +342,32 @@ def test_timeout_retry():
 def test_disable_compression():
     s = Scraper(disable_compression=True)
 
-    headers = s._make_headers("http://dummy/")
-    assert_equal(headers['accept-encoding'], 'text/*')
+    # compression disabled
+    data = s.urlopen(HTTPBIN + 'headers')
+    assert_equal(json.loads(data)['headers']['Accept-Encoding'], 'text/*')
+
+    # default is restored
+    s.disable_compression = False
+    data = s.urlopen(HTTPBIN + 'headers')
+    assert_equal(json.loads(data)['headers']['Accept-Encoding'],
+                 'identity, deflate, compress, gzip')
 
     # A supplied Accept-Encoding headers overrides the
     # disable_compression option
     s.headers['accept-encoding'] = '*'
-    headers = s._make_headers('http://dummy/')
-    assert_equal(headers['accept-encoding'], '*')
+    data = s.urlopen(HTTPBIN + 'headers')
+    assert_equal(json.loads(data)['headers']['Accept-Encoding'], '*')
 
 
 def test_callable_headers():
-    s = Scraper(headers=lambda url: {'url': url})
+    s = Scraper(headers=lambda url: {'X-Url': url})
 
-    headers = s._make_headers('http://google.com')
-    assert_equal(headers['url'], 'http://google.com')
+    data = s.urlopen(HTTPBIN + 'headers')
+    assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN+'headers')
 
     # Make sure it gets called freshly each time
-    headers = s._make_headers('http://example.com')
-    assert_equal(headers['url'], 'http://example.com')
+    data = s.urlopen(HTTPBIN + 'headers?shh')
+    assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN+'headers?shh')
 
 
 def test_ftp_uses_urllib2():

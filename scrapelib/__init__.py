@@ -317,7 +317,6 @@ class Scraper(object):
         else:
             self.save_errors = False
 
-        self.disable_compression = disable_compression
         self.raise_errors = raise_errors
         self.follow_redirects = follow_redirects
 
@@ -345,6 +344,7 @@ class Scraper(object):
         self.retry_attempts = retry_attempts
         self.retry_wait_seconds = retry_wait_seconds
         self.cache_write_only = cache_write_only
+        self.disable_compression = disable_compression
 
     @property
     def requests_per_minute(self):
@@ -394,6 +394,19 @@ class Scraper(object):
     def cache_write_only(self, value):
         self._session.config['cache_write_only'] = value
 
+    @property
+    def disable_compression(self):
+        return self._session.headers['accept-encoding'] == 'text/*'
+
+    @disable_compression.setter
+    def disable_compression(self, value):
+        # disabled: set encoding to text/*
+        if value:
+            self._session.headers['accept-encoding'] = 'text/*'
+        # enabled: if set to text/* pop, otherwie leave unmodified
+        elif self._session.headers.get('accept-encoding') == 'text/*':
+            self._session.headers.pop('accept-encoding', None)
+
     def _make_headers(self, url):
         if callable(self.headers):
             headers = self.headers(url)
@@ -401,9 +414,6 @@ class Scraper(object):
             headers = self.headers
 
         headers = Headers(headers)
-
-        if self.disable_compression and 'accept-encoding' not in headers:
-            headers['accept-encoding'] = 'text/*'
 
         return headers
 
