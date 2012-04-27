@@ -42,7 +42,6 @@ def test_fields():
                 headers={'test': 'ok'},
                 requests_per_minute=100,
                 follow_robots=False,
-                error_dir='errors',
                 disable_compression=True,
                 raise_errors=False,
                 timeout=0,
@@ -54,7 +53,6 @@ def test_fields():
     assert s.headers == {'test': 'ok'}
     assert s.requests_per_minute == 100
     assert s.follow_robots == False
-    assert s.error_dir == 'errors'
     assert s.disable_compression
     assert s.raise_errors == False
     assert s.timeout is None        # 0 becomes None
@@ -145,34 +143,6 @@ def test_follow_robots():
         s.follow_robots = False
         assert_equal(200,
             s.urlopen("http://dummy/private/secret.html").response.code)
-
-
-def test_error_context():
-    # create error dir
-    error_dir = tempfile.mkdtemp()
-    s = Scraper(requests_per_minute=0, follow_robots=False,
-                error_dir=error_dir)
-
-    with mock.patch.object(requests.Session, 'request', mock_200):
-        # try twice to test file name collision
-        try:
-            with s.urlopen("http://dummy/"):
-                raise Exception('test')
-        except:
-            pass
-        try:
-            with s.urlopen("http://dummy/"):
-                raise Exception('test')
-        except:
-            pass
-
-    assert os.path.isfile(os.path.join(error_dir, "http:,,dummy,"))
-    assert os.path.isfile(os.path.join(error_dir, "http:,,dummy,-1"))
-
-    # tear down error dir
-    for path in glob.iglob(os.path.join(error_dir, "*")):
-        os.remove(path)
-    os.rmdir(error_dir)
 
 
 def test_404():

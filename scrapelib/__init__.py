@@ -83,13 +83,13 @@ class FTPError(requests.HTTPError):
         super(FTPError, self).__init__(message)
 
 
-class ErrorManager(object):
+class ErrorManager(object):     # pragma: no cover
     def __enter__(self):
+        warnings.warn('with urlopen(): support is deprecated as of '
+                      'scrapelib 0.7', DeprecationWarning)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type and self._scraper.save_errors:
-            self._scraper._save_error(self.response.url, self)
         return False
 
 
@@ -272,8 +272,6 @@ class Scraper(object):
     :param requests_per_minute: maximum requests per minute (0 for
         unlimited, defaults to 60)
     :param follow_robots: respect robots.txt files (default: True)
-    :param error_dir: if not None, store scraped documents for which
-        an error was encountered.  (TODO: document with blocks)
     :param disable_compression: set to True to not accept compressed content
     :param raise_errors: set to True to raise a :class:`HTTPError`
         on 4xx or 5xx response
@@ -290,7 +288,6 @@ class Scraper(object):
                  headers=None,
                  requests_per_minute=60,
                  follow_robots=True,
-                 error_dir=None,
                  disable_compression=False,
                  raise_errors=True,
                  timeout=None,
@@ -300,6 +297,7 @@ class Scraper(object):
                  cache_obj=None,
                  cache_write_only=True,
                  # deprecated options
+                 error_dir=None,
                  use_cache_first=None,
                  accept_cookies=None,
                  cache_dir=None,
@@ -310,13 +308,6 @@ class Scraper(object):
             timeout = None
         self.timeout = timeout
 
-        self.error_dir = error_dir
-        if self.error_dir:
-            os.path.isdir(error_dir) or os.makedirs(error_dir)
-            self.save_errors = True
-        else:
-            self.save_errors = False
-
         self.raise_errors = raise_errors
         self.follow_redirects = follow_redirects
 
@@ -326,6 +317,9 @@ class Scraper(object):
                           DeprecationWarning)
         if use_cache_first:         # pragma: no cover
             warnings.warn('use_cache_first is a no-op as of scrapelib 0.7',
+                          DeprecationWarning)
+        if error_dir:               # pragma: no cover
+            warnings.warn('error_dir is a no-op as of scrapelib 0.7',
                           DeprecationWarning)
         if cache_dir:               # pragma: no cover
             warnings.warn('cache_dir is deprecated', DeprecationWarning)
@@ -483,24 +477,6 @@ class Scraper(object):
 
         return filename, result.response
 
-    def _save_error(self, url, body):
-        exception = sys.exc_info()[1]
-
-        out = {'exception': repr(exception),
-               'url': url,
-               'body': body.bytes,
-               'when': str(datetime.datetime.now())}
-
-        base_path = os.path.join(self.error_dir, url.replace('/', ','))
-        path = base_path
-
-        n = 0
-        while os.path.exists(path):
-            n += 1
-            path = base_path + "-%d" % n
-
-        with open(path, 'wb') as fp:
-            json.dump(out, fp, ensure_ascii=False)
 
 _default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
 

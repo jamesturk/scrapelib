@@ -3,8 +3,9 @@ scrapelib changelog
 
 0.7.1
 -----
-    * retry on more requests errors
-    * fix for unicode cached content
+    * deprecation of error_dir
+    * bugfix: retry on more requests errors
+    * bugfix: unicode cached content no longer incorrectly encoded
     * addition of overridable accept_response hook
     * implement various requests enhancements piecemeal for ease of reuse
     * convert more Scraper parameters to properties
