@@ -173,7 +173,7 @@ class RobotsTxtSession(requests.Session):
     def request(self, method, url, **kwargs):
         parsed_url = urlparse.urlparse(url)
         user_agent = (kwargs.get('headers', {}).get('user-agent') or
-                      self.headers.get('headers', {}).get('user-agent'))
+                      self.headers.get('user-agent'))
         # robots.txt is http-only
         if (parsed_url.scheme in ('http', 'https') and
             self.config.get('obey_robots_txt', False) and
