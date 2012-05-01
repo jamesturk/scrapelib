@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+0.7.2
+-----
+**in development**
+    * bugfix for user-agent check
+
 0.7.1
 -----
 **27 April 2012**
