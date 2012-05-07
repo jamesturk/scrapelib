@@ -350,11 +350,8 @@ class Scraper(ScrapelibSession):
             warnings.warn('error_dir is a no-op as of scrapelib 0.7',
                           DeprecationWarning)
         if cache_dir:               # pragma: no cover
-            warnings.warn('cache_dir is deprecated', DeprecationWarning)
-            if cache_obj:
-                raise ValueError('cannot specify cache_obj and cache_dir')
-            else:
-                cache_obj = FileCache(cache_dir)
+            warnings.warn('cache_dir is a no-op as of scrapelib 0.7',
+                          DeprecationWarning)
 
     @property
     def user_agent(self):
