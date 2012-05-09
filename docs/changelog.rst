@@ -3,7 +3,7 @@ scrapelib changelog
 
 0.7.2
 -----
-**in development**
+**9 May 2012**
     * bugfix for user-agent check
     * bugfix for cached content with \r characters
     * bugfix for requests >= 0.12
