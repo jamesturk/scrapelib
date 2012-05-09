@@ -16,7 +16,7 @@ import requests
 from .. import (Scraper, HTTPError, HTTPMethodUnavailableError,
                 RobotExclusionError, urllib_URLError, FTPError)
 from .. import _user_agent as default_user_agent
-from ..cache import FileCache
+from ..cache import FileCache, MemoryCache
 
 HTTPBIN = 'http://httpbin.org/'
 
@@ -186,6 +186,8 @@ def test_caching():
     cache_dir = tempfile.mkdtemp()
     s = Scraper(requests_per_minute=0, follow_robots=False,
                 cache_obj=FileCache(cache_dir), cache_write_only=False)
+    #s = Scraper(requests_per_minute=0, follow_robots=False,
+    #            cache_obj=MemoryCache(), cache_write_only=False)
 
     resp = s.urlopen(HTTPBIN + 'status/200')
     assert not resp.response.fromcache

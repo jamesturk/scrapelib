@@ -125,9 +125,9 @@ class FileCache(object):
             with open(path, 'rb') as f:
                 # read lines one at a time
                 while True:
-                    line = f.readline().strip('\r\n')
+                    line = f.readline().decode('utf8').strip('\r\n')
                     # set headers
-                    header = self._header_re.match(line.decode('utf8'))
+                    header = self._header_re.match(line)
                     if header:
                         resp.headers[header.group(1)] = header.group(2)
                     else:
@@ -137,6 +137,7 @@ class FileCache(object):
 
             # status will be in headers but isn't a real header
             resp.status_code = int(resp.headers.pop('status'))
+            resp.encoding = resp.headers.pop('encoding')
             resp.url = resp.headers['content-location'] or orig_key
             #TODO: resp.request = request
             return resp
@@ -150,6 +151,8 @@ class FileCache(object):
         with open(path, 'wb') as f:
             status_str = 'status: {0}\n'.format(response.status_code)
             f.write(status_str.encode('utf8'))
+            encoding_str = 'encoding: {0}\n'.format(response.encoding)
+            f.write(encoding_str.encode('utf8'))
             for h, v in response.headers.items():
                 # header: value\n
                 f.write(h.encode('utf8'))
