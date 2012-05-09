@@ -123,17 +123,17 @@ class FileCache(object):
 
         try:
             with open(path, 'rb') as f:
-                lines = f.readlines()
-                for num, line in enumerate(lines):
+                # read lines one at a time
+                while True:
+                    line = f.readline().strip('\r\n')
                     # set headers
                     header = self._header_re.match(line.decode('utf8'))
                     if header:
-                        resp.headers[header.group(1)] = \
-                                header.group(2).strip('\r')
+                        resp.headers[header.group(1)] = header.group(2)
                     else:
                         break
-                # skip a line, everything after that is good
-                resp._content = (b'\n'.join(lines[num + 1:]))
+                # everything left is the real content
+                resp._content = f.read()
 
             # status will be in headers but isn't a real header
             resp.status_code = int(resp.headers.pop('status'))

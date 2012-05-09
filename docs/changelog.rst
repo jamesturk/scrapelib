@@ -5,6 +5,7 @@ scrapelib changelog
 -----
 **in development**
     * bugfix for user-agent check
+    * bugfix for cached content with \r characters
     * cache_dir deprecation is total
 
 0.7.1
