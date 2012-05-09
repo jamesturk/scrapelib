@@ -135,7 +135,7 @@ class FileCache(object):
                 # everything left is the real content
                 resp._content = f.read()
 
-            # status will be in headers but isn't a real header
+            # status & encoding will be in headers, but are faked
             resp.status_code = int(resp.headers.pop('status'))
             resp.encoding = resp.headers.pop('encoding')
             resp.url = resp.headers['content-location'] or orig_key
