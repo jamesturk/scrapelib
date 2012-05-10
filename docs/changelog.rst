@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+0.7.3
+-----
+**in development**
+    * fix for combination of FTP and caching
+
 0.7.2
 -----
 **9 May 2012**
