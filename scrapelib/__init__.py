@@ -186,6 +186,9 @@ class RobotsTxtSession(requests.Session):
 
 
 class FTPSession(requests.Session):
+    # HACK: add FTP to allowed schemas
+    requests.defaults.SCHEMAS.append('ftp')
+
     def request(self, method, url, **kwargs):
         if url.startswith('ftp://'):
             if method.lower() != 'get':
