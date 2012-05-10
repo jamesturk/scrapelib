@@ -5,6 +5,7 @@ scrapelib changelog
 -----
 **in development**
     * fix for combination of FTP and caching
+    * drop unnecessary ScrapelibSession
 
 0.7.2
 -----

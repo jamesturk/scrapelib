@@ -251,16 +251,12 @@ class RetrySession(requests.Session):
 
 
 # compose sessions, order matters
-class ScrapelibSession(RobotsTxtSession,    # first, check robots.txt
-                       ThrottledSession,    # throttle requests
-                       CachingSession,      # cache responses
-                       RetrySession,        # do retries
-                       FTPSession           # do FTP & HTTP
-                      ):
-    pass
-
-
-class Scraper(ScrapelibSession):
+class Scraper(RobotsTxtSession,    # first, check robots.txt
+              ThrottledSession,    # throttle requests
+              CachingSession,      # cache responses
+              RetrySession,        # do retries
+              FTPSession           # do FTP & HTTP
+              ):
     """
     Scraper is the most important class provided by scrapelib (and generally
     the only one to be instantiated directly).  It provides a large number
