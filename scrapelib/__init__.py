@@ -492,12 +492,8 @@ def scrapeshell():                  # pragma: no cover
     try:
         from IPython import embed
     except ImportError:
-        try:
-            from IPython.Shell import IPShellEmbed
-            embed = IPShellEmbed()
-        except ImportError:
-            print('scrapeshell requires ipython')
-            return
+        print('scrapeshell requires ipython >= 0.11')
+        return
     try:
         import argparse
     except ImportError:
