@@ -100,7 +100,12 @@ class ResultStr(_str_type, ErrorManager):
     ``response`` attribute.
     """
     def __new__(cls, scraper, response, requested_url):
-        self = _str_type.__new__(cls, response.text)
+        try:
+            self = _str_type.__new__(cls, response.text)
+        except TypeError:
+            # use UTF8 as a default encoding if one couldn't be guessed
+            response.encoding = 'utf8'
+            self = _str_type.__new__(cls, response.text)
         self._scraper = scraper
         self.bytes = response.content
         self.encoding = response.encoding
