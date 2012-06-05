@@ -530,7 +530,7 @@ def scrapeshell():                  # pragma: no cover
         html = scraper.urlopen(args.url)
 
     if USE_LXML:
-        doc = lxml.html.fromstring(html)
+        doc = lxml.html.fromstring(html.bytes)
 
     print('local variables')
     print('---------------')
