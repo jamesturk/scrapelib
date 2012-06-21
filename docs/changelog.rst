@@ -3,9 +3,11 @@ scrapelib changelog
 
 0.7.3
 -----
-**in development**
+**21 June 2012**
     * fix for combination of FTP and caching
     * drop unnecessary ScrapelibSession
+    * bytes fix for scrapeshell
+    * use UTF8 if encoding guess fails
 
 0.7.2
 -----
