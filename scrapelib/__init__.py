@@ -26,7 +26,7 @@ else:                               # pragma: no cover
     from urllib import robotparser
     _str_type = str
 
-__version__ = '0.7.3-dev'
+__version__ = '0.7.3'
 _user_agent = 'scrapelib {0}'.format(__version__)
 
 
@@ -98,7 +98,12 @@ class ResultStr(_str_type, ErrorManager):
     ``response`` attribute.
     """
     def __new__(cls, scraper, response, requested_url):
-        self = _str_type.__new__(cls, response.text)
+        try:
+            self = _str_type.__new__(cls, response.text)
+        except TypeError:
+            # use UTF8 as a default encoding if one couldn't be guessed
+            response.encoding = 'utf8'
+            self = _str_type.__new__(cls, response.text)
         self._scraper = scraper
         self.bytes = response.content
         self.encoding = response.encoding
@@ -494,12 +499,8 @@ def scrapeshell():                  # pragma: no cover
     try:
         from IPython import embed
     except ImportError:
-        try:
-            from IPython.Shell import IPShellEmbed
-            embed = IPShellEmbed()
-        except ImportError:
-            print('scrapeshell requires ipython')
-            return
+        print('scrapeshell requires ipython >= 0.11')
+        return
     try:
         import argparse
     except ImportError:
@@ -536,7 +537,7 @@ def scrapeshell():                  # pragma: no cover
         html = scraper.urlopen(args.url)
 
     if USE_LXML:
-        doc = lxml.html.fromstring(html)
+        doc = lxml.html.fromstring(html.bytes)
 
     print('local variables')
     print('---------------')
