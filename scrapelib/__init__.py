@@ -1,3 +1,5 @@
+import datetime
+import json
 import logging
 import os
 import sys
@@ -361,11 +363,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
 
     @user_agent.setter
     def user_agent(self, value):
-        # Avoid clobbering user-agent specified in headers
-        if 'user-agent' in [k.lower() for k in self.headers.keys()]:
-            pass
-        else:
-            self.headers['user-agent'] = value
+        self.headers['user-agent'] = value
 
     @property
     def follow_robots(self):
