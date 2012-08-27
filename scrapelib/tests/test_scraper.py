@@ -71,7 +71,7 @@ def test_get():
 
 def test_post():
     s = Scraper(requests_per_minute=0, follow_robots=False)
-    resp = s.urlopen(HTTPBIN + 'post', 'POST', b'woo=woo')
+    resp = s.urlopen(HTTPBIN + 'post', 'POST', {'woo': 'woo'})
     assert_equal(resp.response.code, 200)
     resp_json = json.loads(resp)
     assert_equal(resp_json['form']['woo'], 'woo')
