@@ -336,7 +336,8 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         self.follow_redirects = follow_redirects
         self.requests_per_minute = requests_per_minute
         # properties (pass through to config/headers)
-        self.user_agent = user_agent
+        if user_agent != _user_agent or 'user-agent' not in self.headers:
+            self.user_agent = user_agent
         self.follow_robots = follow_robots
         self.retry_attempts = retry_attempts
         self.retry_wait_seconds = retry_wait_seconds

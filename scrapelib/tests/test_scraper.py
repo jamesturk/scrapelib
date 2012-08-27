@@ -120,6 +120,14 @@ def test_user_agent():
     assert_equal(ua, 'a different agent')
 
 
+def test_user_agent_from_headers():
+    s = Scraper(requests_per_minute=0, follow_robots=False,
+                headers={'user-agent':'from headers'})
+    resp = s.urlopen(HTTPBIN + 'user-agent')
+    ua = json.loads(resp)['user-agent']
+    assert_equal(ua, 'from headers')
+
+
 def test_follow_robots():
     s = Scraper(requests_per_minute=0, follow_robots=True)
 
