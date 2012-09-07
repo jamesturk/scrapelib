@@ -19,7 +19,7 @@ requests as-is:
 * All of the power of the suberb `requests <http://python-requests.org>`_ library.
 * HTTP, HTTPS, and FTP requests via an identical API
 * support for simple caching with pluggable cache backends
-* request throtting
+* request throttling
 * configurable retries for non-permanent site failures
 * optional robots.txt compliance
 
