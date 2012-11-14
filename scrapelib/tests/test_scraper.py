@@ -329,8 +329,8 @@ def test_disable_compression():
     # default is restored
     s.disable_compression = False
     data = s.urlopen(HTTPBIN + 'headers')
-    assert_equal(json.loads(data)['headers']['Accept-Encoding'],
-                 'identity, deflate, compress, gzip')
+    assert 'compress' in json.loads(data)['headers']['Accept-Encoding']
+    assert 'gzip' in json.loads(data)['headers']['Accept-Encoding']
 
     # A supplied Accept-Encoding headers overrides the
     # disable_compression option
