@@ -47,7 +47,6 @@ def test_fields():
                 timeout=0,
                 retry_attempts=-1,  # will be 0
                 retry_wait_seconds=100,
-                follow_redirects=False,
                 cache_write_only=False)
     assert_equal(s.user_agent, 'secret-agent')
     assert_equal(s.headers['test'], 'ok')
@@ -58,7 +57,6 @@ def test_fields():
     assert s.timeout is None        # 0 becomes None
     assert s.retry_attempts == 0    # -1 becomes 0
     assert s.retry_wait_seconds == 100
-    assert s.follow_redirects == False
     assert s.cache_write_only == False
 
 
@@ -169,24 +167,6 @@ def test_500():
     s.raise_errors = False
     resp = s.urlopen(HTTPBIN + 'status/500')
     assert_equal(500, resp.response.code)
-
-
-def test_follow_redirect():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
-
-    redirect_url = HTTPBIN + 'redirect/1'
-    final_url = HTTPBIN + 'get'
-
-    resp = s.urlopen(redirect_url)
-    assert_equal(final_url, resp.response.url)
-    assert_equal(redirect_url, resp.response.requested_url)
-    assert_equal(200, resp.response.code)
-
-    s.follow_redirects = False
-    resp = s.urlopen(redirect_url)
-    assert_equal(redirect_url, resp.response.url)
-    assert_equal(redirect_url, resp.response.requested_url)
-    assert_equal(302, resp.response.code)
 
 
 def test_caching():

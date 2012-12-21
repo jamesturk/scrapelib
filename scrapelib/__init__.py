@@ -364,6 +364,9 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         if prefetch is not None:
             warnings.warn('prefetch is a no-op as of scrapelib 0.8',
                           DeprecationWarning)
+        if follow_redirects is not True:
+            warnings.warn('follow_redirects is a no-op as of scrapelib 0.8',
+                          DeprecationWarning)
 
         # added by this class
         if timeout:
@@ -377,9 +380,11 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         self.raise_errors = raise_errors
 
         # shortcuts to underlying requests config
+        if user_agent != _user_agent:
+            warnings.warn('passing "timeout" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
         if not headers or 'User-Agent' not in headers:
             self.user_agent = user_agent
-        self.follow_redirects = follow_redirects
         self.disable_compression = disable_compression
 
         # added by CachingSession
@@ -399,14 +404,10 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
 
     @property
     def user_agent(self):
-        warnings.warn('user_agent attribute is deprecated, use '
-                      'headers["User-Agent"]', DeprecationWarning)
         return self.headers['User-Agent']
 
     @user_agent.setter
     def user_agent(self, value):
-        warnings.warn('user_agent attribute is deprecated, use '
-                      'headers["User-Agent"]', DeprecationWarning)
         self.headers['User-Agent'] = value
 
     @property
@@ -423,8 +424,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
             self.headers['Accept-Encoding'] = 'gzip, deflate, compress'
 
     def request(self, method, url, **kwargs):
-        # apply global redirect rule
-        allow_redirects = kwargs.pop('allow_redirects', self.follow_redirects)
         # apply global timeout
         timeout = kwargs.pop('timeout', self.timeout)
 
@@ -436,11 +435,8 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         headers = requests.sessions.merge_kwargs(kwargs.pop('headers', {}),
                                                  headers)
 
-        return super(Scraper, self).request(method, url,
-                                            allow_redirects=allow_redirects,
-                                            timeout=timeout, headers=headers,
-                                            **kwargs
-                                           )
+        return super(Scraper, self).request(method, url, timeout=timeout,
+                                            headers=headers, **kwargs)
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
@@ -543,16 +539,13 @@ def scrapeshell():                  # pragma: no cover
                         help='user agent to make requests with')
     parser.add_argument('--robots', dest='robots', action='store_true',
                         default=False, help='obey robots.txt')
-    parser.add_argument('--noredirect', dest='redirects', action='store_false',
-                        default=True, help="don't follow redirects")
     parser.add_argument('-p', '--postdata', dest='postdata',
                         default=None,
                         help="POST data (will make a POST instead of GET)")
     args = parser.parse_args(orig_argv)
 
     scraper = Scraper(user_agent=args.user_agent,
-                      follow_robots=args.robots,
-                      follow_redirects=args.redirects)
+                      follow_robots=args.robots)
     url = args.url
     if args.postdata:
         html = scraper.urlopen(args.url, 'POST', args.postdata)
