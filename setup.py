@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 long_description = open('README.rst').read()
 
 setup(name="scrapelib",
-      version='0.7.3',
+      version='0.7.4',
       py_modules=['scrapelib'],
       author="James Turk",
       author_email='jturk@sunlightfoundation.com',
@@ -24,7 +24,7 @@ setup(name="scrapelib",
                    ("Topic :: Software Development :: Libraries :: "
                     "Python Modules"),
                    ],
-      install_requires=['requests'],
+      install_requires=['requests<1.0'],
       entry_points="""
 [console_scripts]
 scrapeshell = scrapelib:scrapeshell
