@@ -4,7 +4,7 @@ python:
     - "2.7"
     - "3.2"
     - "3.3"
-install: pip install mock nose requests --use-mirrors --upgrade
+install: pip install mock nose requests<1.0 --use-mirrors --upgrade
 script: nosetests
 notifications:
     email:
