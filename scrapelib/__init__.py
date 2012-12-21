@@ -84,17 +84,7 @@ class FTPError(requests.HTTPError):
         super(FTPError, self).__init__(message)
 
 
-class ErrorManager(object):     # pragma: no cover
-    def __enter__(self):
-        warnings.warn('with urlopen(): support is deprecated as of '
-                      'scrapelib 0.7', DeprecationWarning)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return False
-
-
-class ResultStr(_str_type, ErrorManager):
+class ResultStr(_str_type):
     """
     Wrapper for responses.  Can treat identically to a ``str``
     to get body of response, additional headers, etc. available via
@@ -301,7 +291,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         for building up a cache but not relying on it
     """
     def __init__(self,
-                 # requests.Session
+                 # requests.Session - all deprecated (should be set on object)
                  headers=None,
                  cookies=None,
                  auth=None,
@@ -337,30 +327,40 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
 
         super(Scraper, self).__init__()
 
-        # not attribute from requests
-        self.timeout = timeout
-
         # deprecated options that just get set on requests.Session object
         if headers is not None:
+            warnings.warn('passing "headers" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
             self.headers = headers
         if auth is not None:
+            warnings.warn('passing "auth" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
             self.auth = auth
         if proxies is not None:
+            warnings.warn('passing "proxies" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
             self.proxies = proxies
         if hooks is not None:
+            warnings.warn('passing "hooks" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
             self.hooks = hooks
         if params is not None:
+            warnings.warn('passing "params" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
             self.params = params
         if verify is not True:
+            warnings.warn('passing "verify" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
             self.verify = verify
         if cert is not None:
+            warnings.warn('passing "cert" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
             self.cert = cert
         if cookies is not None:
+            warnings.warn('passing "cookies" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
             self.cookies = cookies
 
-        if timeout:
-            warnings.warn('timeout is a no-op as of scrapelib 0.8',
-                          DeprecationWarning)
         if config is not None:
             warnings.warn('config is a no-op as of scrapelib 0.8',
                           DeprecationWarning)
@@ -369,6 +369,11 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                           DeprecationWarning)
 
         # scrapelib-specific settings
+        if timeout:
+            warnings.warn('passing "timeout" to constructor is deprecated as '
+                          'of scrapelib 0.8', DeprecationWarning)
+
+        self.timeout = timeout
         self.raise_errors = raise_errors
         self.follow_redirects = follow_redirects
         self.cache_storage = cache_obj
@@ -385,10 +390,14 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
 
     @property
     def user_agent(self):
+        warnings.warn('user_agent attribute is deprecated, use '
+                      'headers["User-Agent"]', DeprecationWarning)
         return self.headers['User-Agent']
 
     @user_agent.setter
     def user_agent(self, value):
+        warnings.warn('user_agent attribute is deprecated, use '
+                      'headers["User-Agent"]', DeprecationWarning)
         self.headers['User-Agent'] = value
 
     @property
