@@ -28,7 +28,7 @@ else:                               # pragma: no cover
     from urllib import robotparser
     _str_type = str
 
-__version__ = '0.7.4'
+__version__ = '0.8.0-dev'
 _user_agent = 'scrapelib {0}'.format(__version__)
 
 
