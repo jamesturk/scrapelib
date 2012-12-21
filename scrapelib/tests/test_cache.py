@@ -63,9 +63,8 @@ def test_simple_cache_request():
 
 
 def test_cache_write_only():
-    cs = CachingSession(cache_storage=MemoryCache(),
-                        config={'cache_write_only': True}
-                       )
+    cs = CachingSession(cache_storage=MemoryCache())
+    cs.cache_write_only = True
     url = HTTPBIN + 'get'
 
     # first response not from cache

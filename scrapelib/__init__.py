@@ -154,8 +154,8 @@ class ThrottledSession(requests.Session):
 
 class RobotsTxtSession(requests.Session):
 
-    def __init__(self, *args, **kwargs):
-        super(RobotsTxtSession, self).__init__(*args, **kwargs)
+    def __init__(self):
+        super(RobotsTxtSession, self).__init__()
         self._robot_parsers = {}
 
     def _robot_allowed(self, user_agent, parsed_url):
@@ -177,8 +177,8 @@ class RobotsTxtSession(requests.Session):
 
     def request(self, method, url, **kwargs):
         parsed_url = urlparse.urlparse(url)
-        user_agent = (kwargs.get('headers', {}).get('user-agent') or
-                      self.headers.get('user-agent'))
+        user_agent = (kwargs.get('headers', {}).get('User-Agent') or
+                      self.headers.get('User-Agent'))
         # robots.txt is http-only
         if (parsed_url.scheme in ('http', 'https') and
             self.config.get('obey_robots_txt', False) and
@@ -191,8 +191,6 @@ class RobotsTxtSession(requests.Session):
 
 
 class FTPSession(requests.Session):
-    # HACK: add FTP to allowed schemas
-    requests.defaults.SCHEMAS.append('ftp')
 
     def request(self, method, url, **kwargs):
         if url.startswith('ftp://'):
@@ -297,7 +295,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                  hooks=None,
                  params=None,
                  config=None,
-                 prefetch=False,
+                 prefetch=None,
                  verify=True,
                  cert=None,
                  # scrapelib-specific params
@@ -327,16 +325,46 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         else:
             self._header_func = None
 
-        super(Scraper, self).__init__(headers, cookies, auth, timeout, proxies,
-                                      hooks, params, config, prefetch, verify,
-                                      cert, cache_storage=cache_obj)
+        super(Scraper, self).__init__()
+
+        # not attribute from requests
+        self.cache_storage = cache_obj
+        self.timeout = timeout
+
+        if headers is not None:
+            self.headers = headers
+        if cookies is not None:
+            self.cookies = cookies
+        if auth is not None:
+            self.auth = auth
+        if timeout:
+            self.timeout = timeout
+        if proxies is not None:
+            self.proxies = proxies
+        if hooks is not None:
+            self.hooks = hooks
+        if params is not None:
+            self.params = params
+        if config is not None:
+            # error out immediately
+            pass
+        if prefetch is not None:
+            # error out immediately
+            pass
+        if verify is not True:
+            self.verify = verify
+        if cert is not None:
+            self.cert = cert
+
+        # add config
+        self.config = {}
 
         # scrapelib-specific settings
         self.raise_errors = raise_errors
         self.follow_redirects = follow_redirects
         self.requests_per_minute = requests_per_minute
         # properties (pass through to config/headers)
-        if user_agent != _user_agent or 'user-agent' not in self.headers:
+        if not headers or 'User-Agent' not in headers:
             self.user_agent = user_agent
         self.follow_robots = follow_robots
         self.retry_attempts = retry_attempts
@@ -360,11 +388,11 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
 
     @property
     def user_agent(self):
-        return self.headers['user-agent']
+        return self.headers['User-Agent']
 
     @user_agent.setter
     def user_agent(self, value):
-        self.headers['user-agent'] = value
+        self.headers['User-Agent'] = value
 
     @property
     def follow_robots(self):
@@ -391,25 +419,17 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         self.config['retry_wait_seconds'] = value
 
     @property
-    def cache_write_only(self):
-        return self.config['cache_write_only']
-
-    @cache_write_only.setter
-    def cache_write_only(self, value):
-        self.config['cache_write_only'] = value
-
-    @property
     def disable_compression(self):
-        return self.headers['accept-encoding'] == 'text/*'
+        return self.headers['Accept-Encoding'] == 'text/*'
 
     @disable_compression.setter
     def disable_compression(self, value):
         # disabled: set encoding to text/*
         if value:
-            self.headers['accept-encoding'] = 'text/*'
+            self.headers['Accept-Encoding'] = 'text/*'
         # enabled: if set to text/* pop, otherwise leave unmodified
-        elif self.headers.get('accept-encoding') == 'text/*':
-            self.headers.pop('accept-encoding', None)
+        elif self.headers.get('Accept-Encoding') == 'text/*':
+            self.headers['Accept-Encoding'] = 'gzip, deflate, compress'
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """

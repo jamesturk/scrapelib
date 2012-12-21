@@ -122,7 +122,7 @@ def test_user_agent():
 
 def test_user_agent_from_headers():
     s = Scraper(requests_per_minute=0, follow_robots=False,
-                headers={'user-agent':'from headers'})
+                headers={'User-Agent':'from headers'})
     resp = s.urlopen(HTTPBIN + 'user-agent')
     ua = json.loads(resp)['user-agent']
     assert_equal(ua, 'from headers')
@@ -192,10 +192,10 @@ def test_follow_redirect():
 
 def test_caching():
     cache_dir = tempfile.mkdtemp()
-    s = Scraper(requests_per_minute=0, follow_robots=False,
-                cache_obj=FileCache(cache_dir), cache_write_only=False)
     #s = Scraper(requests_per_minute=0, follow_robots=False,
-    #            cache_obj=MemoryCache(), cache_write_only=False)
+    #            cache_obj=FileCache(cache_dir), cache_write_only=False)
+    s = Scraper(requests_per_minute=0, follow_robots=False,
+                cache_obj=MemoryCache(), cache_write_only=False)
 
     resp = s.urlopen(HTTPBIN + 'status/200')
     assert not resp.response.fromcache
@@ -334,7 +334,7 @@ def test_disable_compression():
 
     # A supplied Accept-Encoding headers overrides the
     # disable_compression option
-    s.headers['accept-encoding'] = '*'
+    s.headers['Accept-Encoding'] = '*'
     data = s.urlopen(HTTPBIN + 'headers')
     assert_equal(json.loads(data)['headers']['Accept-Encoding'], '*')
 

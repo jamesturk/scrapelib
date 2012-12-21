@@ -11,24 +11,10 @@ import requests
 
 
 class CachingSession(requests.Session):
-    def __init__(self,
-                 headers=None,
-                 cookies=None,
-                 auth=None,
-                 timeout=None,
-                 proxies=None,
-                 hooks=None,
-                 params=None,
-                 config=None,
-                 prefetch=False,
-                 verify=True,
-                 cert=None,
-                 cache_storage=None,
-                ):
-        super(CachingSession, self).__init__(headers, cookies, auth, timeout,
-                                             proxies, hooks, params, config,
-                                             prefetch, verify, cert)
+    def __init__(self, cache_storage=None):
+        super(CachingSession, self).__init__()
         self.cache_storage = cache_storage
+        self.cache_write_only = False
 
     def key_for_request(self, method, url, **kwargs):
         """ Return a cache key from a given set of request parameters.
@@ -42,7 +28,7 @@ class CachingSession(requests.Session):
             return None
 
         return requests.Request(url=url,
-                                params=kwargs.get('params', {})).full_url
+                                params=kwargs.get('params', {})).prepare().url
 
     def should_cache_response(self, response):
         """ Check if a given Response object should be cached.
@@ -69,7 +55,7 @@ class CachingSession(requests.Session):
 
         request_key = self.key_for_request(method, url, **kwargs)
 
-        if request_key and not self.config.get('cache_write_only'):
+        if request_key and not self.cache_write_only:
             resp = self.cache_storage.get(request_key)
 
         if resp:
