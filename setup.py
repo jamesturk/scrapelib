@@ -26,7 +26,7 @@ setup(name="scrapelib",
                    ("Topic :: Software Development :: Libraries :: "
                     "Python Modules"),
                    ],
-      install_requires=['requests<1.0'],
+      install_requires=['requests>=1.0'],
       entry_points="""
 [console_scripts]
 scrapeshell = scrapelib:scrapeshell
