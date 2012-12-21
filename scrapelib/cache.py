@@ -136,7 +136,8 @@ class FileCache(object):
                 resp._content = f.read()
 
             # status & encoding will be in headers, but are faked
-            resp.status_code = int(resp.headers.pop('status'))
+            # need to split spaces out of status to get code (e.g. '200 OK')
+            resp.status_code = int(resp.headers.pop('status').split(' ')[0])
             resp.encoding = resp.headers.pop('encoding')
             resp.url = resp.headers['content-location'] or orig_key
             #TODO: resp.request = request

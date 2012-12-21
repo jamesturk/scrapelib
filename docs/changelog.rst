@@ -1,6 +1,13 @@
 scrapelib changelog
 ===================
 
+0.7.4
+-----
+**20 December 2012**
+    * bugfix for status_code coming from a cache
+    * bugfix for setting user-agent from headers
+    * fix requests version at <1.0
+
 0.7.3
 -----
 **21 June 2012**
