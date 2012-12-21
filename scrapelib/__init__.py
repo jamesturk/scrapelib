@@ -29,7 +29,8 @@ else:                               # pragma: no cover
     _str_type = str
 
 __version__ = '0.8.0-dev'
-_user_agent = 'scrapelib {0}'.format(__version__)
+_user_agent = ' '.join(('scrapelib', __version__,
+                        requests.utils.default_user_agent()))
 
 
 class NullHandler(logging.Handler):
