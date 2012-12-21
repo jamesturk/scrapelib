@@ -291,84 +291,29 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         for building up a cache but not relying on it
     """
     def __init__(self,
-                 # requests.Session - all deprecated (should be set on object)
-                 headers=None,
-                 cookies=None,
-                 auth=None,
-                 timeout=None,
-                 proxies=None,
-                 hooks=None,
-                 params=None,
-                 config=None,
-                 prefetch=None,
-                 verify=True,
-                 cert=None,
                  # scrapelib-specific params
-                 user_agent=_user_agent,
+                 header_func=None,
+                 timeout=None,              # deprecated
+                 user_agent=_user_agent,    # deprecated
                  requests_per_minute=60,
                  follow_robots=True,
-                 disable_compression=False,
+                 disable_compression=False, # deprecated
                  raise_errors=True,
                  retry_attempts=0,
                  retry_wait_seconds=5,
-                 follow_redirects=True,
-                 cache_obj=None,
-                 cache_write_only=True,
+                 follow_redirects=True,     # no-op
+                 cache_obj=None,            # deprecated
+                 cache_write_only=True,     # deprecated
                 ):
 
         super(Scraper, self).__init__()
 
-        if callable(headers):
-            self._header_func = headers
-            headers = {}
-        else:
-            self._header_func = None
-
-        # deprecated options that just get set on requests.Session object
-        if headers is not None:
-            warnings.warn('passing "headers" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-            self.headers = headers
-        if auth is not None:
-            warnings.warn('passing "auth" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-            self.auth = auth
-        if proxies is not None:
-            warnings.warn('passing "proxies" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-            self.proxies = proxies
-        if hooks is not None:
-            warnings.warn('passing "hooks" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-            self.hooks = hooks
-        if params is not None:
-            warnings.warn('passing "params" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-            self.params = params
-        if verify is not True:
-            warnings.warn('passing "verify" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-            self.verify = verify
-        if cert is not None:
-            warnings.warn('passing "cert" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-            self.cert = cert
-        if cookies is not None:
-            warnings.warn('passing "cookies" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-            self.cookies = cookies
-
-        if config is not None:
-            warnings.warn('config is a no-op as of scrapelib 0.8',
-                          DeprecationWarning)
-        if prefetch is not None:
-            warnings.warn('prefetch is a no-op as of scrapelib 0.8',
-                          DeprecationWarning)
         if follow_redirects is not True:
             warnings.warn('follow_redirects is a no-op as of scrapelib 0.8',
                           DeprecationWarning)
 
         # added by this class
+        self._header_func = header_func
         if timeout:
             warnings.warn('passing "timeout" to constructor is deprecated as '
                           'of scrapelib 0.8', DeprecationWarning)
@@ -383,12 +328,20 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         if user_agent != _user_agent:
             warnings.warn('passing "timeout" to constructor is deprecated as '
                           'of scrapelib 0.8', DeprecationWarning)
-        if not headers or 'User-Agent' not in headers:
-            self.user_agent = user_agent
+        self.user_agent = user_agent
+        if disable_compression is not False:
+            warnings.warn('passing "disable_compression" to constructor is '
+                          'deprecated as of scrapelib 0.8', DeprecationWarning)
         self.disable_compression = disable_compression
 
         # added by CachingSession
+        if cache_obj is not None:
+            warnings.warn('passing "cache_obj" to constructor is deprecated '
+                          'as of scrapelib 0.8', DeprecationWarning)
         self.cache_storage = cache_obj
+        if cache_write_only is not True:
+            warnings.warn('passing "cache_write_only" to constructor is '
+                          'deprecated as of scrapelib 0.8', DeprecationWarning)
         self.cache_write_only = cache_write_only
 
         # added by ThrottledSession

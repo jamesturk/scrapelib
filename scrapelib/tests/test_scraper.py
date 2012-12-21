@@ -39,7 +39,6 @@ mock_200 = mock.Mock(wraps=request_200)
 def test_fields():
     # timeout=0 means None
     s = Scraper(user_agent='secret-agent',
-                headers={'test': 'ok'},
                 requests_per_minute=100,
                 follow_robots=False,
                 disable_compression=True,
@@ -49,7 +48,6 @@ def test_fields():
                 retry_wait_seconds=100,
                 cache_write_only=False)
     assert_equal(s.user_agent, 'secret-agent')
-    assert_equal(s.headers['test'], 'ok')
     assert s.requests_per_minute == 100
     assert s.follow_robots == False
     assert s.disable_compression
@@ -118,8 +116,8 @@ def test_user_agent():
 
 
 def test_user_agent_from_headers():
-    s = Scraper(requests_per_minute=0, follow_robots=False,
-                headers={'User-Agent':'from headers'})
+    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s.headers = {'User-Agent':'from headers'}
     resp = s.urlopen(HTTPBIN + 'user-agent')
     ua = json.loads(resp)['user-agent']
     assert_equal(ua, 'from headers')
@@ -328,7 +326,7 @@ def test_disable_compression():
 
 
 def test_callable_headers():
-    s = Scraper(headers=lambda url: {'X-Url': url}, follow_robots=False)
+    s = Scraper(header_func=lambda url: {'X-Url': url}, follow_robots=False)
 
     data = s.urlopen(HTTPBIN + 'headers')
     assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN + 'headers')
