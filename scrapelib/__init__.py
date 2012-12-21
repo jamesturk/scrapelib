@@ -316,16 +316,13 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                  cache_write_only=True,
                 ):
 
-        # make timeout of 0 mean timeout of None
-        if timeout == 0:
-            timeout = None
+        super(Scraper, self).__init__()
+
         if callable(headers):
             self._header_func = headers
             headers = {}
         else:
             self._header_func = None
-
-        super(Scraper, self).__init__()
 
         # deprecated options that just get set on requests.Session object
         if headers is not None:
@@ -368,24 +365,36 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
             warnings.warn('prefetch is a no-op as of scrapelib 0.8',
                           DeprecationWarning)
 
-        # scrapelib-specific settings
+        # added by this class
         if timeout:
             warnings.warn('passing "timeout" to constructor is deprecated as '
                           'of scrapelib 0.8', DeprecationWarning)
-
+        # make timeout of 0 mean timeout of None to avoid async behavior
+        if timeout == 0:
+            timeout = None
         self.timeout = timeout
+
         self.raise_errors = raise_errors
-        self.follow_redirects = follow_redirects
-        self.cache_storage = cache_obj
-        self.requests_per_minute = requests_per_minute
-        # properties (pass through to config/headers)
+
+        # shortcuts to underlying requests config
         if not headers or 'User-Agent' not in headers:
             self.user_agent = user_agent
+        self.follow_redirects = follow_redirects
+        self.disable_compression = disable_compression
+
+        # added by CachingSession
+        self.cache_storage = cache_obj
+        self.cache_write_only = cache_write_only
+
+        # added by ThrottledSession
+        self.requests_per_minute = requests_per_minute
+
+        # added by RobotsTxtSession
         self.follow_robots = follow_robots
+
+        # added by RetrySession
         self.retry_attempts = retry_attempts
         self.retry_wait_seconds = retry_wait_seconds
-        self.cache_write_only = cache_write_only
-        self.disable_compression = disable_compression
 
 
     @property
