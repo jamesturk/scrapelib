@@ -80,8 +80,7 @@ def test_post():
 
 
 def test_request_throttling():
-    s = Scraper(requests_per_minute=30, follow_robots=False,
-                accept_cookies=False)
+    s = Scraper(requests_per_minute=30, follow_robots=False)
     assert_equal(s.requests_per_minute, 30)
 
     mock_sleep = mock.Mock()

@@ -157,6 +157,7 @@ class RobotsTxtSession(requests.Session):
     def __init__(self):
         super(RobotsTxtSession, self).__init__()
         self._robot_parsers = {}
+        self.follow_robots = True
 
     def _robot_allowed(self, user_agent, parsed_url):
         _log.info("checking robots permission for %s" % parsed_url.geturl())
@@ -181,7 +182,7 @@ class RobotsTxtSession(requests.Session):
                       self.headers.get('User-Agent'))
         # robots.txt is http-only
         if (parsed_url.scheme in ('http', 'https') and
-            self.config.get('obey_robots_txt', False) and
+            self.follow_robots and
             not self._robot_allowed(user_agent, parsed_url)):
             raise RobotExclusionError(
                 "User-Agent '%s' not allowed at '%s'" % (
@@ -215,6 +216,20 @@ class FTPSession(requests.Session):
 
 class RetrySession(requests.Session):
 
+    def __init__(self):
+        super(RetrySession, self).__init__()
+        self._retry_attempts = 0
+        self.retry_wait_seconds = 10
+
+    # retry_attempts is a property so that it can't go negative
+    @property
+    def retry_attempts(self):
+        return self._retry_attempts
+
+    @retry_attempts.setter
+    def retry_attempts(self, value):
+        self._retry_attempts = max(value, 0)
+
     def accept_response(self, response, **kwargs):
         return response.status_code < 400
 
@@ -223,7 +238,7 @@ class RetrySession(requests.Session):
         tries = 0
         exception_raised = None
 
-        while tries <= self.config.get('retry_attempts', 0):
+        while tries <= self.retry_attempts:
             exception_raised = None
 
             try:
@@ -239,10 +254,9 @@ class RetrySession(requests.Session):
 
             # if we're going to retry, sleep first
             tries += 1
-            if tries <= self.config.get('retry_attempts', 0):
+            if tries <= self.retry_attempts:
                 # twice as long each time
-                wait = (self.config.get('retry_wait_seconds', 10) *
-                        (2 ** (tries - 1)))
+                wait = (self.retry_wait_seconds * (2 ** (tries - 1)))
                 _log.debug('sleeping for %s seconds before retry' % wait)
                 time.sleep(wait)
 
@@ -309,11 +323,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                  follow_redirects=True,
                  cache_obj=None,
                  cache_write_only=True,
-                 # deprecated options
-                 error_dir=None,
-                 use_cache_first=None,
-                 accept_cookies=None,
-                 cache_dir=None,
                 ):
 
         # make timeout of 0 mean timeout of None
@@ -345,19 +354,16 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
             self.hooks = hooks
         if params is not None:
             self.params = params
-        if config is not None:
-            # error out immediately
-            pass
-        if prefetch is not None:
-            # error out immediately
-            pass
         if verify is not True:
             self.verify = verify
         if cert is not None:
             self.cert = cert
-
-        # add config
-        self.config = {}
+        if config is not None:
+            warnings.warn('config is a no-op as of scrapelib 0.8',
+                          DeprecationWarning)
+        if prefetch is not None:
+            warnings.warn('prefetch is a no-op as of scrapelib 0.8',
+                          DeprecationWarning)
 
         # scrapelib-specific settings
         self.raise_errors = raise_errors
@@ -372,19 +378,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         self.cache_write_only = cache_write_only
         self.disable_compression = disable_compression
 
-        # deprecations from 0.7, remove in 0.8
-        if accept_cookies:          # pragma: no cover
-            warnings.warn('accept_cookies is a no-op as of scrapelib 0.7',
-                          DeprecationWarning)
-        if use_cache_first:         # pragma: no cover
-            warnings.warn('use_cache_first is a no-op as of scrapelib 0.7',
-                          DeprecationWarning)
-        if error_dir:               # pragma: no cover
-            warnings.warn('error_dir is a no-op as of scrapelib 0.7',
-                          DeprecationWarning)
-        if cache_dir:               # pragma: no cover
-            warnings.warn('cache_dir is a no-op as of scrapelib 0.7',
-                          DeprecationWarning)
 
     @property
     def user_agent(self):
@@ -393,30 +386,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
     @user_agent.setter
     def user_agent(self, value):
         self.headers['User-Agent'] = value
-
-    @property
-    def follow_robots(self):
-        return self.config.get('obey_robots_txt', False)
-
-    @follow_robots.setter
-    def follow_robots(self, value):
-        self.config['obey_robots_txt'] = value
-
-    @property
-    def retry_attempts(self):
-        return self.config.get('retry_attempts', 0)
-
-    @retry_attempts.setter
-    def retry_attempts(self, value):
-        self.config['retry_attempts'] = max(value, 0)
-
-    @property
-    def retry_wait_seconds(self):
-        return self.config.get('retry_wait_seconds', 0)
-
-    @retry_wait_seconds.setter
-    def retry_wait_seconds(self, value):
-        self.config['retry_wait_seconds'] = value
 
     @property
     def disable_compression(self):
