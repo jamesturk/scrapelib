@@ -337,17 +337,13 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         super(Scraper, self).__init__()
 
         # not attribute from requests
-        self.cache_storage = cache_obj
         self.timeout = timeout
 
+        # deprecated options that just get set on requests.Session object
         if headers is not None:
             self.headers = headers
-        if cookies is not None:
-            self.cookies = cookies
         if auth is not None:
             self.auth = auth
-        if timeout:
-            self.timeout = timeout
         if proxies is not None:
             self.proxies = proxies
         if hooks is not None:
@@ -358,6 +354,12 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
             self.verify = verify
         if cert is not None:
             self.cert = cert
+        if cookies is not None:
+            self.cookies = cookies
+
+        if timeout:
+            warnings.warn('timeout is a no-op as of scrapelib 0.8',
+                          DeprecationWarning)
         if config is not None:
             warnings.warn('config is a no-op as of scrapelib 0.8',
                           DeprecationWarning)
@@ -368,6 +370,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         # scrapelib-specific settings
         self.raise_errors = raise_errors
         self.follow_redirects = follow_redirects
+        self.cache_storage = cache_obj
         self.requests_per_minute = requests_per_minute
         # properties (pass through to config/headers)
         if not headers or 'User-Agent' not in headers:
@@ -400,6 +403,26 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         elif self.headers.get('Accept-Encoding') == 'text/*':
             self.headers['Accept-Encoding'] = 'gzip, deflate, compress'
 
+    def request(self, method, url, **kwargs):
+        # apply global redirect rule
+        allow_redirects = kwargs.pop('allow_redirects', self.follow_redirects)
+        # apply global timeout
+        timeout = kwargs.pop('timeout', self.timeout)
+
+        if self._header_func:
+            headers = Headers(self._header_func(url))
+        else:
+            headers = {}
+        headers = requests.sessions.merge_kwargs(headers, self.headers)
+        headers = requests.sessions.merge_kwargs(kwargs.pop('headers', {}),
+                                                 headers)
+
+        return super(Scraper, self).request(method, url,
+                                            allow_redirects=allow_redirects,
+                                            timeout=timeout, headers=headers,
+                                            **kwargs
+                                           )
+
     def urlopen(self, url, method='GET', body=None, retry_on_404=False):
         """
             Make an HTTP request and return a :class:`ResultStr` object.
@@ -416,17 +439,10 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                 if retries are not enabled this parameter does nothing
                 (default: False)
         """
-        if self._header_func:
-            headers = Headers(self._header_func(url))
-        else:
-            headers = {}
 
         _log.info("{0} - {1}".format(method.upper(), url))
 
-        resp = self.request(method, url,
-                            data=body, headers=headers,
-                            allow_redirects=self.follow_redirects,
-                            retry_on_404=retry_on_404)
+        resp = self.request(method, url, data=body, retry_on_404=retry_on_404)
 
         if self.raise_errors and not self.accept_response(resp):
             raise HTTPError(resp)

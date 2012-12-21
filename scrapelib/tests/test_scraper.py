@@ -284,6 +284,15 @@ def test_retry_404():
     assert_equal(mock_request.call_count, 5)
 
 
+def test_timeout():
+    s = Scraper()
+    s.timeout = 0.001
+    s.follow_robots = False
+    with assert_raises(requests.Timeout):
+        x = s.urlopen(HTTPBIN + 'delay/1')
+
+
+
 def test_timeout_retry():
     # TODO: make this work with the other requests exceptions
     count = []
@@ -339,7 +348,7 @@ def test_disable_compression():
 
 
 def test_callable_headers():
-    s = Scraper(headers=lambda url: {'X-Url': url})
+    s = Scraper(headers=lambda url: {'X-Url': url}, follow_robots=False)
 
     data = s.urlopen(HTTPBIN + 'headers')
     assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN + 'headers')
