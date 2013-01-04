@@ -29,6 +29,6 @@ setup(name="scrapelib",
       install_requires=['requests>=1.0'],
       entry_points="""
 [console_scripts]
-scrapeshell = scrapelib:scrapeshell
+scrapeshell = scrapelib.__main__:scrapeshell
 """
       )

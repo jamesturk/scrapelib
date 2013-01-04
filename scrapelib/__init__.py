@@ -291,19 +291,18 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         for building up a cache but not relying on it
     """
     def __init__(self,
-                 # scrapelib-specific params
+                 raise_errors=True,
+                 requests_per_minute=60,
+                 follow_robots=True,
+                 retry_attempts=0,
+                 retry_wait_seconds=5,
                  header_func=None,
                  timeout=None,              # deprecated
                  user_agent=_user_agent,    # deprecated
-                 requests_per_minute=60,
-                 follow_robots=True,
                  disable_compression=False, # deprecated
-                 raise_errors=True,
-                 retry_attempts=0,
-                 retry_wait_seconds=5,
-                 follow_redirects=True,     # no-op
                  cache_obj=None,            # deprecated
                  cache_write_only=True,     # deprecated
+                 follow_redirects=True,     # no-op
                 ):
 
         super(Scraper, self).__init__()
@@ -460,58 +459,3 @@ _default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
 
 def urlopen(url, method='GET', body=None):  # pragma: no cover
     return _default_scraper.urlopen(url, method, body)
-
-
-def scrapeshell():                  # pragma: no cover
-    # clear argv for IPython
-    import sys
-    orig_argv = sys.argv[1:]
-    sys.argv = sys.argv[:1]
-
-    try:
-        from IPython import embed
-    except ImportError:
-        print('scrapeshell requires ipython >= 0.11')
-        return
-    try:
-        import argparse
-    except ImportError:
-        print('scrapeshell requires argparse')
-        return
-    try:
-        import lxml.html
-        USE_LXML = True
-    except ImportError:
-        USE_LXML = False
-
-    parser = argparse.ArgumentParser(prog='scrapeshell',
-                                     description='interactive python shell for'
-                                     ' scraping')
-    parser.add_argument('url', help="url to scrape")
-    parser.add_argument('--ua', dest='user_agent', default=_user_agent,
-                        help='user agent to make requests with')
-    parser.add_argument('--robots', dest='robots', action='store_true',
-                        default=False, help='obey robots.txt')
-    parser.add_argument('-p', '--postdata', dest='postdata',
-                        default=None,
-                        help="POST data (will make a POST instead of GET)")
-    args = parser.parse_args(orig_argv)
-
-    scraper = Scraper(user_agent=args.user_agent,
-                      follow_robots=args.robots)
-    url = args.url
-    if args.postdata:
-        html = scraper.urlopen(args.url, 'POST', args.postdata)
-    else:
-        html = scraper.urlopen(args.url)
-
-    if USE_LXML:
-        doc = lxml.html.fromstring(html.bytes)
-
-    print('local variables')
-    print('---------------')
-    print('url: %s' % url)
-    print('html: `scrapelib.ResultStr` instance')
-    if USE_LXML:
-        print('doc: `lxml HTML element`')
-    embed()
