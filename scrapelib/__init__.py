@@ -284,8 +284,9 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         page returns a (non-404) error
     :param retry_wait_seconds: number of seconds to retry after first failure,
         subsequent retries will double this wait
+    :param cache_obj: cache manager instance (see cache.py)
     :param cache_write_only: will write to cache but not read from it, useful
-        for building up a cache but not relying on it
+        for building up a cache but not relying on it (default: True)
     """
     def __init__(self,
                  # requests.Session
