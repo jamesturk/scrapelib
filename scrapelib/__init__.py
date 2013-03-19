@@ -274,21 +274,15 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
     then using the :meth:`urlopen` & :meth:`urlretrieve` methods of that
     instance.
 
-    :param user_agent: the value to send as a User-Agent header on
-        HTTP requests (default is "scrapelib |release|")
+    :param raise_errors: set to True to raise a :class:`HTTPError`
+        on 4xx or 5xx response
     :param requests_per_minute: maximum requests per minute (0 for
         unlimited, defaults to 60)
     :param follow_robots: respect robots.txt files (default: True)
-    :param disable_compression: set to True to not accept compressed content
-    :param raise_errors: set to True to raise a :class:`HTTPError`
-        on 4xx or 5xx response
-    :param timeout: socket timeout in seconds (default: None)
     :param retry_attempts: number of times to retry if timeout occurs or
         page returns a (non-404) error
     :param retry_wait_seconds: number of seconds to retry after first failure,
         subsequent retries will double this wait
-    :param cache_write_only: will write to cache but not read from it, useful
-        for building up a cache but not relying on it
     """
     def __init__(self,
                  raise_errors=True,
@@ -297,51 +291,14 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                  retry_attempts=0,
                  retry_wait_seconds=5,
                  header_func=None,
-                 timeout=None,              # deprecated
-                 user_agent=_user_agent,    # deprecated
-                 disable_compression=False, # deprecated
                  cache_obj=None,            # deprecated
                  cache_write_only=True,     # deprecated
-                 follow_redirects=True,     # no-op
                 ):
 
         super(Scraper, self).__init__()
 
-        if follow_redirects is not True:
-            warnings.warn('follow_redirects is a no-op as of scrapelib 0.8',
-                          DeprecationWarning)
-
         # added by this class
-        self._header_func = header_func
-        if timeout:
-            warnings.warn('passing "timeout" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-        # make timeout of 0 mean timeout of None to avoid async behavior
-        if timeout == 0:
-            timeout = None
-        self.timeout = timeout
-
         self.raise_errors = raise_errors
-
-        # shortcuts to underlying requests config
-        if user_agent != _user_agent:
-            warnings.warn('passing "timeout" to constructor is deprecated as '
-                          'of scrapelib 0.8', DeprecationWarning)
-        self.user_agent = user_agent
-        if disable_compression is not False:
-            warnings.warn('passing "disable_compression" to constructor is '
-                          'deprecated as of scrapelib 0.8', DeprecationWarning)
-        self.disable_compression = disable_compression
-
-        # added by CachingSession
-        if cache_obj is not None:
-            warnings.warn('passing "cache_obj" to constructor is deprecated '
-                          'as of scrapelib 0.8', DeprecationWarning)
-        self.cache_storage = cache_obj
-        if cache_write_only is not True:
-            warnings.warn('passing "cache_write_only" to constructor is '
-                          'deprecated as of scrapelib 0.8', DeprecationWarning)
-        self.cache_write_only = cache_write_only
 
         # added by ThrottledSession
         self.requests_per_minute = requests_per_minute
@@ -353,6 +310,16 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         self.retry_attempts = retry_attempts
         self.retry_wait_seconds = retry_wait_seconds
 
+        # added by this class
+        self._header_func = header_func
+
+        # added by CachingSession
+        self.cache_storage = None
+        self.cache_write_only = True
+
+        # non-parameter options
+        self.timeout = None
+        self.user_agent = _user_agent
 
     @property
     def user_agent(self):
