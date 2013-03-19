@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 long_description = open('README.rst').read()
 
 setup(name="scrapelib",
-      version='0.8.0-dev',
+      version='0.8.0',
       py_modules=['scrapelib'],
       author="James Turk",
       author_email='jturk@sunlightfoundation.com',
@@ -23,6 +23,7 @@ setup(name="scrapelib",
                    "Programming Language :: Python :: 2.6",
                    "Programming Language :: Python :: 2.7",
                    "Programming Language :: Python :: 3.2",
+                   "Programming Language :: Python :: 3.3",
                    ("Topic :: Software Development :: Libraries :: "
                     "Python Modules"),
                    ],

@@ -4,7 +4,7 @@ scrapelib changelog
 0.8.0
 -----
     * requests 1.0 compatibility
-        * removal of some requests pass-throughs
+        * removal of requests pass-throughs
         * deprecation of setting parameters via constructor
 
 0.7.4

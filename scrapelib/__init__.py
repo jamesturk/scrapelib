@@ -10,10 +10,6 @@ import warnings
 import requests
 from .cache import CachingSession, FileCache
 
-# for backwards-compatibility w/ scrapelib <= 0.6
-Headers = requests.structures.CaseInsensitiveDict
-ScrapeError = requests.RequestException
-
 if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import urlopen as urllib_urlopen
     from urllib2 import URLError as urllib_URLError
@@ -28,7 +24,7 @@ else:                               # pragma: no cover
     from urllib import robotparser
     _str_type = str
 
-__version__ = '0.8.0-dev'
+__version__ = '0.8.0'
 _user_agent = ' '.join(('scrapelib', __version__,
                         requests.utils.default_user_agent()))
 
