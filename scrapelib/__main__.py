@@ -36,8 +36,8 @@ def scrapeshell():                  # pragma: no cover
                         help="POST data (will make a POST instead of GET)")
     args = parser.parse_args(orig_argv)
 
-    scraper = Scraper(user_agent=args.user_agent,
-                      follow_robots=args.robots)
+    scraper = Scraper(follow_robots=args.robots)
+    scraper.user_agent=args.user_agent
     url = args.url
     if args.postdata:
         html = scraper.urlopen(args.url, 'POST', args.postdata)
