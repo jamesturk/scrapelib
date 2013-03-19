@@ -3,6 +3,7 @@ scrapelib changelog
 
 0.8.0
 -----
+**18 March 2013**
     * requests 1.0 compatibility
         * removal of requests pass-throughs
         * deprecation of setting parameters via constructor
