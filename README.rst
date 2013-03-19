@@ -23,7 +23,7 @@ requests as-is:
 * configurable retries for non-permanent site failures
 * optional robots.txt compliance
 
-scrapelib is a project of Sunlight Labs (c) 2012.
+scrapelib is a project of Sunlight Labs (c) 2013.
 All code is released under a BSD-style license, see LICENSE for details.
 
 Written by James Turk <jturk@sunlightfoundation.com>
@@ -37,8 +37,8 @@ Contributors:
 Requirements
 ============
 
-* python 2.6, 2.7, or 3.2
-* requests
+* python 2.7 or 3.3
+* requests >= 1.0
 
 Installation
 ============
