@@ -287,8 +287,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                  retry_attempts=0,
                  retry_wait_seconds=5,
                  header_func=None,
-                 cache_obj=None,            # deprecated
-                 cache_write_only=True,     # deprecated
                 ):
 
         super(Scraper, self).__init__()
@@ -343,7 +341,8 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         timeout = kwargs.pop('timeout', self.timeout)
 
         if self._header_func:
-            headers = Headers(self._header_func(url))
+            headers = requests.structures.CaseInsensitiveDict(
+                self._header_func(url))
         else:
             headers = {}
         headers = requests.sessions.merge_kwargs(headers, self.headers)

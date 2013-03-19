@@ -38,24 +38,16 @@ mock_200 = mock.Mock(wraps=request_200)
 
 def test_fields():
     # timeout=0 means None
-    s = Scraper(user_agent='secret-agent',
-                requests_per_minute=100,
+    s = Scraper(requests_per_minute=100,
                 follow_robots=False,
-                disable_compression=True,
                 raise_errors=False,
-                timeout=0,
                 retry_attempts=-1,  # will be 0
-                retry_wait_seconds=100,
-                cache_write_only=False)
-    assert_equal(s.user_agent, 'secret-agent')
+                retry_wait_seconds=100)
     assert s.requests_per_minute == 100
     assert s.follow_robots == False
-    assert s.disable_compression
     assert s.raise_errors == False
-    assert s.timeout is None        # 0 becomes None
     assert s.retry_attempts == 0    # -1 becomes 0
     assert s.retry_wait_seconds == 100
-    assert s.cache_write_only == False
 
 
 def test_get():
@@ -169,10 +161,9 @@ def test_500():
 
 def test_caching():
     cache_dir = tempfile.mkdtemp()
-    #s = Scraper(requests_per_minute=0, follow_robots=False,
-    #            cache_obj=FileCache(cache_dir), cache_write_only=False)
-    s = Scraper(requests_per_minute=0, follow_robots=False,
-                cache_obj=MemoryCache(), cache_write_only=False)
+    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s.cache_storage = MemoryCache()
+    s.cache_write_only = False
 
     resp = s.urlopen(HTTPBIN + 'status/200')
     assert not resp.response.fromcache
@@ -306,7 +297,8 @@ def test_timeout_retry():
 
 
 def test_disable_compression():
-    s = Scraper(disable_compression=True)
+    s = Scraper()
+    s.disable_compression = True
 
     # compression disabled
     data = s.urlopen(HTTPBIN + 'headers')
