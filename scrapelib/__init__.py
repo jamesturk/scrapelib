@@ -178,27 +178,25 @@ class RobotsTxtSession(requests.Session):
         return super(RobotsTxtSession, self).request(method, url, **kwargs)
 
 
-class FTPSession(requests.Session):
+class FTPAdapter(requests.adapters.BaseAdapter):
 
-    def request(self, method, url, **kwargs):
-        if url.startswith('ftp://'):
-            if method.lower() != 'get':
-                raise HTTPMethodUnavailableError(
-                    "non-HTTP(S) requests do not support method '%s'" %
-                    method, method)
-            try:
-                real_resp = urllib_urlopen(url, timeout=self.timeout)
-                # we're going to fake a requests.Response with this
-                resp = requests.Response()
-                resp.status_code = 200
-                resp.url = url
-                resp.headers = {}
-                resp._content = real_resp.read()
-                return resp
-            except urllib_URLError:
-                raise FTPError(url)
-        else:
-            return super(FTPSession, self).request(method, url, **kwargs)
+    def send(self, request, stream=False, timeout=None, verify=False,
+             cert=None, proxies=None):
+        if request.method != 'GET':
+            raise HTTPMethodUnavailableError(
+                "FTP requests do not support method '%s'" % request.method,
+            request.method)
+        try:
+            real_resp = urllib_urlopen(request.url, timeout=timeout)
+            # we're going to fake a requests.Response with this
+            resp = requests.Response()
+            resp.status_code = 200
+            resp.url = request.url
+            resp.headers = {}
+            resp._content = real_resp.read()
+            return resp
+        except urllib_URLError:
+            raise FTPError(request.url)
 
 
 class RetrySession(requests.Session):
@@ -259,7 +257,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
               ThrottledSession,    # throttle requests
               CachingSession,      # cache responses
               RetrySession,        # do retries
-              FTPSession           # do FTP & HTTP
               ):
     """
     Scraper is the most important class provided by scrapelib (and generally
@@ -290,6 +287,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                 ):
 
         super(Scraper, self).__init__()
+        self.mount('ftp://', FTPAdapter())
 
         # added by this class
         self.raise_errors = raise_errors
