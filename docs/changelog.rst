@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+0.9.0
+-----
+    * replace FTPSession with FTPAdapter
+    * 
+
 0.8.0
 -----
 **18 March 2013**

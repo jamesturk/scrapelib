@@ -1,4 +1,5 @@
 from . import Scraper, _user_agent
+import argparse
 
 
 def scrapeshell():                  # pragma: no cover
@@ -11,11 +12,6 @@ def scrapeshell():                  # pragma: no cover
         from IPython import embed
     except ImportError:
         print('scrapeshell requires ipython >= 0.11')
-        return
-    try:
-        import argparse
-    except ImportError:
-        print('scrapeshell requires argparse')
         return
     try:
         import lxml.html
@@ -53,6 +49,8 @@ def scrapeshell():                  # pragma: no cover
     print('html: `scrapelib.ResultStr` instance')
     if USE_LXML:
         print('doc: `lxml HTML element`')
+    else:
+        print('doc not available: lxml not installed')
     embed()
 
 
