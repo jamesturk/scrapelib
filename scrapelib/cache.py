@@ -125,7 +125,7 @@ class FileCache(object):
             # need to split spaces out of status to get code (e.g. '200 OK')
             resp.status_code = int(resp.headers.pop('status').split(' ')[0])
             resp.encoding = resp.headers.pop('encoding')
-            resp.url = resp.headers['content-location'] or orig_key
+            resp.url = resp.headers.get('content-location', orig_key)
             #TODO: resp.request = request
             return resp
         except IOError:

@@ -1,14 +1,11 @@
-import datetime
-import json
 import logging
 import os
 import sys
 import tempfile
 import time
-import warnings
 
 import requests
-from .cache import CachingSession, FileCache
+from .cache import CachingSession, FileCache    # noqa
 
 if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import urlopen as urllib_urlopen
@@ -169,13 +166,27 @@ class RobotsTxtSession(requests.Session):
                       self.headers.get('User-Agent'))
         # robots.txt is http-only
         if (parsed_url.scheme in ('http', 'https') and
-            self.follow_robots and
-            not self._robot_allowed(user_agent, parsed_url)):
+                self.follow_robots and
+                not self._robot_allowed(user_agent, parsed_url)):
             raise RobotExclusionError(
                 "User-Agent '%s' not allowed at '%s'" % (
                     user_agent, url), url, user_agent)
 
         return super(RobotsTxtSession, self).request(method, url, **kwargs)
+
+
+# this object exists because Requests assumes it can call
+# resp.raw._original_response.msg.getheaders() and we need to cope with that
+class DummyObject(object):
+    def getheaders(self, name):
+        return ''
+
+    def get_all(self, name, default):
+        return default
+
+_dummy = DummyObject()
+_dummy._original_response = DummyObject()
+_dummy._original_response.msg = DummyObject()
 
 
 class FTPAdapter(requests.adapters.BaseAdapter):
@@ -185,7 +196,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         if request.method != 'GET':
             raise HTTPMethodUnavailableError(
                 "FTP requests do not support method '%s'" % request.method,
-            request.method)
+                request.method)
         try:
             real_resp = urllib_urlopen(request.url, timeout=timeout)
             # we're going to fake a requests.Response with this
@@ -194,6 +205,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             resp.url = request.url
             resp.headers = {}
             resp._content = real_resp.read()
+            resp.raw = _dummy
             return resp
         except urllib_URLError:
             raise FTPError(request.url)
@@ -283,8 +295,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                  follow_robots=True,
                  retry_attempts=0,
                  retry_wait_seconds=5,
-                 header_func=None,
-                ):
+                 header_func=None):
 
         super(Scraper, self).__init__()
         self.mount('ftp://', FTPAdapter())
@@ -343,9 +354,16 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
                 self._header_func(url))
         else:
             headers = {}
-        headers = requests.sessions.merge_kwargs(headers, self.headers)
-        headers = requests.sessions.merge_kwargs(kwargs.pop('headers', {}),
-                                                 headers)
+        try:
+            # requests < 1.2.2
+            headers = requests.sessions.merge_kwargs(headers, self.headers)
+            headers = requests.sessions.merge_kwargs(kwargs.pop('headers', {}),
+                                                     headers)
+        except AttributeError:
+            # requests >= 1.2.2
+            headers = requests.sessions.merge_setting(headers, self.headers)
+            headers = requests.sessions.merge_setting(
+                kwargs.pop('headers', {}), headers)
 
         return super(Scraper, self).request(method, url, timeout=timeout,
                                             headers=headers, **kwargs)

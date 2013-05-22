@@ -16,7 +16,7 @@ import requests
 from .. import (Scraper, HTTPError, HTTPMethodUnavailableError,
                 RobotExclusionError, urllib_URLError, FTPError)
 from .. import _user_agent as default_user_agent
-from ..cache import FileCache, MemoryCache
+from ..cache import MemoryCache
 
 HTTPBIN = 'http://httpbin.org/'
 
@@ -44,8 +44,8 @@ def test_fields():
                 retry_attempts=-1,  # will be 0
                 retry_wait_seconds=100)
     assert s.requests_per_minute == 100
-    assert s.follow_robots == False
-    assert s.raise_errors == False
+    assert s.follow_robots is False
+    assert s.raise_errors is False
     assert s.retry_attempts == 0    # -1 becomes 0
     assert s.retry_wait_seconds == 100
 
@@ -64,7 +64,7 @@ def test_post():
     resp_json = json.loads(resp)
     assert_equal(resp_json['form']['woo'], 'woo')
     assert_equal(resp_json['headers']['Content-Type'],
-                     'application/x-www-form-urlencoded')
+                 'application/x-www-form-urlencoded')
 
 
 def test_request_throttling():
@@ -109,7 +109,7 @@ def test_user_agent():
 
 def test_user_agent_from_headers():
     s = Scraper(requests_per_minute=0, follow_robots=False)
-    s.headers = {'User-Agent':'from headers'}
+    s.headers = {'User-Agent': 'from headers'}
     resp = s.urlopen(HTTPBIN + 'user-agent')
     ua = json.loads(resp)['user-agent']
     assert_equal(ua, 'from headers')
@@ -136,7 +136,8 @@ def test_follow_robots():
 
         # turn off follow_robots, everything works
         s.follow_robots = False
-        assert_equal(200,
+        assert_equal(
+            200,
             s.urlopen("http://dummy/private/secret.html").response.code)
 
 
@@ -258,8 +259,7 @@ def test_timeout():
     s.timeout = 0.001
     s.follow_robots = False
     with assert_raises(requests.Timeout):
-        x = s.urlopen(HTTPBIN + 'delay/1')
-
+        s.urlopen(HTTPBIN + 'delay/1')
 
 
 def test_timeout_retry():

@@ -33,7 +33,7 @@ def scrapeshell():                  # pragma: no cover
     args = parser.parse_args(orig_argv)
 
     scraper = Scraper(follow_robots=args.robots)
-    scraper.user_agent=args.user_agent
+    scraper.user_agent = args.user_agent
     url = args.url
     if args.postdata:
         html = scraper.urlopen(args.url, 'POST', args.postdata)
@@ -41,7 +41,7 @@ def scrapeshell():                  # pragma: no cover
         html = scraper.urlopen(args.url)
 
     if USE_LXML:
-        doc = lxml.html.fromstring(html.bytes)
+        doc = lxml.html.fromstring(html.bytes)  # noqa
 
     print('local variables')
     print('---------------')
