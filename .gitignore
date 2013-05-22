@@ -7,3 +7,4 @@ dist/
 scrapelib.egg-info/
 .coverage
 cover/
+.tox
