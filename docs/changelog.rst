@@ -3,8 +3,9 @@ scrapelib changelog
 
 0.9.0
 -----
+**22 May 2013**
     * replace FTPSession with FTPAdapter
-    * 
+    * fixes for latest requests
 
 0.8.0
 -----
