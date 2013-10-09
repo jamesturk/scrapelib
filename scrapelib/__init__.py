@@ -266,8 +266,8 @@ class RetrySession(requests.Session):
 
 # compose sessions, order matters
 class Scraper(RobotsTxtSession,    # first, check robots.txt
-              ThrottledSession,    # throttle requests
               CachingSession,      # cache responses
+              ThrottledSession,    # throttle requests
               RetrySession,        # do retries
               ):
     """
