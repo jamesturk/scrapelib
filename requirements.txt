@@ -1,2 +1,1 @@
-# Not strictly required, but you probably want it
-httplib2>=0.6.0
+requests>=1.0

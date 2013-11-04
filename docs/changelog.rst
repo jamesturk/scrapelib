@@ -1,10 +1,103 @@
 scrapelib changelog
 ===================
 
+0.9.0
+-----
+**22 May 2013**
+    * replace FTPSession with FTPAdapter
+    * fixes for latest requests
+
+0.8.0
+-----
+**18 March 2013**
+    * requests 1.0 compatibility
+        * removal of requests pass-throughs
+        * deprecation of setting parameters via constructor
+
+0.7.4
+-----
+**20 December 2012**
+    * bugfix for status_code coming from a cache
+    * bugfix for setting user-agent from headers
+    * fix requests version at <1.0
+
+0.7.3
+-----
+**21 June 2012**
+    * fix for combination of FTP and caching
+    * drop unnecessary ScrapelibSession
+    * bytes fix for scrapeshell
+    * use UTF8 if encoding guess fails
+
+0.7.2
+-----
+**9 May 2012**
+    * bugfix for user-agent check
+    * bugfix for cached content with \r characters
+    * bugfix for requests >= 0.12
+    * cache_dir deprecation is total
+
+0.7.1
+-----
+**27 April 2012**
+    * breaking change: no longer accept URLs without a scheme
+    * deprecation of error_dir & context-manager mode
+    * addition of overridable accept_response hook
+    * bugfix: retry on more requests errors
+    * bugfix: unicode cached content no longer incorrectly encoded
+    * implement various requests enhancements separately for ease of reuse
+    * convert more Scraper parameters to properties
+
+0.7.0
+-----
+**23 April 2012**
+    * rewritten internals to use requests, dropping httplib2
+    * as a result of rewrite, caching behavior no longer attempts to be
+      compliant with the HTTP specification but is much more configurable
+    * added cache_write_only option
+    * deprecation of accept_cookies, use_cache_first, cache_dir parameter
+    * improved tests
+    * improved Python 3 support
+
+0.6.2
+-----
+**20 April 2012**
+    * bugfix for POST-redirects
+    * drastically improved test coverage
+    * add encoding to ResultStr
+
+0.6.1
+-----
+**19 April 2012**
+    * add .bytes attribute to ResultStr
+    * bugfix related to bytes in urlretrieve
+
+0.6.0
+-----
+**19 April 2012**
+    * remove urllib2 fallback for HTTP
+    * rework entire test suite to not rely on Flask
+    * Unicode & Str unification
+    * experimental Python 3.2 support
+
+0.5.8
+-----
+**15 February 2012**
+    * fix to test suite from Alex Chiang
+
+0.5.7
+-----
+**2 February 2012**
+    * -p, --postdata parameter
+    * argv fix for IPython <= 0.10 from Joe Germuska
+    * treat FTP 550 errors as HTTP 404s
+    * use_cache_first improvements
+
 0.5.6
 -----
-**7 November 2011**
+**9 November 2011**
     * scrapeshell fix for IPython >= 0.11
+    * scrapelib.urlopen can take method/body params too
 
 0.5.5
 -----

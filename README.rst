@@ -2,30 +2,43 @@
 scrapelib
 =========
 
-A Python library for scraping things.
+scrapelib is a library for making requests to websites, particularly those
+that may be less-than-reliable.
 
-Features include:
+scrapelib originated as part of the `Open States <http://openstates.org/>`_
+project to scrape the websites of all 50 state legislatures and as a result
+was therefore designed with features desirable when dealing with sites that
+have intermittent errors or require rate-limiting.
 
-  * HTTP, HTTPS, FTP requests via an identical API
-  * HTTP caching, compression and cookies
-  * redirect following
-  * request throttling
-  * robots.txt compliance (optional)
-  * robust error handling
+As of version 0.7 scrapelib has been retooled to take advantage of the superb
+`requests <http://python-requests.org>`_ library.
 
-scrapelib is a project of Sunlight Labs (c) 2011.
+Advantages of using scrapelib over alternatives like httplib2 simply using
+requests as-is:
+
+* All of the power of the suberb `requests <http://python-requests.org>`_ library.
+* HTTP, HTTPS, and FTP requests via an identical API
+* support for simple caching with pluggable cache backends
+* request throttling
+* configurable retries for non-permanent site failures
+* optional robots.txt compliance
+
+scrapelib is a project of Sunlight Labs (c) 2013.
 All code is released under a BSD-style license, see LICENSE for details.
 
-Written by Michael Stephens <mstephens@sunlightfoundation.com> and James Turk
-<jturk@sunlightfoundation.com>.
+Written by James Turk <jturk@sunlightfoundation.com>
+
+Contributors:
+    * Michael Stephens - initial urllib2/httplib2 version
+    * Joe Germuska - fix for IPython embedding
+    * Alex Chiang - fix to test suite
 
 
 Requirements
 ============
 
-python >= 2.6
-
-httplib2 optional but highly recommended.
+* python 2.7 or 3.3
+* requests >= 1.0
 
 Installation
 ============

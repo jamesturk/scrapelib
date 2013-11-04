@@ -20,12 +20,10 @@ Response objects
 .. autoclass:: Headers
 
 
-ResultStr and ResultUnicode
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ResultStr
+~~~~~~~~~
 
 .. autoclass:: ResultStr
-
-.. autoclass:: ResultUnicode
 
 
 Exceptions
