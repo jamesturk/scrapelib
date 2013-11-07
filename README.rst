@@ -57,8 +57,7 @@ Example Usage
 ::
 
   import scrapelib
-  s = scrapelib.Scraper(requests_per_minute=10, allow_cookies=True,
-                        follow_robots=True)
+  s = scrapelib.Scraper(requests_per_minute=10, follow_robots=True)
 
   # Grab Google front page
   s.urlopen('http://google.com')
