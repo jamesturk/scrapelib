@@ -261,6 +261,12 @@ def test_timeout():
     with assert_raises(requests.Timeout):
         s.urlopen(HTTPBIN + 'delay/1')
 
+def test_timeout_arg():
+    s = Scraper()
+    s.follow_robots = False
+    with assert_raises(requests.Timeout):
+        s.urlopen(HTTPBIN + 'delay/1', timeout=0.001)
+
 
 def test_timeout_retry():
     # TODO: make this work with the other requests exceptions
