@@ -1,6 +1,13 @@
 scrapelib changelog
 ===================
 
+0.9.1
+-----
+**28 March 2013**
+    * support kwargs in request paths -thanks to Drew Vogel
+    * allow_cookies removal and documentation fix -thanks to Joe Germuska
+    * add dir param to urlretrieve -thanks to Alison Rowland
+
 0.9.0
 -----
 **22 May 2013**
