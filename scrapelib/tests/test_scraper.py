@@ -194,6 +194,14 @@ def test_urlretrieve():
             assert_equal(200, resp.code)
         os.remove(set_fname)
 
+        dirname = os.path.dirname(set_fname)
+        fname, resp = s.urlretrieve("http://dummy/", dir=dirname)
+        assert_equal(os.path.dirname(fname), dirname)
+        with open(fname) as f:
+            assert_equal(f.read(), 'ok')
+            assert_equal(200, resp.code)
+        os.remove(fname)
+
 ## TODO: on these retry tests it'd be nice to ensure that it tries
 ## 3 times for 500 and once for 404
 
