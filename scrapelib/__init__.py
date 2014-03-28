@@ -394,7 +394,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         else:
             return ResultStr(self, resp, url)
 
-    def urlretrieve(self, url, filename=None, method='GET', body=None, **kwargs):
+    def urlretrieve(self, url, filename=None, method='GET', body=None, dir=None, **kwargs):
         """
         Save result of a request to a file, similarly to
         :func:`urllib.urlretrieve`.
@@ -403,15 +403,17 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         `exceptions`_.
 
         A filename may be provided or :meth:`urlretrieve` will safely create a
-        temporary file.  Either way it is the responsibility of the caller
-        to ensure that the temporary file is deleted when it is no longer
-        needed.
+        temporary file. If a directory is provided, a file will be given a random
+        name within the specified directory. Either way, it is the responsibility
+        of the caller to ensure that the temporary file is deleted when it is no
+        longer needed.
 
         :param url: URL for request
         :param filename: optional name for file
         :param method: any valid HTTP method, but generally GET or POST
         :param body: optional body for request, to turn parameters into
             an appropriate string use :func:`urllib.urlencode()`
+        :param dir: optional directory to place file in
         :returns filename, response: tuple with filename for saved
             response (will be same as given filename if one was given,
             otherwise will be a temp file in the OS temp directory) and
@@ -421,7 +423,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         result = self.urlopen(url, method, body, **kwargs)
 
         if not filename:
-            fd, filename = tempfile.mkstemp()
+            fd, filename = tempfile.mkstemp(dir=dir)
             f = os.fdopen(fd, 'wb')
         else:
             f = open(filename, 'wb')
