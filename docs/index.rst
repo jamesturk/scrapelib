@@ -22,7 +22,6 @@ requests as-is:
 * support for simple caching with pluggable cache backends
 * request throtting
 * configurable retries for non-permanent site failures
-* optional robots.txt compliance
 
 Contents
 --------

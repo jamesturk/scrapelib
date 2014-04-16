@@ -11,14 +11,12 @@ if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import urlopen as urllib_urlopen
     from urllib2 import URLError as urllib_URLError
     import urlparse
-    import robotparser
     _str_type = unicode
 else:                               # pragma: no cover
     PY3K = True
     from urllib.request import urlopen as urllib_urlopen
     from urllib.error import URLError as urllib_URLError
     from urllib import parse as urlparse
-    from urllib import robotparser
     _str_type = str
 
 __version__ = '0.9.1'
@@ -32,18 +30,6 @@ class NullHandler(logging.Handler):
 
 _log = logging.getLogger('scrapelib')
 _log.addHandler(NullHandler())
-
-
-class RobotExclusionError(requests.RequestException):
-    """
-    Raised when an attempt is made to access a page denied by
-    the host's robots.txt file.
-    """
-
-    def __init__(self, message, url, user_agent):
-        super(RobotExclusionError, self).__init__(message)
-        self.url = url
-        self.user_agent = user_agent
 
 
 class HTTPMethodUnavailableError(requests.RequestException):
@@ -136,45 +122,6 @@ class ThrottledSession(requests.Session):
         return super(ThrottledSession, self).request(method, url, **kwargs)
 
 
-class RobotsTxtSession(requests.Session):
-
-    def __init__(self):
-        super(RobotsTxtSession, self).__init__()
-        self._robot_parsers = {}
-        self.follow_robots = True
-
-    def _robot_allowed(self, user_agent, parsed_url):
-        _log.info("checking robots permission for %s" % parsed_url.geturl())
-        robots_url = urlparse.urljoin(parsed_url.scheme + "://" +
-                                      parsed_url.netloc, "robots.txt")
-
-        try:
-            parser = self._robot_parsers[robots_url]
-            _log.info("using cached copy of %s" % robots_url)
-        except KeyError:
-            _log.info("grabbing %s" % robots_url)
-            parser = robotparser.RobotFileParser()
-            parser.set_url(robots_url)
-            parser.read()
-            self._robot_parsers[robots_url] = parser
-
-        return parser.can_fetch(user_agent, parsed_url.geturl())
-
-    def request(self, method, url, **kwargs):
-        parsed_url = urlparse.urlparse(url)
-        user_agent = (kwargs.get('headers', {}).get('User-Agent') or
-                      self.headers.get('User-Agent'))
-        # robots.txt is http-only
-        if (parsed_url.scheme in ('http', 'https') and
-                self.follow_robots and
-                not self._robot_allowed(user_agent, parsed_url)):
-            raise RobotExclusionError(
-                "User-Agent '%s' not allowed at '%s'" % (
-                    user_agent, url), url, user_agent)
-
-        return super(RobotsTxtSession, self).request(method, url, **kwargs)
-
-
 # this object exists because Requests assumes it can call
 # resp.raw._original_response.msg.getheaders() and we need to cope with that
 class DummyObject(object):
@@ -265,8 +212,7 @@ class RetrySession(requests.Session):
 
 
 # compose sessions, order matters
-class Scraper(RobotsTxtSession,    # first, check robots.txt
-              CachingSession,      # cache responses
+class Scraper(CachingSession,      # cache responses
               ThrottledSession,    # throttle requests
               RetrySession,        # do retries
               ):
@@ -283,7 +229,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         on 4xx or 5xx response
     :param requests_per_minute: maximum requests per minute (0 for
         unlimited, defaults to 60)
-    :param follow_robots: respect robots.txt files (default: True)
     :param retry_attempts: number of times to retry if timeout occurs or
         page returns a (non-404) error
     :param retry_wait_seconds: number of seconds to retry after first failure,
@@ -292,7 +237,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
     def __init__(self,
                  raise_errors=True,
                  requests_per_minute=60,
-                 follow_robots=True,
                  retry_attempts=0,
                  retry_wait_seconds=5,
                  header_func=None):
@@ -305,9 +249,6 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
 
         # added by ThrottledSession
         self.requests_per_minute = requests_per_minute
-
-        # added by RobotsTxtSession
-        self.follow_robots = follow_robots
 
         # added by RetrySession
         self.retry_attempts = retry_attempts
@@ -434,7 +375,7 @@ class Scraper(RobotsTxtSession,    # first, check robots.txt
         return filename, result.response
 
 
-_default_scraper = Scraper(follow_robots=False, requests_per_minute=0)
+_default_scraper = Scraper(requests_per_minute=0)
 
 
 def urlopen(url, method='GET', body=None, **kwargs):  # pragma: no cover

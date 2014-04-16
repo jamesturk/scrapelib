@@ -23,10 +23,6 @@ scrapeshell arguments
 
     Set a custom user agent (useful for seeing if a site is returning different results based on UA).
 
-.. option:: --robots
-
-    Obey robots.txt (default is to ignore).
-
 .. option:: --noredirect
 
     Don't follow redirects.

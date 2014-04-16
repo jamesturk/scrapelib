@@ -5,16 +5,10 @@ import json
 import tempfile
 from io import BytesIO
 
-if sys.version_info[0] < 3:
-    import robotparser
-else:
-    from urllib import robotparser
-
 import mock
 from nose.tools import assert_equal, assert_raises
 import requests
-from .. import (Scraper, HTTPError, HTTPMethodUnavailableError,
-                RobotExclusionError, urllib_URLError, FTPError)
+from .. import Scraper, HTTPError, HTTPMethodUnavailableError, urllib_URLError, FTPError
 from .. import _user_agent as default_user_agent
 from ..cache import MemoryCache
 
@@ -39,26 +33,24 @@ mock_200 = mock.Mock(wraps=request_200)
 def test_fields():
     # timeout=0 means None
     s = Scraper(requests_per_minute=100,
-                follow_robots=False,
                 raise_errors=False,
                 retry_attempts=-1,  # will be 0
                 retry_wait_seconds=100)
     assert s.requests_per_minute == 100
-    assert s.follow_robots is False
     assert s.raise_errors is False
     assert s.retry_attempts == 0    # -1 becomes 0
     assert s.retry_wait_seconds == 100
 
 
 def test_get():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
     resp = s.urlopen(HTTPBIN + 'get?woo=woo')
     assert_equal(resp.response.code, 200)
     assert_equal(json.loads(resp)['args']['woo'], 'woo')
 
 
 def test_post():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
     resp = s.urlopen(HTTPBIN + 'post', 'POST', {'woo': 'woo'})
     assert_equal(resp.response.code, 200)
     resp_json = json.loads(resp)
@@ -68,7 +60,7 @@ def test_post():
 
 
 def test_request_throttling():
-    s = Scraper(requests_per_minute=30, follow_robots=False)
+    s = Scraper(requests_per_minute=30)
     assert_equal(s.requests_per_minute, 30)
 
     mock_sleep = mock.Mock()
@@ -96,7 +88,7 @@ def test_request_throttling():
 
 
 def test_user_agent():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
     resp = s.urlopen(HTTPBIN + 'user-agent')
     ua = json.loads(resp)['user-agent']
     assert_equal(ua, default_user_agent)
@@ -108,41 +100,15 @@ def test_user_agent():
 
 
 def test_user_agent_from_headers():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
     s.headers = {'User-Agent': 'from headers'}
     resp = s.urlopen(HTTPBIN + 'user-agent')
     ua = json.loads(resp)['user-agent']
     assert_equal(ua, 'from headers')
 
 
-def test_follow_robots():
-    s = Scraper(requests_per_minute=0, follow_robots=True)
-
-    with mock.patch.object(requests.Session, 'request', mock_200):
-        # check that a robots.txt is created
-        s.urlopen(HTTPBIN)
-        assert HTTPBIN + 'robots.txt' in s._robot_parsers
-
-        # set a fake robots.txt for http://dummy
-        parser = robotparser.RobotFileParser()
-        parser.parse(['User-agent: *', 'Disallow: /private/', 'Allow: /'])
-        s._robot_parsers['http://dummy/robots.txt'] = parser
-
-        # anything behind private fails
-        assert_raises(RobotExclusionError, s.urlopen,
-                      "http://dummy/private/secret.html")
-        # but others work
-        assert_equal(200, s.urlopen("http://dummy/").response.code)
-
-        # turn off follow_robots, everything works
-        s.follow_robots = False
-        assert_equal(
-            200,
-            s.urlopen("http://dummy/private/secret.html").response.code)
-
-
 def test_404():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
     assert_raises(HTTPError, s.urlopen, HTTPBIN + 'status/404')
 
     s.raise_errors = False
@@ -151,7 +117,7 @@ def test_404():
 
 
 def test_500():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
 
     assert_raises(HTTPError, s.urlopen, HTTPBIN + 'status/500')
 
@@ -162,7 +128,7 @@ def test_500():
 
 def test_caching():
     cache_dir = tempfile.mkdtemp()
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
     s.cache_storage = MemoryCache()
     s.cache_write_only = False
 
@@ -177,7 +143,7 @@ def test_caching():
 
 
 def test_urlretrieve():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
 
     with mock.patch.object(requests.Session, 'request', mock_200):
         fname, resp = s.urlretrieve("http://dummy/")
@@ -207,8 +173,7 @@ def test_urlretrieve():
 
 
 def test_retry():
-    s = Scraper(retry_attempts=3, retry_wait_seconds=0.001,
-                follow_robots=False, raise_errors=False)
+    s = Scraper(retry_attempts=3, retry_wait_seconds=0.001, raise_errors=False)
 
     # On the first call return a 500, then a 200
     mock_request = mock.Mock(side_effect=[
@@ -231,8 +196,7 @@ def test_retry():
 
 
 def test_retry_404():
-    s = Scraper(retry_attempts=3, retry_wait_seconds=0.001,
-                follow_robots=False, raise_errors=False)
+    s = Scraper(retry_attempts=3, retry_wait_seconds=0.001, raise_errors=False)
 
     # On the first call return a 404, then a 200
     mock_request = mock.Mock(side_effect=[
@@ -265,13 +229,11 @@ def test_retry_404():
 def test_timeout():
     s = Scraper()
     s.timeout = 0.001
-    s.follow_robots = False
     with assert_raises(requests.Timeout):
         s.urlopen(HTTPBIN + 'delay/1')
 
 def test_timeout_arg():
     s = Scraper()
-    s.follow_robots = False
     with assert_raises(requests.Timeout):
         s.urlopen(HTTPBIN + 'delay/1', timeout=0.001)
 
@@ -289,8 +251,7 @@ def test_timeout_retry():
 
     mock_request = mock.Mock(side_effect=side_effect)
 
-    s = Scraper(retry_attempts=0, retry_wait_seconds=0.001,
-                follow_robots=False)
+    s = Scraper(retry_attempts=0, retry_wait_seconds=0.001)
 
     with mock.patch.object(requests.Session, 'request', mock_request):
         # first, try without retries
@@ -301,8 +262,7 @@ def test_timeout_retry():
     # reset and try again with retries
     mock_request.reset_mock()
     count = []
-    s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
-                follow_robots=False)
+    s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
     with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen("http://dummy/")
         # get the result, take two tries
@@ -333,7 +293,7 @@ def test_disable_compression():
 
 
 def test_callable_headers():
-    s = Scraper(header_func=lambda url: {'X-Url': url}, follow_robots=False)
+    s = Scraper(header_func=lambda url: {'X-Url': url})
 
     data = s.urlopen(HTTPBIN + 'headers')
     assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN + 'headers')
@@ -344,7 +304,7 @@ def test_callable_headers():
 
 
 def test_ftp_uses_urllib2():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
     urlopen = mock.Mock(return_value=BytesIO(b"ftp success!"))
 
     with mock.patch('scrapelib.urllib_urlopen', urlopen):
@@ -367,8 +327,7 @@ def test_ftp_retries():
 
     # retry on
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
-        s = Scraper(retry_attempts=2, retry_wait_seconds=0.001,
-                    follow_robots=False)
+        s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
         r = s.urlopen('ftp://dummy/', retry_on_404=True)
         assert r == "ftp success!"
     assert_equal(mock_urlopen.call_count, 2)
@@ -377,15 +336,14 @@ def test_ftp_retries():
     count = []
     mock_urlopen.reset_mock()
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
-        s = Scraper(retry_attempts=0, retry_wait_seconds=0.001,
-                    follow_robots=False)
+        s = Scraper(retry_attempts=0, retry_wait_seconds=0.001)
         assert_raises(FTPError, s.urlopen, 'ftp://dummy/',
                       retry_on_404=True)
     assert_equal(mock_urlopen.call_count, 1)
 
 
 def test_ftp_method_restrictions():
-    s = Scraper(requests_per_minute=0, follow_robots=False)
+    s = Scraper(requests_per_minute=0)
 
     # only http(s) supports non-'GET' requests
     assert_raises(HTTPMethodUnavailableError, s.urlopen, "ftp://dummy/",

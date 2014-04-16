@@ -31,8 +31,6 @@ Exceptions
 
 All scrapelib exceptions are a subclass of :class:`ScrapeError`.
 
-.. autoclass:: RobotExclusionError
-
 .. autoclass:: HTTPMethodUnavailableError
 
 .. autoclass:: HTTPError
