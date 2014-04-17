@@ -10,13 +10,11 @@ from .cache import CachingSession, FileCache    # noqa
 if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import urlopen as urllib_urlopen
     from urllib2 import URLError as urllib_URLError
-    import urlparse
     _str_type = unicode
 else:                               # pragma: no cover
     PY3K = True
     from urllib.request import urlopen as urllib_urlopen
     from urllib.error import URLError as urllib_URLError
-    from urllib import parse as urlparse
     _str_type = str
 
 __version__ = '0.9.1'

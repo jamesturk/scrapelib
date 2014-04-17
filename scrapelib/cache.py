@@ -126,7 +126,7 @@ class FileCache(object):
             resp.status_code = int(resp.headers.pop('status').split(' ')[0])
             resp.encoding = resp.headers.pop('encoding')
             resp.url = resp.headers.get('content-location', orig_key)
-            #TODO: resp.request = request
+            # TODO: resp.request = request
             return resp
         except IOError:
             return None

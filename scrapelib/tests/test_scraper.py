@@ -6,7 +6,7 @@ import tempfile
 from io import BytesIO
 
 import mock
-from nose.tools import assert_equal, assert_raises
+import pytest
 import requests
 from .. import Scraper, HTTPError, HTTPMethodUnavailableError, urllib_URLError, FTPError
 from .. import _user_agent as default_user_agent
@@ -45,23 +45,22 @@ def test_fields():
 def test_get():
     s = Scraper(requests_per_minute=0)
     resp = s.urlopen(HTTPBIN + 'get?woo=woo')
-    assert_equal(resp.response.code, 200)
-    assert_equal(json.loads(resp)['args']['woo'], 'woo')
+    assert resp.response.code == 200
+    assert json.loads(resp)['args']['woo'] == 'woo'
 
 
 def test_post():
     s = Scraper(requests_per_minute=0)
     resp = s.urlopen(HTTPBIN + 'post', 'POST', {'woo': 'woo'})
-    assert_equal(resp.response.code, 200)
+    assert resp.response.code == 200
     resp_json = json.loads(resp)
-    assert_equal(resp_json['form']['woo'], 'woo')
-    assert_equal(resp_json['headers']['Content-Type'],
-                 'application/x-www-form-urlencoded')
+    assert resp_json['form']['woo'] == 'woo'
+    assert resp_json['headers']['Content-Type'] == 'application/x-www-form-urlencoded'
 
 
 def test_request_throttling():
     s = Scraper(requests_per_minute=30)
-    assert_equal(s.requests_per_minute, 30)
+    assert s.requests_per_minute == 30
 
     mock_sleep = mock.Mock()
 
@@ -71,7 +70,7 @@ def test_request_throttling():
             s.urlopen('http://dummy/')
             s.urlopen('http://dummy/')
             s.urlopen('http://dummy/')
-            assert_equal(mock_sleep.call_count, 2)
+            assert mock_sleep.call_count == 2
             # should have slept for ~2 seconds
             assert 1.8 <= mock_sleep.call_args[0][0] <= 2.2
 
@@ -84,19 +83,19 @@ def test_request_throttling():
             s.urlopen('http://dummy/')
             s.urlopen('http://dummy/')
             s.urlopen('http://dummy/')
-            assert_equal(mock_sleep.call_count, 0)
+            assert mock_sleep.call_count == 0
 
 
 def test_user_agent():
     s = Scraper(requests_per_minute=0)
     resp = s.urlopen(HTTPBIN + 'user-agent')
     ua = json.loads(resp)['user-agent']
-    assert_equal(ua, default_user_agent)
+    assert ua == default_user_agent
 
     s.user_agent = 'a different agent'
     resp = s.urlopen(HTTPBIN + 'user-agent')
     ua = json.loads(resp)['user-agent']
-    assert_equal(ua, 'a different agent')
+    assert ua == 'a different agent'
 
 
 def test_user_agent_from_headers():
@@ -104,26 +103,26 @@ def test_user_agent_from_headers():
     s.headers = {'User-Agent': 'from headers'}
     resp = s.urlopen(HTTPBIN + 'user-agent')
     ua = json.loads(resp)['user-agent']
-    assert_equal(ua, 'from headers')
+    assert ua == 'from headers'
 
 
 def test_404():
     s = Scraper(requests_per_minute=0)
-    assert_raises(HTTPError, s.urlopen, HTTPBIN + 'status/404')
+    pytest.raises(HTTPError, s.urlopen, HTTPBIN + 'status/404')
 
     s.raise_errors = False
     resp = s.urlopen(HTTPBIN + 'status/404')
-    assert_equal(404, resp.response.code)
+    assert resp.response.code == 404
 
 
 def test_500():
     s = Scraper(requests_per_minute=0)
 
-    assert_raises(HTTPError, s.urlopen, HTTPBIN + 'status/500')
+    pytest.raises(HTTPError, s.urlopen, HTTPBIN + 'status/500')
 
     s.raise_errors = False
     resp = s.urlopen(HTTPBIN + 'status/500')
-    assert_equal(500, resp.response.code)
+    assert resp.response.code == 500
 
 
 def test_caching():
@@ -148,24 +147,24 @@ def test_urlretrieve():
     with mock.patch.object(requests.Session, 'request', mock_200):
         fname, resp = s.urlretrieve("http://dummy/")
         with open(fname) as f:
-            assert_equal(f.read(), 'ok')
-            assert_equal(200, resp.code)
+            assert f.read() == 'ok'
+            assert resp.code == 200
         os.remove(fname)
 
         (fh, set_fname) = tempfile.mkstemp()
         fname, resp = s.urlretrieve("http://dummy/", set_fname)
-        assert_equal(fname, set_fname)
+        assert fname == set_fname
         with open(set_fname) as f:
-            assert_equal(f.read(), 'ok')
-            assert_equal(200, resp.code)
+            assert f.read() == 'ok'
+            assert resp.code == 200
         os.remove(set_fname)
 
         dirname = os.path.dirname(set_fname)
         fname, resp = s.urlretrieve("http://dummy/", dir=dirname)
-        assert_equal(os.path.dirname(fname), dirname)
+        assert os.path.dirname(fname) == dirname
         with open(fname) as f:
-            assert_equal(f.read(), 'ok')
-            assert_equal(200, resp.code)
+            assert f.read() == 'ok'
+            assert resp.code == 200
         os.remove(fname)
 
 ## TODO: on these retry tests it'd be nice to ensure that it tries
@@ -183,16 +182,15 @@ def test_retry():
 
     with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/')
-    assert_equal(mock_request.call_count, 2)
+    assert mock_request.call_count == 2
 
     # 500 always
-    mock_request = mock.Mock(return_value=FakeResponse('http://dummy/', 500,
-                                                       'failure!'))
+    mock_request = mock.Mock(return_value=FakeResponse('http://dummy/', 500, 'failure!'))
 
     with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/')
-    assert_equal(resp.response.code, 500)
-    assert_equal(mock_request.call_count, 4)
+    assert resp.response.code == 500
+    assert mock_request.call_count == 4
 
 
 def test_retry_404():
@@ -206,8 +204,8 @@ def test_retry_404():
 
     with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/', retry_on_404=True)
-    assert_equal(mock_request.call_count, 2)
-    assert_equal(resp.response.code, 200)
+    assert mock_request.call_count == 2
+    assert resp.response.code == 200
 
     # 404 always
     mock_request = mock.Mock(return_value=FakeResponse('http://dummy/', 404,
@@ -216,25 +214,25 @@ def test_retry_404():
     # retry on 404 true, 4 tries
     with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/', retry_on_404=True)
-    assert_equal(resp.response.code, 404)
-    assert_equal(mock_request.call_count, 4)
+    assert resp.response.code == 404
+    assert mock_request.call_count == 4
 
     # retry on 404 false, just one more try
     with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen('http://dummy/', retry_on_404=False)
-    assert_equal(resp.response.code, 404)
-    assert_equal(mock_request.call_count, 5)
+    assert resp.response.code == 404
+    assert mock_request.call_count == 5
 
 
 def test_timeout():
     s = Scraper()
     s.timeout = 0.001
-    with assert_raises(requests.Timeout):
+    with pytest.raises(requests.Timeout):
         s.urlopen(HTTPBIN + 'delay/1')
 
 def test_timeout_arg():
     s = Scraper()
-    with assert_raises(requests.Timeout):
+    with pytest.raises(requests.Timeout):
         s.urlopen(HTTPBIN + 'delay/1', timeout=0.001)
 
 
@@ -256,8 +254,8 @@ def test_timeout_retry():
     with mock.patch.object(requests.Session, 'request', mock_request):
         # first, try without retries
         # try only once, get the error
-        assert_raises(requests.Timeout, s.urlopen, "http://dummy/")
-        assert_equal(mock_request.call_count, 1)
+        pytest.raises(requests.Timeout, s.urlopen, "http://dummy/")
+        assert mock_request.call_count == 1
 
     # reset and try again with retries
     mock_request.reset_mock()
@@ -266,9 +264,8 @@ def test_timeout_retry():
     with mock.patch.object(requests.Session, 'request', mock_request):
         resp = s.urlopen("http://dummy/")
         # get the result, take two tries
-        assert_equal(resp, "success!")
-        assert_equal(mock_request.call_count, 2)
-
+        assert resp == "success!"
+        assert mock_request.call_count == 2
 
 def test_disable_compression():
     s = Scraper()
@@ -296,11 +293,11 @@ def test_callable_headers():
     s = Scraper(header_func=lambda url: {'X-Url': url})
 
     data = s.urlopen(HTTPBIN + 'headers')
-    assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN + 'headers')
+    assert json.loads(data)['headers']['X-Url'] == HTTPBIN + 'headers'
 
     # Make sure it gets called freshly each time
     data = s.urlopen(HTTPBIN + 'headers?shh')
-    assert_equal(json.loads(data)['headers']['X-Url'], HTTPBIN + 'headers?shh')
+    assert json.loads(data)['headers']['X-Url'] == HTTPBIN + 'headers?shh'
 
 
 def test_ftp_uses_urllib2():
@@ -330,21 +327,19 @@ def test_ftp_retries():
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
         r = s.urlopen('ftp://dummy/', retry_on_404=True)
         assert r == "ftp success!"
-    assert_equal(mock_urlopen.call_count, 2)
+    assert mock_urlopen.call_count == 2
 
     # retry off, retry_on_404 on (shouldn't matter)
     count = []
     mock_urlopen.reset_mock()
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=0, retry_wait_seconds=0.001)
-        assert_raises(FTPError, s.urlopen, 'ftp://dummy/',
-                      retry_on_404=True)
-    assert_equal(mock_urlopen.call_count, 1)
+        pytest.raises(FTPError, s.urlopen, 'ftp://dummy/', retry_on_404=True)
+    assert mock_urlopen.call_count == 1
 
 
 def test_ftp_method_restrictions():
     s = Scraper(requests_per_minute=0)
 
     # only http(s) supports non-'GET' requests
-    assert_raises(HTTPMethodUnavailableError, s.urlopen, "ftp://dummy/",
-                  method='POST')
+    pytest.raises(HTTPMethodUnavailableError, s.urlopen, "ftp://dummy/", method='POST')
