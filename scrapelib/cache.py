@@ -27,8 +27,7 @@ class CachingSession(requests.Session):
         if method != 'get':
             return None
 
-        return requests.Request(url=url,
-                                params=kwargs.get('params', {})).prepare().url
+        return requests.Request(url=url, params=kwargs.get('params', {})).prepare().url
 
     def should_cache_response(self, response):
         """ Check if a given Response object should be cached.

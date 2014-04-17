@@ -12,14 +12,12 @@ if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import URLError as urllib_URLError
     _str_type = unicode
 else:                               # pragma: no cover
-    PY3K = True
     from urllib.request import urlopen as urllib_urlopen
     from urllib.error import URLError as urllib_URLError
     _str_type = str
 
 __version__ = '0.9.1'
-_user_agent = ' '.join(('scrapelib', __version__,
-                        requests.utils.default_user_agent()))
+_user_agent = ' '.join(('scrapelib', __version__, requests.utils.default_user_agent()))
 
 
 class NullHandler(logging.Handler):
@@ -48,8 +46,7 @@ class HTTPError(requests.HTTPError):
     """
 
     def __init__(self, response, body=None):
-        message = '%s while retrieving %s' % (response.status_code,
-                                              response.url)
+        message = '%s while retrieving %s' % (response.status_code, response.url)
         super(HTTPError, self).__init__(message)
         self.response = response
         self.body = body or self.response.text
@@ -136,12 +133,10 @@ _dummy._original_response.msg = DummyObject()
 
 class FTPAdapter(requests.adapters.BaseAdapter):
 
-    def send(self, request, stream=False, timeout=None, verify=False,
-             cert=None, proxies=None):
+    def send(self, request, stream=False, timeout=None, verify=False, cert=None, proxies=None):
         if request.method != 'GET':
-            raise HTTPMethodUnavailableError(
-                "FTP requests do not support method '%s'" % request.method,
-                request.method)
+            raise HTTPMethodUnavailableError("FTP requests do not support method '%s'" %
+                                             request.method, request.method)
         try:
             real_resp = urllib_urlopen(request.url, timeout=timeout)
             # we're going to fake a requests.Response with this
@@ -186,12 +181,10 @@ class RetrySession(requests.Session):
             try:
                 resp = super(RetrySession, self).request(method, url, **kwargs)
                 # break from loop on an accepted response
-                if self.accept_response(resp) or (resp.status_code == 404
-                                                  and not retry_on_404):
+                if self.accept_response(resp) or (resp.status_code == 404 and not retry_on_404):
                     break
 
-            except (requests.HTTPError, requests.ConnectionError,
-                    requests.Timeout) as e:
+            except (requests.HTTPError, requests.ConnectionError, requests.Timeout) as e:
                 exception_raised = e
 
             # if we're going to retry, sleep first
@@ -209,11 +202,8 @@ class RetrySession(requests.Session):
             return resp
 
 
-# compose sessions, order matters
-class Scraper(CachingSession,      # cache responses
-              ThrottledSession,    # throttle requests
-              RetrySession,        # do retries
-              ):
+# compose sessions, order matters (cache then throttle then retry)
+class Scraper(CachingSession, ThrottledSession, RetrySession):
     """
     Scraper is the most important class provided by scrapelib (and generally
     the only one to be instantiated directly).  It provides a large number
@@ -285,16 +275,15 @@ class Scraper(CachingSession,      # cache responses
         timeout = kwargs.pop('timeout', self.timeout)
 
         if self._header_func:
-            headers = requests.structures.CaseInsensitiveDict(
-                self._header_func(url))
+            headers = requests.structures.CaseInsensitiveDict(self._header_func(url))
         else:
             headers = {}
 
         headers = requests.sessions.merge_setting(headers, self.headers)
         headers = requests.sessions.merge_setting(kwargs.pop('headers', {}), headers)
 
-        return super(Scraper, self).request(method, url, timeout=timeout,
-                                            headers=headers, **kwargs)
+        return super(Scraper, self).request(method, url, timeout=timeout, headers=headers,
+                                            **kwargs)
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False, **kwargs):
         """
