@@ -232,12 +232,8 @@ class Scraper(CachingSession,      # cache responses
     :param retry_wait_seconds: number of seconds to retry after first failure,
         subsequent retries will double this wait
     """
-    def __init__(self,
-                 raise_errors=True,
-                 requests_per_minute=60,
-                 retry_attempts=0,
-                 retry_wait_seconds=5,
-                 header_func=None):
+    def __init__(self, raise_errors=True, requests_per_minute=60, retry_attempts=0,
+                 retry_wait_seconds=5, header_func=None):
 
         super(Scraper, self).__init__()
         self.mount('ftp://', FTPAdapter())
@@ -293,16 +289,9 @@ class Scraper(CachingSession,      # cache responses
                 self._header_func(url))
         else:
             headers = {}
-        try:
-            # requests < 1.2.2
-            headers = requests.sessions.merge_kwargs(headers, self.headers)
-            headers = requests.sessions.merge_kwargs(kwargs.pop('headers', {}),
-                                                     headers)
-        except AttributeError:
-            # requests >= 1.2.2
-            headers = requests.sessions.merge_setting(headers, self.headers)
-            headers = requests.sessions.merge_setting(
-                kwargs.pop('headers', {}), headers)
+
+        headers = requests.sessions.merge_setting(headers, self.headers)
+        headers = requests.sessions.merge_setting(kwargs.pop('headers', {}), headers)
 
         return super(Scraper, self).request(method, url, timeout=timeout,
                                             headers=headers, **kwargs)
