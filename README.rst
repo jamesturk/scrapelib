@@ -2,16 +2,13 @@
 scrapelib
 =========
 
-scrapelib is a library for making requests to websites, particularly those
-that may be less-than-reliable.
+scrapelib is a library for making requests to less-than-reliable websites, it is implemented
+(as of 0.7) as a wrapper around `requests <http://python-requests.org>`_.
 
 scrapelib originated as part of the `Open States <http://openstates.org/>`_
 project to scrape the websites of all 50 state legislatures and as a result
 was therefore designed with features desirable when dealing with sites that
 have intermittent errors or require rate-limiting.
-
-As of version 0.7 scrapelib has been retooled to take advantage of the superb
-`requests <http://python-requests.org>`_ library.
 
 Advantages of using scrapelib over alternatives like httplib2 simply using
 requests as-is:
@@ -22,8 +19,7 @@ requests as-is:
 * request throttling
 * configurable retries for non-permanent site failures
 
-scrapelib is a project of Sunlight Labs (c) 2013.
-All code is released under a BSD-style license, see LICENSE for details.
+scrapelib is a project of Sunlight Labs released under a BSD-style license, see LICENSE for details.
 
 Written by James Turk <jturk@sunlightfoundation.com>
 
