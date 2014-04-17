@@ -17,9 +17,9 @@ def test_default_key_for_request():
     # simple get method
     assert cs.key_for_request('get', DUMMY_URL) == DUMMY_URL
     # now with params
-    assert cs.key_for_request('get', DUMMY_URL, params={'foo': 'bar'}) ==  DUMMY_URL + '?foo=bar'
+    assert cs.key_for_request('get', DUMMY_URL, params={'foo': 'bar'}) == DUMMY_URL + '?foo=bar'
     # params in both places
-    assert (cs.key_for_request('get', DUMMY_URL + '?abc=def', params={'foo': 'bar'}) == 
+    assert (cs.key_for_request('get', DUMMY_URL + '?abc=def', params={'foo': 'bar'}) ==
             DUMMY_URL + '?abc=def&foo=bar')
 
 
@@ -40,7 +40,7 @@ def test_no_cache_request():
     resp = cs.request('get', HTTPBIN + 'status/200')
     resp = cs.request('get', HTTPBIN + 'status/200')
     assert resp.status_code == 200
-    assert resp.fromcache == False
+    assert resp.fromcache is False
 
 
 def test_simple_cache_request():

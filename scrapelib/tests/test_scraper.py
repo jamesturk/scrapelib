@@ -1,5 +1,4 @@
 import os
-import sys
 import glob
 import json
 import tempfile
@@ -167,8 +166,8 @@ def test_urlretrieve():
             assert resp.code == 200
         os.remove(fname)
 
-## TODO: on these retry tests it'd be nice to ensure that it tries
-## 3 times for 500 and once for 404
+# TODO: on these retry tests it'd be nice to ensure that it tries
+# 3 times for 500 and once for 404
 
 
 def test_retry():
@@ -230,6 +229,7 @@ def test_timeout():
     with pytest.raises(requests.Timeout):
         s.urlopen(HTTPBIN + 'delay/1')
 
+
 def test_timeout_arg():
     s = Scraper()
     with pytest.raises(requests.Timeout):
@@ -266,6 +266,7 @@ def test_timeout_retry():
         # get the result, take two tries
         assert resp == "success!"
         assert mock_request.call_count == 2
+
 
 def test_disable_compression():
     s = Scraper()
