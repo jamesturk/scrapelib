@@ -2,7 +2,10 @@ language: python
 python:
     - "2.7"
     - "3.3"
-install: pip install mock pytest requests --use-mirrors --upgrade
+env:
+    - REQUESTS=requests==1.2.2
+    - REQUESTS=requests
+install: pip install mock pytest $REQUESTS --use-mirrors --upgrade
 script: py.test
 notifications:
     email:
