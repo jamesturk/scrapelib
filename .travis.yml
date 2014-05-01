@@ -11,3 +11,7 @@ script: py.test
 notifications:
     email:
         - jturk@sunlightfoundation.com
+matrix:
+    exclude:
+        - python: "3.4"
+        env: REQUESTS=requests==1.2.2
