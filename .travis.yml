@@ -6,8 +6,10 @@ python:
 env:
     - REQUESTS=requests==1.2.2
     - REQUESTS=requests
-install: pip install mock pytest $REQUESTS --use-mirrors --upgrade
-script: py.test
+install: pip install mock pytest pytest-cov coveralls $REQUESTS --use-mirrors --upgrade
+script: py.test --cov
+after_success:
+    - coveralls
 notifications:
     email:
         - jturk@sunlightfoundation.com
