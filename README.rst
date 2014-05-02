@@ -3,6 +3,7 @@ scrapelib
 =========
 
 .. image:: https://travis-ci.org/sunlightlabs/scrapelib.svg?branch=master :target: https://travis-ci.org/sunlightlabs/scrapelib
+
 .. image:: https://coveralls.io/repos/sunlightlabs/scrapelib.png :target: https://coveralls.io/r/sunlightlabs/scrapelib
 
 
@@ -36,7 +37,7 @@ Contributors:
 Requirements
 ============
 
-* python 2.7 or 3.3
+* python 2.7, 3.3, 3.4
 * requests >= 1.0
 
 Installation
