@@ -2,6 +2,10 @@
 scrapelib
 =========
 
+.. image:: https://travis-ci.org/sunlightlabs/scrapelib.svg?branch=master :target: https://travis-ci.org/sunlightlabs/scrapelib
+.. image:: https://coveralls.io/repos/sunlightlabs/scrapelib.png :target: https://coveralls.io/r/sunlightlabs/scrapelib
+
+
 scrapelib is a library for making requests to less-than-reliable websites, it is implemented
 (as of 0.7) as a wrapper around `requests <http://python-requests.org>`_.
 
