@@ -1,0 +1,4 @@
+[run]
+omit = scrapelib/tests/*
+       scrapelib/__main__.py
+

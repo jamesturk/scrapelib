@@ -1,8 +1,9 @@
+# pragma: no cover
 from . import Scraper, _user_agent
 import argparse
 
 
-def scrapeshell():                  # pragma: no cover
+def scrapeshell():
     # clear argv for IPython
     import sys
     orig_argv = sys.argv[1:]
