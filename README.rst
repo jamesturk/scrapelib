@@ -2,9 +2,18 @@
 scrapelib
 =========
 
-.. image:: https://travis-ci.org/sunlightlabs/scrapelib.svg?branch=master :target: https://travis-ci.org/sunlightlabs/scrapelib
+.. raw:: html
 
-.. image:: https://coveralls.io/repos/sunlightlabs/scrapelib.png :target: https://coveralls.io/r/sunlightlabs/scrapelib
+    <p style="height:22px">
+    <a href="https://travis-ci.org/sunlightlabs/scrapelib">
+      <img src="https://travis-ci.org/sunlightlabs/scrapelib.svg?branch=master"/>
+    </a>
+    </p>
+    <p style="height:22px">
+    <a href="https://coveralls.io/r/sunlightlabs/scrapelib">
+      <img src="https://coveralls.io/repos/sunlightlabs/scrapelib.png"/>
+    </a>
+    </p>
 
 
 scrapelib is a library for making requests to less-than-reliable websites, it is implemented
