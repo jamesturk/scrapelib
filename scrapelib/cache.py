@@ -94,9 +94,10 @@ class FileCache(object):
         key = self._illegal.sub(',', key)
         return ','.join((key[:self._maxlen], md5))
 
-    def __init__(self, cache_dir):
+    def __init__(self, cache_dir, check_last_modified=False):
         # normalize path
         self.cache_dir = os.path.join(os.getcwd(), cache_dir)
+        self.check_last_modified = check_last_modified
         # create directory
         os.path.isdir(self.cache_dir) or os.makedirs(self.cache_dir)
 
@@ -113,7 +114,7 @@ class FileCache(object):
                     line = f.readline().decode('utf8').strip('\r\n')
                     # set headers
 
-                    if re.search("last-modified", line, flags=re.I):
+                    if self.check_last_modified and re.search("last-modified", line, flags=re.I):
                         #line contains last modified header
                         head_resp = requests.head(orig_key)
                         
