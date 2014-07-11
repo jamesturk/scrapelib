@@ -14,12 +14,6 @@ scrapelib
 .. image:: https://pypip.in/format/scrapelib/badge.svg
     :target: https://pypi.python.org/pypi/scrapelib
 
-    <p style="height:22px">
-    <a href="https://coveralls.io/r/sunlightlabs/scrapelib">
-      <img src="https://coveralls.io/repos/sunlightlabs/scrapelib.png"/>
-    </a>
-    </p>
-
 
 scrapelib is a library for making requests to less-than-reliable websites, it is implemented
 (as of 0.7) as a wrapper around `requests <http://python-requests.org>`_.
