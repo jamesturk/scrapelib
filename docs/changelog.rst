@@ -1,9 +1,15 @@
 scrapelib changelog
 ===================
 
+0.9.2
+-----
+    * addition of Wheel
+    * added kwarg to use last modified headers when using caching -thanks to Kaitlin Devine
+    * addition of dir param
+
 0.9.1
 -----
-**28 March 2013**
+**28 March 2014**
     * support kwargs in request paths -thanks to Drew Vogel
     * allow_cookies removal and documentation fix -thanks to Joe Germuska
     * add dir param to urlretrieve -thanks to Alison Rowland
