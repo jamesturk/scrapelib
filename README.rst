@@ -2,13 +2,18 @@
 scrapelib
 =========
 
-.. raw:: html
+.. image:: https://travis-ci.org/sunlightlabs/scrapelib.svg?branch=master
+    :target: https://travis-ci.org/sunlightlabs/scrapelib
 
-    <p style="height:22px">
-    <a href="https://travis-ci.org/sunlightlabs/scrapelib">
-      <img src="https://travis-ci.org/sunlightlabs/scrapelib.svg?branch=master"/>
-    </a>
-    </p>
+.. image:: https://coveralls.io/repos/sunlightlabs/scrapelib/badge.png?branch=master
+    :target: https://coveralls.io/r/sunlightlabs/scrapelib
+
+.. image:: https://pypip.in/version/scrapelib/badge.svg
+    :target: https://pypi.python.org/pypi/scrapelib
+
+.. image:: https://pypip.in/format/scrapelib/badge.svg
+    :target: https://pypi.python.org/pypi/scrapelib
+
     <p style="height:22px">
     <a href="https://coveralls.io/r/sunlightlabs/scrapelib">
       <img src="https://coveralls.io/repos/sunlightlabs/scrapelib.png"/>
