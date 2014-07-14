@@ -337,7 +337,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
             a :class:`Response` object that can be used to inspect the
             response headers.
         """
-        result = self.request(method, url, data=body, **kwargs) #self.urlopen(url, method, body, **kwargs)
+        result = self.request(method, url, data=body, **kwargs) 
 
         if not filename:
             fd, filename = tempfile.mkstemp(dir=dir)
