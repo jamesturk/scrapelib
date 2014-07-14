@@ -338,6 +338,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
             response headers.
         """
         result = self.request(method, url, data=body, **kwargs) 
+        result.code = result.status_code #backwards compat
 
         if not filename:
             fd, filename = tempfile.mkstemp(dir=dir)
