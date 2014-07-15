@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import time
+import warnings
 
 import requests
 from .cache import CachingSession, FileCache    # noqa
@@ -271,6 +272,8 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
             self.headers['Accept-Encoding'] = 'gzip, deflate, compress'
 
     def request(self, method, url, **kwargs):
+        _log.info("{0} - {1}".format(method.upper(), url))
+
         # apply global timeout
         timeout = kwargs.pop('timeout', self.timeout)
 
@@ -282,8 +285,11 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         headers = requests.sessions.merge_setting(headers, self.headers)
         headers = requests.sessions.merge_setting(kwargs.pop('headers', {}), headers)
 
-        return super(Scraper, self).request(method, url, timeout=timeout, headers=headers,
+        resp = super(Scraper, self).request(method, url, timeout=timeout, headers=headers,
                                             **kwargs)
+        if self.raise_errors and not self.accept_response(resp):
+            raise HTTPError(resp)
+        return resp
 
     def urlopen(self, url, method='GET', body=None, retry_on_404=False, **kwargs):
         """
@@ -301,15 +307,10 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
                 if retries are not enabled this parameter does nothing
                 (default: False)
         """
-
-        _log.info("{0} - {1}".format(method.upper(), url))
-
+        warnings.warn("urlopen is deprecated, use request, get, post, etc.",
+                      DeprecationWarning)
         resp = self.request(method, url, data=body, retry_on_404=retry_on_404, **kwargs)
-
-        if self.raise_errors and not self.accept_response(resp):
-            raise HTTPError(resp)
-        else:
-            return ResultStr(self, resp, url)
+        return ResultStr(self, resp, url)
 
     def urlretrieve(self, url, filename=None, method='GET', body=None, dir=None, **kwargs):
         """
@@ -337,8 +338,8 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
             a :class:`Response` object that can be used to inspect the
             response headers.
         """
-        result = self.request(method, url, data=body, **kwargs) 
-        result.code = result.status_code #backwards compat
+        result = self.request(method, url, data=body, **kwargs)
+        result.code = result.status_code    # backwards compat
 
         if not filename:
             fd, filename = tempfile.mkstemp(dir=dir)

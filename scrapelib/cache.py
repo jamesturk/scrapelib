@@ -7,8 +7,9 @@ import re
 import os
 import glob
 import hashlib
-import requests
 import string
+import requests
+
 
 class CachingSession(requests.Session):
     def __init__(self, cache_storage=None):
@@ -115,14 +116,14 @@ class FileCache(object):
                     # set headers
 
                     if self.check_last_modified and re.search("last-modified", line, flags=re.I):
-                        #line contains last modified header
+                        # line contains last modified header
                         head_resp = requests.head(orig_key)
-                        
-                        try: 
+
+                        try:
                             new_lm = head_resp.headers['last-modified']
                             old_lm = line[string.find(line, ':') + 1:].strip()
                             if old_lm != new_lm:
-                                #last modified timestamps don't match, need to download again
+                                # last modified timestamps don't match, need to download again
                                 return None
                         except KeyError:
                             # no last modified header present, so redownload
