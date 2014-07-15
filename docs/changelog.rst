@@ -3,10 +3,13 @@ scrapelib changelog
 
 0.10.0
 ------
+**15 July 2014**
     * added kwarg to use last modified headers when using caching -thanks to Kaitlin Devine
     * fix for chardet bug when opening large PDFs (& other binary files) with urlretrieve - thanks to Katilin Devine
-    * addition of Wheel
     * deprecation of urlopen in favor of Requests's request(), get(), post(), etc.
+    * removal of robots.txt code
+    * switch tests to py.test
+    * addition of wheel for release
 
 0.9.1
 -----
