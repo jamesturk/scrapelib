@@ -1,11 +1,12 @@
 scrapelib changelog
 ===================
 
-0.9.2
------
-    * addition of Wheel
+0.10.0
+------
     * added kwarg to use last modified headers when using caching -thanks to Kaitlin Devine
-    * addition of dir param
+    * fix for chardet bug when opening large PDFs (& other binary files) with urlretrieve - thanks to Katilin Devine
+    * addition of Wheel
+    * deprecation of urlopen in favor of Requests's request(), get(), post(), etc.
 
 0.9.1
 -----
