@@ -30,8 +30,7 @@ class CachingSession(requests.Session):
         parts = urlparse.urlparse(url.lower())
         newquery = sorted(urlparse.parse_qsl(parts.query))
         newquery = urlparse.urlencode(newquery)
-        newpath = urlparse.unquote_plus(parts.path)
-        parts = parts._replace(query=newquery, path=newpath)
+        parts = parts._replace(query=newquery)
         newurl = urlparse.urlunparse(parts)
         return newurl
 
