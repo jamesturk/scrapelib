@@ -10,12 +10,30 @@ import hashlib
 import string
 import requests
 
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
+
 
 class CachingSession(requests.Session):
     def __init__(self, cache_storage=None):
         super(CachingSession, self).__init__()
         self.cache_storage = cache_storage
         self.cache_write_only = False
+
+    def normalize_url(self, url):
+        '''Rewerites the url with GET params ordered alphabetically.
+        Prevents any non-deterministic ordering of params (server-side)
+        in the query string from causing cache misses.
+        '''
+        parts = urlparse.urlparse(url.lower())
+        newquery = sorted(urlparse.parse_qsl(parts.query))
+        newquery = urlparse.urlencode(newquery)
+        newpath = urlparse.unquote_plus(parts.path)
+        parts = parts._replace(query=newquery, path=newpath)
+        newurl = urlparse.urlunparse(parts)
+        return newurl
 
     def key_for_request(self, method, url, **kwargs):
         """ Return a cache key from a given set of request parameters.
@@ -27,8 +45,8 @@ class CachingSession(requests.Session):
         """
         if method != 'get':
             return None
-
-        return requests.Request(url=url, params=kwargs.get('params', {})).prepare().url
+        url = self.normalize_url(url)
+        return requests.Request(url=url).prepare().url
 
     def should_cache_response(self, response):
         """ Check if a given Response object should be cached.
