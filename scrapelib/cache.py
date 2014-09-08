@@ -27,7 +27,7 @@ class CachingSession(requests.Session):
         preventing cache misses due to non-deterministic server-side
         ordering of params in the query string.
         '''
-        parts = urlparse.urlparse(url.lower())
+        parts = urlparse.urlparse(url)
         newquery = sorted(urlparse.parse_qsl(parts.query))
         newquery = urlparse.urlencode(newquery)
         parts = parts._replace(query=newquery)
