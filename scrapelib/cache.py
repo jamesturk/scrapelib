@@ -23,9 +23,9 @@ class CachingSession(requests.Session):
         self.cache_write_only = False
 
     def normalize_url(self, url):
-        '''Rewerites the url with GET params ordered alphabetically.
-        Prevents any non-deterministic ordering of params (server-side)
-        in the query string from causing cache misses.
+        '''Rewrites the url with GET params ordered alphabetically,
+        preventing cache misses due to non-deterministic server-side
+        ordering of params in the query string.
         '''
         parts = urlparse.urlparse(url.lower())
         newquery = sorted(urlparse.parse_qsl(parts.query))
