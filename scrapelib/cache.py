@@ -33,7 +33,8 @@ class CachingSession(requests.Session):
         ordering of params in the query string.
         '''
         parts = urlparse.urlparse(url)
-        newquery = sorted(urlparse.parse_qsl(parts.query))
+        oldquery = urlparse.parse_qsl(parts.query)
+        newquery = sorted(oldquery)
         newquery = urlencode(newquery)
         parts = parts._replace(query=newquery)
         newurl = urlparse.urlunparse(parts)
