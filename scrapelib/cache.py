@@ -15,6 +15,11 @@ try:
 except ImportError:
     import urlparse
 
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
+
 
 class CachingSession(requests.Session):
     def __init__(self, cache_storage=None):
@@ -29,7 +34,7 @@ class CachingSession(requests.Session):
         '''
         parts = urlparse.urlparse(url)
         newquery = sorted(urlparse.parse_qsl(parts.query))
-        newquery = urlparse.urlencode(newquery)
+        newquery = urlencode(newquery)
         parts = parts._replace(query=newquery)
         newurl = urlparse.urlunparse(parts)
         return newurl
