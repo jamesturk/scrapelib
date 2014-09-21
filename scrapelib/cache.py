@@ -6,6 +6,7 @@
 import re
 import os
 import glob
+import gzip
 import hashlib
 import string
 import requests
@@ -101,6 +102,7 @@ class FileCache(object):
         self.check_last_modified = check_last_modified
         # create directory
         os.path.isdir(self.cache_dir) or os.makedirs(self.cache_dir)
+        self.gzip = os.environ.get('SCRAPELIB_CACHE_GZIP')
 
     def get(self, orig_key):
         resp = requests.Response()
@@ -109,7 +111,11 @@ class FileCache(object):
         path = os.path.join(self.cache_dir, key)
 
         try:
-            with open(path, 'rb') as f:
+            if self.gzip:
+                open_ = gzip.open
+            else:
+                open_ = open
+            with open_(path, 'rb') as f:
                 # read lines one at a time
                 while True:
                     line = f.readline().decode('utf8').strip('\r\n')
@@ -151,7 +157,11 @@ class FileCache(object):
         key = self._clean_key(key)
         path = os.path.join(self.cache_dir, key)
 
-        with open(path, 'wb') as f:
+        if self.gzip:
+            open_ = gzip.open
+        else:
+            open_ = open
+        with open_(path, 'wb') as f:
             status_str = 'status: {0}\n'.format(response.status_code)
             f.write(status_str.encode('utf8'))
             encoding_str = 'encoding: {0}\n'.format(response.encoding)
