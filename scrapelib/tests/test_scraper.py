@@ -1,6 +1,5 @@
 import os
 import glob
-import json
 import tempfile
 from io import BytesIO
 
@@ -43,16 +42,16 @@ def test_fields():
 
 def test_get():
     s = Scraper(requests_per_minute=0)
-    resp = s.urlopen(HTTPBIN + 'get?woo=woo')
-    assert resp.response.code == 200
-    assert json.loads(resp)['args']['woo'] == 'woo'
+    resp = s.get(HTTPBIN + 'get?woo=woo')
+    assert resp.status_code == 200
+    assert resp.json()['args']['woo'] == 'woo'
 
 
 def test_post():
     s = Scraper(requests_per_minute=0)
-    resp = s.urlopen(HTTPBIN + 'post', 'POST', {'woo': 'woo'})
-    assert resp.response.code == 200
-    resp_json = json.loads(resp)
+    resp = s.post(HTTPBIN + 'post', {'woo': 'woo'})
+    assert resp.status_code == 200
+    resp_json = resp.json()
     assert resp_json['form']['woo'] == 'woo'
     assert resp_json['headers']['Content-Type'] == 'application/x-www-form-urlencoded'
 
@@ -66,9 +65,9 @@ def test_request_throttling():
     # check that sleep is called on call 2 & 3
     with mock.patch('time.sleep', mock_sleep):
         with mock.patch.object(requests.Session, 'request', mock_200):
-            s.urlopen('http://dummy/')
-            s.urlopen('http://dummy/')
-            s.urlopen('http://dummy/')
+            s.get('http://dummy/')
+            s.get('http://dummy/')
+            s.get('http://dummy/')
             assert mock_sleep.call_count == 2
             # should have slept for ~2 seconds
             assert 1.8 <= mock_sleep.call_args[0][0] <= 2.2
@@ -79,49 +78,49 @@ def test_request_throttling():
 
     with mock.patch('time.sleep', mock_sleep):
         with mock.patch.object(requests.Session, 'request', mock_200):
-            s.urlopen('http://dummy/')
-            s.urlopen('http://dummy/')
-            s.urlopen('http://dummy/')
+            s.get('http://dummy/')
+            s.get('http://dummy/')
+            s.get('http://dummy/')
             assert mock_sleep.call_count == 0
 
 
 def test_user_agent():
     s = Scraper(requests_per_minute=0)
-    resp = s.urlopen(HTTPBIN + 'user-agent')
-    ua = json.loads(resp)['user-agent']
+    resp = s.get(HTTPBIN + 'user-agent')
+    ua = resp.json()['user-agent']
     assert ua == default_user_agent
 
     s.user_agent = 'a different agent'
-    resp = s.urlopen(HTTPBIN + 'user-agent')
-    ua = json.loads(resp)['user-agent']
+    resp = s.get(HTTPBIN + 'user-agent')
+    ua = resp.json()['user-agent']
     assert ua == 'a different agent'
 
 
 def test_user_agent_from_headers():
     s = Scraper(requests_per_minute=0)
     s.headers = {'User-Agent': 'from headers'}
-    resp = s.urlopen(HTTPBIN + 'user-agent')
-    ua = json.loads(resp)['user-agent']
+    resp = s.get(HTTPBIN + 'user-agent')
+    ua = resp.json()['user-agent']
     assert ua == 'from headers'
 
 
 def test_404():
     s = Scraper(requests_per_minute=0)
-    pytest.raises(HTTPError, s.urlopen, HTTPBIN + 'status/404')
+    pytest.raises(HTTPError, s.get, HTTPBIN + 'status/404')
 
     s.raise_errors = False
-    resp = s.urlopen(HTTPBIN + 'status/404')
-    assert resp.response.code == 404
+    resp = s.get(HTTPBIN + 'status/404')
+    assert resp.status_code == 404
 
 
 def test_500():
     s = Scraper(requests_per_minute=0)
 
-    pytest.raises(HTTPError, s.urlopen, HTTPBIN + 'status/500')
+    pytest.raises(HTTPError, s.get, HTTPBIN + 'status/500')
 
     s.raise_errors = False
-    resp = s.urlopen(HTTPBIN + 'status/500')
-    assert resp.response.code == 500
+    resp = s.get(HTTPBIN + 'status/500')
+    assert resp.status_code == 500
 
 
 def test_caching():
@@ -130,10 +129,10 @@ def test_caching():
     s.cache_storage = MemoryCache()
     s.cache_write_only = False
 
-    resp = s.urlopen(HTTPBIN + 'status/200')
-    assert not resp.response.fromcache
-    resp = s.urlopen(HTTPBIN + 'status/200')
-    assert resp.response.fromcache
+    resp = s.get(HTTPBIN + 'status/200')
+    assert not resp.fromcache
+    resp = s.get(HTTPBIN + 'status/200')
+    assert resp.fromcache
 
     for path in glob.iglob(os.path.join(cache_dir, "*")):
         os.remove(path)
@@ -180,15 +179,15 @@ def test_retry():
     ])
 
     with mock.patch.object(requests.Session, 'request', mock_request):
-        resp = s.urlopen('http://dummy/')
+        resp = s.get('http://dummy/')
     assert mock_request.call_count == 2
 
     # 500 always
     mock_request = mock.Mock(return_value=FakeResponse('http://dummy/', 500, 'failure!'))
 
     with mock.patch.object(requests.Session, 'request', mock_request):
-        resp = s.urlopen('http://dummy/')
-    assert resp.response.code == 500
+        resp = s.get('http://dummy/')
+    assert resp.status_code == 500
     assert mock_request.call_count == 4
 
 
@@ -202,9 +201,9 @@ def test_retry_404():
     ])
 
     with mock.patch.object(requests.Session, 'request', mock_request):
-        resp = s.urlopen('http://dummy/', retry_on_404=True)
+        resp = s.get('http://dummy/', retry_on_404=True)
     assert mock_request.call_count == 2
-    assert resp.response.code == 200
+    assert resp.status_code == 200
 
     # 404 always
     mock_request = mock.Mock(return_value=FakeResponse('http://dummy/', 404,
@@ -212,14 +211,14 @@ def test_retry_404():
 
     # retry on 404 true, 4 tries
     with mock.patch.object(requests.Session, 'request', mock_request):
-        resp = s.urlopen('http://dummy/', retry_on_404=True)
-    assert resp.response.code == 404
+        resp = s.get('http://dummy/', retry_on_404=True)
+    assert resp.status_code == 404
     assert mock_request.call_count == 4
 
     # retry on 404 false, just one more try
     with mock.patch.object(requests.Session, 'request', mock_request):
-        resp = s.urlopen('http://dummy/', retry_on_404=False)
-    assert resp.response.code == 404
+        resp = s.get('http://dummy/', retry_on_404=False)
+    assert resp.status_code == 404
     assert mock_request.call_count == 5
 
 
@@ -227,13 +226,13 @@ def test_timeout():
     s = Scraper()
     s.timeout = 0.001
     with pytest.raises(requests.Timeout):
-        s.urlopen(HTTPBIN + 'delay/1')
+        s.get(HTTPBIN + 'delay/1')
 
 
 def test_timeout_arg():
     s = Scraper()
     with pytest.raises(requests.Timeout):
-        s.urlopen(HTTPBIN + 'delay/1', timeout=0.001)
+        s.get(HTTPBIN + 'delay/1', timeout=0.001)
 
 
 def test_timeout_retry():
@@ -254,7 +253,7 @@ def test_timeout_retry():
     with mock.patch.object(requests.Session, 'request', mock_request):
         # first, try without retries
         # try only once, get the error
-        pytest.raises(requests.Timeout, s.urlopen, "http://dummy/")
+        pytest.raises(requests.Timeout, s.get, "http://dummy/")
         assert mock_request.call_count == 1
 
     # reset and try again with retries
@@ -262,9 +261,9 @@ def test_timeout_retry():
     count = []
     s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
     with mock.patch.object(requests.Session, 'request', mock_request):
-        resp = s.urlopen("http://dummy/")
+        resp = s.get("http://dummy/")
         # get the result, take two tries
-        assert resp == "success!"
+        assert resp.content == "success!"
         assert mock_request.call_count == 2
 
 
@@ -273,32 +272,35 @@ def test_disable_compression():
     s.disable_compression = True
 
     # compression disabled
-    data = s.urlopen(HTTPBIN + 'headers')
-    assert 'compress' not in json.loads(data)['headers']['Accept-Encoding']
-    assert 'gzip' not in json.loads(data)['headers']['Accept-Encoding']
+    data = s.get(HTTPBIN + 'headers')
+    djson = data.json()
+    assert 'compress' not in djson['headers']['Accept-Encoding']
+    assert 'gzip' not in djson['headers']['Accept-Encoding']
 
     # default is restored
     s.disable_compression = False
-    data = s.urlopen(HTTPBIN + 'headers')
-    assert 'compress' in json.loads(data)['headers']['Accept-Encoding']
-    assert 'gzip' in json.loads(data)['headers']['Accept-Encoding']
+    data = s.get(HTTPBIN + 'headers')
+    djson = data.json()
+    assert 'compress' in djson['headers']['Accept-Encoding']
+    assert 'gzip' in djson['headers']['Accept-Encoding']
 
     # A supplied Accept-Encoding headers overrides the
     # disable_compression option
     s.headers['Accept-Encoding'] = 'xyz'
-    data = s.urlopen(HTTPBIN + 'headers')
-    assert 'xyz' in json.loads(data)['headers']['Accept-Encoding']
+    data = s.get(HTTPBIN + 'headers')
+    djson = data.json()
+    assert 'xyz' in djson['headers']['Accept-Encoding']
 
 
 def test_callable_headers():
     s = Scraper(header_func=lambda url: {'X-Url': url})
 
-    data = s.urlopen(HTTPBIN + 'headers')
-    assert json.loads(data)['headers']['X-Url'] == HTTPBIN + 'headers'
+    data = s.get(HTTPBIN + 'headers')
+    assert data.json()['headers']['X-Url'] == HTTPBIN + 'headers'
 
     # Make sure it gets called freshly each time
-    data = s.urlopen(HTTPBIN + 'headers?shh')
-    assert json.loads(data)['headers']['X-Url'] == HTTPBIN + 'headers?shh'
+    data = s.get(HTTPBIN + 'headers?shh')
+    assert data.json()['headers']['X-Url'] == HTTPBIN + 'headers?shh'
 
 
 def test_ftp_uses_urllib2():
@@ -306,9 +308,9 @@ def test_ftp_uses_urllib2():
     urlopen = mock.Mock(return_value=BytesIO(b"ftp success!"))
 
     with mock.patch('scrapelib.urllib_urlopen', urlopen):
-        r = s.urlopen('ftp://dummy/')
-        assert r.response.code == 200
-        assert r == "ftp success!"
+        r = s.get('ftp://dummy/')
+        assert r.status_code == 200
+        assert r.content == b"ftp success!"
 
 
 def test_ftp_retries():
@@ -326,8 +328,8 @@ def test_ftp_retries():
     # retry on
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
-        r = s.urlopen('ftp://dummy/', retry_on_404=True)
-        assert r == "ftp success!"
+        r = s.get('ftp://dummy/', retry_on_404=True)
+        assert r.content == b"ftp success!"
     assert mock_urlopen.call_count == 2
 
     # retry off, retry_on_404 on (shouldn't matter)
@@ -335,7 +337,7 @@ def test_ftp_retries():
     mock_urlopen.reset_mock()
     with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=0, retry_wait_seconds=0.001)
-        pytest.raises(FTPError, s.urlopen, 'ftp://dummy/', retry_on_404=True)
+        pytest.raises(FTPError, s.get, 'ftp://dummy/', retry_on_404=True)
     assert mock_urlopen.call_count == 1
 
 
@@ -343,4 +345,4 @@ def test_ftp_method_restrictions():
     s = Scraper(requests_per_minute=0)
 
     # only http(s) supports non-'GET' requests
-    pytest.raises(HTTPMethodUnavailableError, s.urlopen, "ftp://dummy/", method='POST')
+    pytest.raises(HTTPMethodUnavailableError, s.post, "ftp://dummy/")
