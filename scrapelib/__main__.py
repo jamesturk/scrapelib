@@ -35,9 +35,9 @@ def scrapeshell():
     scraper.user_agent = args.user_agent
     url = args.url
     if args.postdata:
-        html = scraper.urlopen(args.url, 'POST', args.postdata)
+        html = scraper.post(args.url, args.postdata)
     else:
-        html = scraper.urlopen(args.url)
+        html = scraper.get(args.url)
 
     if USE_LXML:
         doc = lxml.html.fromstring(html.bytes)  # noqa
