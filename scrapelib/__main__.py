@@ -40,12 +40,12 @@ def scrapeshell():
         html = scraper.get(args.url)
 
     if USE_LXML:
-        doc = lxml.html.fromstring(html.bytes)  # noqa
+        doc = lxml.html.fromstring(html.content)  # noqa
 
     print('local variables')
     print('---------------')
     print('url: %s' % url)
-    print('html: `scrapelib.ResultStr` instance')
+    print('html: requests Response instance')
     if USE_LXML:
         print('doc: `lxml HTML element`')
     else:
