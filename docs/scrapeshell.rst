@@ -3,7 +3,7 @@ scrapeshell
 
 Many times, especially during development, it is useful to open an interactive shell to tinker with a page.  Often the HTML being returned is slightly out of sync with what is being seen in the browser, and it can be difficult to detect these differences without firing up an interactive python shell and inspecting what the request is returning.
 
-If scrapelib is installed on your path it provides :program:`scrapeshell`, an entrypoint that will open an `IPython <http://ipython.scipy.org/moin/>`_ shell.  It will present the user with an instance of :class:`ResultStr` with the contents of the scraped page and if `lxml <http://lxml.de>`_ is installed, an :class:`lxml.html.HtmlElement` instance as well.
+If scrapelib is installed on your path it provides :program:`scrapeshell`, an entrypoint that will open an `IPython <http://ipython.scipy.org/moin/>`_ shell.  It will present the user with an instance of requests.Response with the contents of the scraped page and if `lxml <http://lxml.de>`_ is installed, an :class:`lxml.html.HtmlElement` instance as well.
 
 .. note:
     scrapeshell requires argparse and IPython, which are not dependencies of scrapelib

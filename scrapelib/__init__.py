@@ -3,7 +3,6 @@ import os
 import sys
 import tempfile
 import time
-import warnings
 
 import requests
 from .cache import CachingSession, FileCache    # noqa
@@ -57,31 +56,6 @@ class FTPError(requests.HTTPError):
     def __init__(self, url):
         message = 'error while retrieving %s' % url
         super(FTPError, self).__init__(message)
-
-
-class ResultStr(_str_type):
-    """
-    Wrapper for responses.  Can treat identically to a ``str``
-    to get body of response, additional headers, etc. available via
-    ``response`` attribute.
-    """
-    def __new__(cls, scraper, response, requested_url):
-        try:
-            self = _str_type.__new__(cls, response.text)
-        except TypeError:
-            # use UTF8 as a default encoding if one couldn't be guessed
-            response.encoding = 'utf8'
-            self = _str_type.__new__(cls, response.text)
-        self._scraper = scraper
-        self.bytes = response.content
-        self.encoding = response.encoding
-        self.response = response
-        # augment self.response
-        #   manually set: requested_url
-        #   aliases: code -> status_code
-        self.response.requested_url = requested_url
-        self.response.code = self.response.status_code
-        return self
 
 
 class ThrottledSession(requests.Session):
@@ -290,27 +264,6 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         if self.raise_errors and not self.accept_response(resp):
             raise HTTPError(resp)
         return resp
-
-    def urlopen(self, url, method='GET', body=None, retry_on_404=False, **kwargs):
-        """
-            Make an HTTP request and return a :class:`ResultStr` object.
-
-            If an error is encountered may raise any of the scrapelib
-            `exceptions`_.
-
-            :param url: URL for request
-            :param method: any valid HTTP method, but generally GET or POST
-            :param body: optional body for request, to turn parameters into
-                an appropriate string use :func:`urllib.urlencode()`
-            :param retry_on_404: if retries are enabled, retry if a 404 is
-                encountered, this should only be used on pages known to exist
-                if retries are not enabled this parameter does nothing
-                (default: False)
-        """
-        warnings.warn("urlopen is deprecated, use request, get, post, etc.",
-                      DeprecationWarning)
-        resp = self.request(method, url, data=body, retry_on_404=retry_on_404, **kwargs)
-        return ResultStr(self, resp, url)
 
     def urlretrieve(self, url, filename=None, method='GET', body=None, dir=None, **kwargs):
         """

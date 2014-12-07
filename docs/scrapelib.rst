@@ -20,12 +20,6 @@ Response objects
 .. autoclass:: Headers
 
 
-ResultStr
-~~~~~~~~~
-
-.. autoclass:: ResultStr
-
-
 Exceptions
 ----------
 
