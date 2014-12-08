@@ -8,3 +8,4 @@ scrapelib.egg-info/
 .coverage
 htmlcov/
 .tox
+.ropeproject
