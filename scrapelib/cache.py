@@ -71,17 +71,27 @@ class CachingSession(requests.Session):
 
 
 class MemoryCache(object):
+    """In memory cache for request responses."""
     def __init__(self):
         self.cache = {}
 
     def get(self, key):
+        """Get cache entry for key, or return None."""
         return self.cache.get(key, None)
 
     def set(self, key, response):
+        """Set cache entry for key with contents of response."""
         self.cache[key] = response
 
 
 class FileCache(object):
+    """
+    File-based cache for request responses.
+
+    :param cache_dir: directory for storing responses
+    :param check_last_modified:  set to True to compare last-modified
+        timestamp in cached response with value from HEAD request
+    """
     # file name escaping inspired by httplib2
     _prefix = re.compile(r'^\w+://')
     _illegal = re.compile(r'[?/:|]+')
@@ -103,6 +113,7 @@ class FileCache(object):
         os.path.isdir(self.cache_dir) or os.makedirs(self.cache_dir)
 
     def get(self, orig_key):
+        """Get cache entry for key, or return None."""
         resp = requests.Response()
 
         key = self._clean_key(orig_key)
@@ -148,6 +159,7 @@ class FileCache(object):
             return None
 
     def set(self, key, response):
+        """Set cache entry for key with contents of response."""
         key = self._clean_key(key)
         path = os.path.join(self.cache_dir, key)
 
