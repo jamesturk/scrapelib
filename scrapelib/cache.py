@@ -9,7 +9,11 @@ import glob
 import hashlib
 import string
 import requests
-
+import sqlite3
+try:
+    import json
+except:
+    import simplejson as json
 
 class CachingSession(requests.Session):
     def __init__(self, cache_storage=None):
@@ -145,7 +149,7 @@ class FileCache(object):
             # TODO: resp.request = request
             return resp
         except IOError:
-            return None
+            return None 
 
     def set(self, key, response):
         key = self._clean_key(key)
@@ -171,3 +175,64 @@ class FileCache(object):
         cache_glob = '*,' + ('[0-9a-f]' * 32)
         for fname in glob.glob(os.path.join(self.cache_dir, cache_glob)):
             os.remove(fname)
+
+
+class SQLiteCache(object):
+    """SQLite cache to save responses."""
+    _columns = ['key', 'status', 'modified', 'encoding', 'data', 'headers']
+
+    def __init__(self, cache_path, check_last_modified=False):
+        self.cache_path = cache_path
+        self.check_last_modified = check_last_modified
+        self._conn = sqlite3.connect(cache_path)
+        self._conn.text_factory = str
+        self._build_table()
+
+    def _build_table(self):
+        """Create table for storing request information and response."""
+        self._conn.execute("""CREATE TABLE IF NOT EXISTS cache
+                (key text UNIQUE, status integer, modified text,
+                 encoding text, data blob, headers blob)""")
+
+    def set(self, key, response):
+        """Set cache value for key to response."""
+        mod = response.headers.pop('last-modified', None)
+        status = int(response.status_code)
+        rec = (key, status, mod, response.encoding, response.content,
+                json.dumps(dict(response.headers)))
+        with self._conn:
+            self._conn.execute("DELETE FROM cache WHERE key=?", (key, ))
+            self._conn.execute("INSERT INTO cache VALUES (?,?,?,?,?,?)", rec)
+
+    def get(self, key):
+        query = self._conn.execute("SELECT * FROM cache WHERE key=?", (key,))
+        rec = query.fetchone()
+        if rec is None:
+            return None
+        rec = dict(zip(self._columns, rec))
+
+        if self.check_last_modified:
+            if rec['modified'] is None:
+                return None  # no last modified header present, so redownload
+
+            head_resp = requests.head(key)
+            new_lm = head_resp.headers.get('last-modified', None)
+            if rec['modified'] != new_lm:
+                return None
+
+        resp = requests.Response()
+        resp._content = rec['data']
+        resp.status_code = rec['status']
+        resp.encoding = rec['encoding']
+        resp.headers = json.loads(rec['headers'])
+        resp.url = key
+        return resp
+
+    def clear(self):
+        """Remove all records from cache."""
+        with self._conn:
+            _ = self._conn.execute('DELETE FROM cache')
+
+    def __del__(self):
+        self._conn.close()
+
