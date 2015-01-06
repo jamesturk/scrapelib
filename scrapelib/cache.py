@@ -190,7 +190,13 @@ class FileCache(object):
 
 
 class SQLiteCache(object):
-    """SQLite cache to save responses."""
+    """SQLite cache for request responses.
+
+    :param cache_path: path for SQLite database file
+    :param check_last_modified: set to True to compare last-modified
+        timestamp in cached response with value from HEAD request
+
+    """
     _columns = ['key', 'status', 'modified', 'encoding', 'data', 'headers']
 
     def __init__(self, cache_path, check_last_modified=False):
@@ -207,7 +213,7 @@ class SQLiteCache(object):
                  encoding text, data blob, headers blob)""")
 
     def set(self, key, response):
-        """Set cache value for key to response."""
+        """Set cache entry for key with contents of response."""
         mod = response.headers.pop('last-modified', None)
         status = int(response.status_code)
         rec = (key, status, mod, response.encoding, response.content,
@@ -217,6 +223,7 @@ class SQLiteCache(object):
             self._conn.execute("INSERT INTO cache VALUES (?,?,?,?,?,?)", rec)
 
     def get(self, key):
+        """Get cache entry for key, or return None."""
         query = self._conn.execute("SELECT * FROM cache WHERE key=?", (key,))
         rec = query.fetchone()
         if rec is None:
