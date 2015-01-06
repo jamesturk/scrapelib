@@ -31,6 +31,7 @@ Contents
 
    scrapelib
    scrapeshell
+   cache
    changelog
 
 Indices and tables
