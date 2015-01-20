@@ -303,6 +303,16 @@ def test_callable_headers():
     assert data.json()['headers']['X-Url'] == HTTPBIN + 'headers?shh'
 
 
+def test_headers_everywhere():
+    s = Scraper()
+    s.headers = {'a': 'a'}
+
+    data = s.get(HTTPBIN + 'headers', headers={'b': 'b'}).json()
+    print(data)
+    assert data['headers']['A'] == 'a'
+    assert data['headers']['B'] == 'b'
+
+
 def test_ftp_uses_urllib2():
     s = Scraper(requests_per_minute=0)
     urlopen = mock.Mock(return_value=BytesIO(b"ftp success!"))
