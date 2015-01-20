@@ -1,7 +1,7 @@
 import sys
 
 import requests
-from ..cache import CachingSession, MemoryCache, FileCache
+from ..cache import CachingSession, MemoryCache, FileCache, SQLiteCache
 
 DUMMY_URL = 'http://dummy/'
 HTTPBIN = 'http://httpbin.org/'
@@ -111,3 +111,10 @@ def test_file_cache():
     fc.clear()
     _test_cache_storage(fc)
     fc.clear()
+
+
+def test_sqlite_cache():
+    sc = SQLiteCache('cache.db')
+    sc.clear()
+    _test_cache_storage(sc)
+    sc.clear()
