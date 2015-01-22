@@ -1,6 +1,12 @@
 scrapelib changelog
 ===================
 
+0.10.1
+------
+**22 January 2015**
+    * SQLite cache backend (thanks Chris Poliquin!)
+    * test and fix for header merging bug
+
 0.10.0
 ------
 **15 July 2014**
