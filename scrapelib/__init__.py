@@ -282,8 +282,13 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         else:
             headers = {}
 
-        headers = requests.sessions.merge_setting(headers, self.headers)
-        headers = requests.sessions.merge_setting(headers, kwargs.pop('headers', {}))
+        kwarg_headers = kwargs.pop('headers', {})
+        headers = requests.sessions.merge_setting(
+            headers, self.headers,
+            dict_class=requests.structures.CaseInsensitiveDict)
+        headers = requests.sessions.merge_setting(
+            kwarg_headers, headers,
+            dict_class=requests.structures.CaseInsensitiveDict)
 
         resp = super(Scraper, self).request(method, url, timeout=timeout, headers=headers,
                                             **kwargs)
