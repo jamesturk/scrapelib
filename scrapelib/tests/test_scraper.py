@@ -301,14 +301,16 @@ def test_callable_headers():
     assert json.loads(data)['headers']['X-Url'] == HTTPBIN + 'headers?shh'
 
 
-def test_headers_everywhere():
+def test_headers_weirdness():
     s = Scraper()
-    s.headers = {'a': 'a'}
+    s.headers = {'accept': 'application/json'}
+    data = s.get(HTTPBIN + 'headers').json()
+    assert data['headers']['Accept'] == 'application/json'
 
-    data = s.get(HTTPBIN + 'headers', headers={'b': 'b'}).json()
-    print(data)
-    assert data['headers']['A'] == 'a'
-    assert data['headers']['B'] == 'b'
+    s = Scraper()
+    data = s.get(HTTPBIN + 'headers',
+                 headers={'accept': 'application/xml'}).json()
+    assert data['headers']['Accept'] == 'application/xml'
 
 
 def test_ftp_uses_urllib2():
