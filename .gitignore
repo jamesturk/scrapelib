@@ -9,3 +9,4 @@ scrapelib.egg-info/
 htmlcov/
 .tox
 .ropeproject
+cache.db
