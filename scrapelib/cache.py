@@ -10,10 +10,8 @@ import hashlib
 import string
 import requests
 import sqlite3
-try:
-    import json
-except:
-    import simplejson as json
+import json
+
 
 class CachingSession(requests.Session):
     def __init__(self, cache_storage=None):
@@ -160,7 +158,7 @@ class FileCache(object):
             # TODO: resp.request = request
             return resp
         except IOError:
-            return None 
+            return None
 
     def set(self, key, response):
         """Set cache entry for key with contents of response."""
@@ -217,7 +215,7 @@ class SQLiteCache(object):
         mod = response.headers.pop('last-modified', None)
         status = int(response.status_code)
         rec = (key, status, mod, response.encoding, response.content,
-                json.dumps(dict(response.headers)))
+               json.dumps(dict(response.headers)))
         with self._conn:
             self._conn.execute("DELETE FROM cache WHERE key=?", (key, ))
             self._conn.execute("INSERT INTO cache VALUES (?,?,?,?,?,?)", rec)
@@ -250,8 +248,7 @@ class SQLiteCache(object):
     def clear(self):
         """Remove all records from cache."""
         with self._conn:
-            _ = self._conn.execute('DELETE FROM cache')
+            self._conn.execute('DELETE FROM cache')
 
     def __del__(self):
         self._conn.close()
-

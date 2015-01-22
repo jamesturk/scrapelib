@@ -16,7 +16,7 @@ else:                               # pragma: no cover
     from urllib.error import URLError as urllib_URLError
     _str_type = str
 
-__version__ = '0.10.0'
+__version__ = '0.10.1'
 _user_agent = ' '.join(('scrapelib', __version__, requests.utils.default_user_agent()))
 
 
@@ -256,8 +256,13 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         else:
             headers = {}
 
-        headers = requests.sessions.merge_setting(headers, self.headers)
-        headers = requests.sessions.merge_setting(headers, kwargs.pop('headers', {}))
+        kwarg_headers = kwargs.pop('headers', {})
+        headers = requests.sessions.merge_setting(
+            headers, self.headers,
+            dict_class=requests.structures.CaseInsensitiveDict)
+        headers = requests.sessions.merge_setting(
+            kwarg_headers, headers,
+            dict_class=requests.structures.CaseInsensitiveDict)
 
         resp = super(Scraper, self).request(method, url, timeout=timeout, headers=headers,
                                             **kwargs)
