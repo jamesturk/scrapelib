@@ -186,6 +186,8 @@ class RetrySession(requests.Session):
                     break
 
             except (requests.HTTPError, requests.ConnectionError, requests.Timeout) as e:
+                if isinstance(e, requests.exceptions.SSLError):
+                    raise
                 exception_raised = e
 
             # if we're going to retry, sleep first
