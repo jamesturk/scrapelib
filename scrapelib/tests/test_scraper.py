@@ -28,6 +28,11 @@ def request_200(method, url, *args, **kwargs):
 mock_200 = mock.Mock(wraps=request_200)
 
 
+def request_sslerror(method, url, *args, **kwargs):
+    raise requests.exceptions.SSLError('sslfail')
+mock_sslerror = mock.Mock(wraps=request_sslerror)
+
+
 def test_fields():
     # timeout=0 means None
     s = Scraper(requests_per_minute=100,
@@ -220,6 +225,16 @@ def test_retry_404():
         resp = s.get('http://dummy/', retry_on_404=False)
     assert resp.status_code == 404
     assert mock_request.call_count == 5
+
+
+def test_retry_ssl():
+    s = Scraper(retry_attempts=5, retry_wait_seconds=0.001, raise_errors=False)
+
+    # ensure SSLError is considered fatal even w/ retries
+    with mock.patch.object(requests.Session, 'request', mock_sslerror):
+        with pytest.raises(requests.exceptions.SSLError):
+            resp = s.get('http://dummy/', retry_on_404=True)
+    assert mock_sslerror.call_count == 1
 
 
 def test_timeout():
