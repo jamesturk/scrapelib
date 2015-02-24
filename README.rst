@@ -14,6 +14,9 @@ scrapelib
 .. image:: https://pypip.in/format/scrapelib/badge.svg
     :target: https://pypi.python.org/pypi/scrapelib
 
+.. image:: https://readthedocs.org/projects/scrapelib/badge/?version=latest
+    :target: https://readthedocs.org/projects/scrapelib/?badge=latest
+    :alt: Documentation Status
 
 scrapelib is a library for making requests to less-than-reliable websites, it is implemented
 (as of 0.7) as a wrapper around `requests <http://python-requests.org>`_.
