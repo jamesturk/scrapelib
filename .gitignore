@@ -10,3 +10,4 @@ htmlcov/
 .tox
 .ropeproject
 cache.db
+_build
