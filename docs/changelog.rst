@@ -1,6 +1,14 @@
 scrapelib changelog
 ===================
 
+1.0.0
+-----
+**20 March 2015**
+    * drop deprecated urlopen interface, see http://scrapelib.readthedocs.org/en/latest/migration.html
+    * documentation thanks to poliquin
+    * sqlite cache thanks to poliquin
+    * fix for SSLError retries pointed out by Eric Mill
+
 0.10.1
 ------
 **22 January 2015**
