@@ -6,7 +6,7 @@ Overview
 scrapelib is a library for making requests to websites, particularly those
 that may be less-than-reliable.
 
-scrapelib originated as part of the `Open States <http://openstates.org/`_
+scrapelib originated as part of the `Open States <http://openstates.org/>`_
 project to scrape the websites of all 50 state legislatures and as a result
 was therefore designed with features desirable when dealing with sites that
 have intermittent errors or require rate-limiting.
