@@ -3,17 +3,10 @@ python:
     - "2.7"
     - "3.3"
     - "3.4"
-env:
-    - REQUESTS=requests==1.2.2
-    - REQUESTS=requests
-install: pip install mock pytest pytest-cov coveralls $REQUESTS --upgrade
+install: pip install mock pytest pytest-cov coveralls requests>=2.0 --upgrade
 script: py.test --cov scrapelib
 after_success:
     - coveralls
 notifications:
     email:
         - jturk@sunlightfoundation.com
-matrix:
-    exclude:
-        - python: "3.4"
-          env: REQUESTS=requests==1.2.2
