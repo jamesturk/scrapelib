@@ -373,3 +373,38 @@ def test_ftp_method_restrictions():
 
     # only http(s) supports non-'GET' requests
     pytest.raises(HTTPMethodUnavailableError, s.post, "ftp://dummy/")
+
+
+
+def test_basic_stats():
+    s = Scraper()
+    with mock.patch.object(requests.Session, 'request', mock_200):
+        s.get('http://example.com')
+        s.get('http://example.com')
+        s.get('http://example.com')
+
+    assert s.stats['total_requests'] == 3
+    assert s.stats['total_time'] > 0
+    assert s.stats['average_time'] == s.stats['total_time'] / 3
+
+    three_time = s.stats['total_time']
+
+    with mock.patch.object(requests.Session, 'request', mock_200):
+        s.get('http://example.com')
+        assert s.stats['total_requests'] == 4
+        assert s.stats['total_time'] > three_time
+        assert s.stats['average_time'] == s.stats['total_time'] / 4
+
+
+def test_reset_stats():
+    s = Scraper()
+    with mock.patch.object(requests.Session, 'request', mock_200):
+        s.get('http://example.com')
+    assert s.stats['total_requests'] == 1
+
+    s.reset_stats()
+    assert s.stats['total_requests'] == 0
+
+    with mock.patch.object(requests.Session, 'request', mock_200):
+        s.get('http://example.com')
+    assert s.stats['total_requests'] == 1

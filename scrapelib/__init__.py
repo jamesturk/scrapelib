@@ -226,6 +226,15 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         self.timeout = None
         self.user_agent = _user_agent
 
+        # statistics structure
+        self.reset_stats()
+
+    def reset_stats(self):
+        self.stats = {}
+        self.stats['total_requests'] = 0
+        self.stats['total_time'] = 0
+        self.stats['average_time'] = None
+
     @property
     def user_agent(self):
         return self.headers['User-Agent']
@@ -266,8 +275,14 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
             kwarg_headers, headers,
             dict_class=requests.structures.CaseInsensitiveDict)
 
+        _start_time = time.time()
+
         resp = super(Scraper, self).request(method, url, timeout=timeout, headers=headers,
                                             **kwargs)
+        self.stats['total_requests'] += 1
+        self.stats['total_time'] += (time.time() - _start_time)
+        self.stats['average_time'] = self.stats['total_time'] / self.stats['total_requests']
+
         if self.raise_errors and not self.accept_response(resp):
             raise HTTPError(resp)
         return resp
