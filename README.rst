@@ -34,7 +34,7 @@ requests as-is:
 
 Written by James Turk <james.p.turk@gmail.com>, thanks to Michael Stephens for initial urllib2/httplib2 version
 
-See https://github.com/jamesturk/jellyfish/graphs/contributors for contributors.
+See https://github.com/jamesturk/scrapelib/graphs/contributors for contributors.
 
 Requirements
 ============
