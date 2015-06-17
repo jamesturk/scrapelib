@@ -2,16 +2,13 @@
 scrapelib
 =========
 
-.. image:: https://travis-ci.org/sunlightlabs/scrapelib.svg?branch=master
-    :target: https://travis-ci.org/sunlightlabs/scrapelib
+.. image:: https://travis-ci.org/jamesturk/scrapelib.svg?branch=master
+    :target: https://travis-ci.org/jamesturk/scrapelib
 
-.. image:: https://coveralls.io/repos/sunlightlabs/scrapelib/badge.png?branch=master
-    :target: https://coveralls.io/r/sunlightlabs/scrapelib
+.. image:: https://coveralls.io/repos/jamesturk/scrapelib/badge.png?branch=master
+    :target: https://coveralls.io/r/jamesturk/scrapelib
 
-.. image:: https://pypip.in/version/scrapelib/badge.svg
-    :target: https://pypi.python.org/pypi/scrapelib
-
-.. image:: https://pypip.in/format/scrapelib/badge.svg
+.. image:: https://img.shields.io/pypi/v/scrapelib.svg
     :target: https://pypi.python.org/pypi/scrapelib
 
 .. image:: https://readthedocs.org/projects/scrapelib/badge/?version=latest
@@ -35,15 +32,9 @@ requests as-is:
 * request throttling
 * configurable retries for non-permanent site failures
 
-scrapelib is a project of Sunlight Labs released under a BSD-style license, see LICENSE for details.
+Written by James Turk <james.p.turk@gmail.com>, thanks to Michael Stephens for initial urllib2/httplib2 version
 
-Written by James Turk <jturk@sunlightfoundation.com>
-
-Contributors:
-    * Michael Stephens - initial urllib2/httplib2 version
-    * Joe Germuska - fix for IPython embedding
-    * Alex Chiang - fix to test suite
-
+See https://github.com/jamesturk/jellyfish/graphs/contributors for contributors.
 
 Requirements
 ============
@@ -51,19 +42,11 @@ Requirements
 * python 2.7, 3.3, 3.4
 * requests >= 2.0 (earlier versions may work but aren't tested)
 
-Installation
-============
-
-scrapelib is available on PyPI and can be installed via ``pip install scrapelib``
-
-PyPI package: http://pypi.python.org/pypi/scrapelib
-
-Source: http://github.com/sunlightlabs/scrapelib
-
-Documentation: http://scrapelib.readthedocs.org/en/latest/
 
 Example Usage
 =============
+
+Documentation: http://scrapelib.readthedocs.org/en/latest/
 
 ::
 
