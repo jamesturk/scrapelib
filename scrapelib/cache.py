@@ -8,82 +8,27 @@ import os
 import glob
 import hashlib
 import string
-import requests
 import sqlite3
 import json
 
+import requests
+import cachecontrol
+
+from cachecontrol import CacheControlAdapter
+from cachecontrol.heuristics import ExpiresAfter
+from cachecontrol.cache import DictCache as MemoryCache
 
 class CachingSession(requests.Session):
-    def __init__(self, cache_storage=None):
+    def __init__(self, cache_storage=None, cache_all=False):
         super(CachingSession, self).__init__()
-        self.cache_storage = cache_storage
-        self.cache_write_only = False
-
-    def key_for_request(self, method, url, **kwargs):
-        """ Return a cache key from a given set of request parameters.
-
-            Default behavior is to return a complete URL for all GET
-            requests, and None otherwise.
-
-            Can be overriden if caching of non-get requests is desired.
-        """
-        if method != 'get':
-            return None
-
-        return requests.Request(url=url, params=kwargs.get('params', {})).prepare().url
-
-    def should_cache_response(self, response):
-        """ Check if a given Response object should be cached.
-
-            Default behavior is to only cache responses with a 200
-            status code.
-        """
-        return response.status_code == 200
-
-    def request(self, method, url, **kwargs):
-        """ Override, wraps Session.request in caching.
-
-            Cache is only used if key_for_request returns a valid key
-            and should_cache_response was true as well.
-        """
-        # short circuit if cache isn't configured
-        if not self.cache_storage:
-            resp = super(CachingSession, self).request(method, url, **kwargs)
-            resp.fromcache = False
-            return resp
-
-        resp = None
-        method = method.lower()
-
-        request_key = self.key_for_request(method, url, **kwargs)
-
-        if request_key and not self.cache_write_only:
-            resp = self.cache_storage.get(request_key)
-
-        if resp:
-            resp.fromcache = True
+        if cache_all:
+            adapter = CacheControlAdapter(cache=cache_storage,
+                                          heuristic=ExpiresAfter(days=365))
         else:
-            resp = super(CachingSession, self).request(method, url, **kwargs)
-            # save to cache if request and response meet criteria
-            if request_key and self.should_cache_response(resp):
-                self.cache_storage.set(request_key, resp)
-            resp.fromcache = False
+            adapter = CacheControlAdapter(cache=cache_storage)
+        self.mount('http://', adapter)
+        self.mount('https://', adapter)
 
-        return resp
-
-
-class MemoryCache(object):
-    """In memory cache for request responses."""
-    def __init__(self):
-        self.cache = {}
-
-    def get(self, key):
-        """Get cache entry for key, or return None."""
-        return self.cache.get(key, None)
-
-    def set(self, key, response):
-        """Set cache entry for key with contents of response."""
-        self.cache[key] = response
 
 
 class FileCache(object):

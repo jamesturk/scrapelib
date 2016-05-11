@@ -5,7 +5,8 @@ import tempfile
 import time
 
 import requests
-from .cache import CachingSession, FileCache    # noqa
+from cachecontrol import CacheControlAdapter
+from cachecontrol.heuristics import ExpiresAfter
 
 if sys.version_info[0] < 3:         # pragma: no cover
     from urllib2 import urlopen as urllib_urlopen
@@ -180,7 +181,7 @@ class RetrySession(requests.Session):
 
 
 # compose sessions, order matters (cache then throttle then retry)
-class Scraper(CachingSession, ThrottledSession, RetrySession):
+class Scraper(ThrottledSession, RetrySession):
     """
     Scraper is the most important class provided by scrapelib (and generally
     the only one to be instantiated directly).  It provides a large number
@@ -218,10 +219,6 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         # added by this class
         self._header_func = header_func
 
-        # added by CachingSession
-        self.cache_storage = None
-        self.cache_write_only = True
-
         # non-parameter options
         self.timeout = None
         self.user_agent = _user_agent
@@ -229,11 +226,48 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         # statistics structure
         self.reset_stats()
 
+        # By default, if we cache, cache everyting
+        self._cache_all = True
+
     def reset_stats(self):
         self.stats = {}
         self.stats['total_requests'] = 0
         self.stats['total_time'] = 0
         self.stats['average_time'] = None
+
+    @property
+    def cache_storage(self):
+        for adapter in self.adapters.values():
+            if hasattr(adapter, 'cache'):
+                return adapter.cache
+        else:
+            return None
+
+    @cache_storage.setter
+    def cache_storage(self, value):
+        if value is None:
+            self.mount('http://', requests.addapters.HTTPAdapter())
+            self.mount('https://', requests.addapters.HTTPAdapter())
+        else:
+            adapter = CacheControlAdapter(cache=value)
+            if self.cache_all:
+                adapter.heuristic = ExpiresAfter(days=365)
+            self.mount('http://', adapter)
+            self.mount('https://', adapter)
+
+    @property
+    def cache_all(self):
+        return self._cache_all
+
+    @cache_all.setter
+    def cache_all(self, value):
+        self._cache_all = value
+        for adapter in self.adapters.values():
+            if hasattr(adapter, 'cache'):
+                if value:
+                    adapter.heuristic = ExpiresAfter(days=365)
+                else:
+                    adapter.heuristic = None
 
     @property
     def user_agent(self):

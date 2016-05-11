@@ -128,21 +128,35 @@ def test_500():
     assert resp.status_code == 500
 
 
-def test_caching():
-    cache_dir = tempfile.mkdtemp()
+def test_caching_all():
     s = Scraper(requests_per_minute=0)
     s.cache_storage = MemoryCache()
-    s.cache_write_only = False
 
     resp = s.get(HTTPBIN + 'status/200')
-    assert not resp.fromcache
+    assert not resp.from_cache
     resp = s.get(HTTPBIN + 'status/200')
-    assert resp.fromcache
+    assert resp.from_cache
 
-    for path in glob.iglob(os.path.join(cache_dir, "*")):
-        os.remove(path)
-    os.rmdir(cache_dir)
+def test_caching_headers():
+    s = Scraper(requests_per_minute=0)
+    s.cache_storage = MemoryCache()
+    s.cache_all = False
 
+    resp = s.get(HTTPBIN + 'cache/60')
+    assert not resp.from_cache
+    resp = s.get(HTTPBIN + 'cache/60')
+    assert resp.from_cache
+
+
+def test_caching_no_headers():
+    s = Scraper(requests_per_minute=0)
+    s.cache_storage = MemoryCache()
+    s.cache_all = False
+
+    resp = s.get(HTTPBIN + 'get')
+    assert not resp.from_cache
+    resp = s.get(HTTPBIN + 'get')
+    assert not resp.from_cache
 
 def test_urlretrieve():
     s = Scraper(requests_per_minute=0)
