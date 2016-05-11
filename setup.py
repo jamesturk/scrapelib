@@ -27,7 +27,8 @@ setup(name="scrapelib",
                    "Topic :: Software Development :: Libraries :: Python Modules",
                    ],
       install_requires=['requests>=1.2.2',
-                        'cachecontrol'],
+                        'cachecontrol',
+                        'cachecontrol[filecache]'],
       entry_points="""
 [console_scripts]
 scrapeshell = scrapelib.__main__:scrapeshell
