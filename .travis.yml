@@ -4,7 +4,7 @@ python:
     - "3.4"
     - "3.5"
     - "3.6"
-install: pip install mock pytest pytest-cov coveralls requests>=2.0 --upgrade
+install: pip install mock pytest pytest-cov coveralls requests[security]>=2.0 --upgrade
 script: py.test --cov scrapelib
 after_success:
     - coveralls
