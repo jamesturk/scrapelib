@@ -6,11 +6,22 @@
 import re
 import os
 import glob
+import gzip
 import hashlib
 import string
 import requests
 import sqlite3
 import json
+
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
+
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
 
 
 class CachingSession(requests.Session):
@@ -18,6 +29,19 @@ class CachingSession(requests.Session):
         super(CachingSession, self).__init__()
         self.cache_storage = cache_storage
         self.cache_write_only = False
+
+    def normalize_url(self, url):
+        '''Rewrites the url with GET params ordered alphabetically,
+        preventing cache misses due to non-deterministic server-side
+        ordering of params in the query string.
+        '''
+        parts = urlparse.urlparse(url)
+        oldquery = urlparse.parse_qsl(parts.query)
+        newquery = sorted(oldquery)
+        newquery = urlencode(newquery)
+        parts = parts._replace(query=newquery)
+        newurl = urlparse.urlunparse(parts)
+        return newurl
 
     def key_for_request(self, method, url, **kwargs):
         """ Return a cache key from a given set of request parameters.
@@ -29,7 +53,7 @@ class CachingSession(requests.Session):
         """
         if method != 'get':
             return None
-
+        url = self.normalize_url(url)
         return requests.Request(url=url, params=kwargs.get('params', {})).prepare().url
 
     def should_cache_response(self, response):
@@ -113,6 +137,7 @@ class FileCache(object):
         self.check_last_modified = check_last_modified
         # create directory
         os.path.isdir(self.cache_dir) or os.makedirs(self.cache_dir)
+        self.gzip = os.environ.get('SCRAPELIB_CACHE_GZIP')
 
     def get(self, orig_key):
         """Get cache entry for key, or return None."""
@@ -122,7 +147,11 @@ class FileCache(object):
         path = os.path.join(self.cache_dir, key)
 
         try:
-            with open(path, 'rb') as f:
+            if self.gzip:
+                open_ = gzip.open
+            else:
+                open_ = open
+            with open_(path, 'rb') as f:
                 # read lines one at a time
                 while True:
                     line = f.readline().decode('utf8').strip('\r\n')
@@ -165,7 +194,11 @@ class FileCache(object):
         key = self._clean_key(key)
         path = os.path.join(self.cache_dir, key)
 
-        with open(path, 'wb') as f:
+        if self.gzip:
+            open_ = gzip.open
+        else:
+            open_ = open
+        with open_(path, 'wb') as f:
             status_str = 'status: {0}\n'.format(response.status_code)
             f.write(status_str.encode('utf8'))
             encoding_str = 'encoding: {0}\n'.format(response.encoding)

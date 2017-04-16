@@ -23,6 +23,38 @@ def test_default_key_for_request():
             DUMMY_URL + '?abc=def&foo=bar')
 
 
+def test_key_param_ordering():
+    '''Verifies that two differently ordered but otherwise equivalent
+    query strings recieve the same cache key.
+    '''
+    cs = CachingSession()
+    params1 = '?a=1&b=2&c=3'
+    params2 = '?c=3&a=1&b=2'
+
+    key1 = cs.key_for_request('get', DUMMY_URL + params1)
+    key2 = cs.key_for_request('get', DUMMY_URL + params2)
+    assert key1 == key2
+
+
+def test_key_param_ordering_with_array():
+    '''Verifies that that two differently ordered but otherwise equivalent
+    query strings continaing array parameters result in the same cache key.
+    This should just work, because python's sorted function sorts a list of
+    sequences by their first item, then second, etc.
+    '''
+    cs = CachingSession()
+    params1 = '?a[]=jamesturk&a[]=thomnasty&a[]=tags'
+    params2 = '?a[]=tags&a[]=jamesturk&a[]=thomnasty'
+    params3 = '?a[]=tags&a[]=jamesturk&a[]=thomnasty&intern=cspencer'
+
+    key1 = cs.key_for_request('get', DUMMY_URL + params1)
+    key2 = cs.key_for_request('get', DUMMY_URL + params2)
+    key3 = cs.key_for_request('get', DUMMY_URL + params3)
+    assert key1 == key2
+    assert key1 != key3
+    assert key2 != key3
+
+
 def test_default_should_cache_response():
     cs = CachingSession()
     resp = requests.Response()
