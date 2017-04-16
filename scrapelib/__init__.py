@@ -159,7 +159,8 @@ class RetrySession(requests.Session):
                 if self.accept_response(resp) or (resp.status_code == 404 and not retry_on_404):
                     break
 
-            except (requests.HTTPError, requests.ConnectionError, requests.Timeout) as e:
+            except (requests.HTTPError, requests.ConnectionError,
+                    requests.ChunkedEncodingError, requests.Timeout) as e:
                 if isinstance(e, requests.exceptions.SSLError):
                     raise
                 exception_raised = e
