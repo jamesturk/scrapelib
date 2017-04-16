@@ -16,7 +16,7 @@ else:                               # pragma: no cover
     from urllib.error import URLError as urllib_URLError
     _str_type = str
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 _user_agent = ' '.join(('scrapelib', __version__, requests.utils.default_user_agent()))
 
 
