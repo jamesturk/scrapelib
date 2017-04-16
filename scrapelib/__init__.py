@@ -16,7 +16,7 @@ else:                               # pragma: no cover
     from urllib.error import URLError as urllib_URLError
     _str_type = str
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 _user_agent = ' '.join(('scrapelib', __version__, requests.utils.default_user_agent()))
 
 
@@ -160,7 +160,7 @@ class RetrySession(requests.Session):
                     break
 
             except (requests.HTTPError, requests.ConnectionError,
-                    requests.ChunkedEncodingError, requests.Timeout) as e:
+                    requests.exceptions.ChunkedEncodingError, requests.Timeout) as e:
                 if isinstance(e, requests.exceptions.SSLError):
                     raise
                 exception_raised = e

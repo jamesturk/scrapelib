@@ -1,11 +1,16 @@
 scrapelib changelog
 ===================
 
-1.0.1
+1.0.2
 -----
 **16 April 2017**
     * add retry on ChunkedEncodingError
     * depend on requests[security] for better SSL handling
+
+1.0.1
+-----
+**16 April 2017**
+    * broken release
 
 1.0.0
 -----
