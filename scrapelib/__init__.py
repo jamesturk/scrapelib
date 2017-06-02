@@ -159,8 +159,12 @@ class RetrySession(requests.Session):
                 if self.accept_response(resp) or (resp.status_code == 404 and not retry_on_404):
                     break
 
-            except (requests.HTTPError, requests.ConnectionError,
-                    requests.exceptions.ChunkedEncodingError, requests.Timeout) as e:
+            # note: This is a pretty broad catch-all, but given the plethora of things that can
+            #       happen during a requests.request it is used to try to be complete &
+            #       future-proof this as much as possible.
+            #       Should it become a problem we could either alter to exclude a few others
+            #       the way we handle SSLError or we could go back to enumeration of all types.
+            except Exception as e:
                 if isinstance(e, requests.exceptions.SSLError):
                     raise
                 exception_raised = e
