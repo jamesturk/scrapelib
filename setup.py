@@ -26,6 +26,16 @@ setup(name="scrapelib",
                    "Topic :: Software Development :: Libraries :: Python Modules",
                    ],
       install_requires=['requests[security]>=2'],
+      extras_require={
+          'dev': [
+              'flake8',
+              'mock',
+              'pytest',
+              'coveralls',
+              'sphinx',
+              'sphinx-rtd-theme',
+          ]
+      },
       entry_points="""
 [console_scripts]
 scrapeshell = scrapelib.__main__:scrapeshell
