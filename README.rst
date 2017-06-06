@@ -32,14 +32,15 @@ requests as-is:
 * request throttling
 * configurable retries for non-permanent site failures
 
-Written by James Turk <james.p.turk@gmail.com>, thanks to Michael Stephens for initial urllib2/httplib2 version
+Written by James Turk <james.p.turk@gmail.com>, thanks to Michael Stephens for
+initial urllib2/httplib2 version
 
 See https://github.com/jamesturk/scrapelib/graphs/contributors for contributors.
 
 Requirements
 ============
 
-* python 2.7, 3.3, 3.4
+* python 2.7, >=3.3
 * requests >= 2.0 (earlier versions may work but aren't tested)
 
 

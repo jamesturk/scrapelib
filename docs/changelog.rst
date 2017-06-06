@@ -1,6 +1,12 @@
 scrapelib changelog
 ===================
 
+1.1.0
+-----
+**6 June 2017**
+    * added more resilient retry logic that retries when any type of exception
+        occurs during a request
+
 1.0.2
 -----
 **16 April 2017**
