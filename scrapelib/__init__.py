@@ -20,12 +20,8 @@ __version__ = '1.1.0'
 _user_agent = ' '.join(('scrapelib', __version__, requests.utils.default_user_agent()))
 
 
-class NullHandler(logging.Handler):
-    def emit(self, record):
-        pass
-
 _log = logging.getLogger('scrapelib')
-_log.addHandler(NullHandler())
+_log.addHandler(logging.NullHandler())
 
 
 class HTTPMethodUnavailableError(requests.RequestException):
@@ -175,6 +171,10 @@ class RetrySession(requests.Session):
                 # twice as long each time
                 wait = (self.retry_wait_seconds * (2 ** (tries - 1)))
                 _log.debug('sleeping for %s seconds before retry' % wait)
+                if exception_raised:
+                    _log.warn('got %s sleeping for %s seconds before retry', exception_raised, wait)
+                else:
+                    _log.warn('sleeping for %s seconds before retry', wait)
                 time.sleep(wait)
 
         # out of the loop, either an exception was raised or we had a success
