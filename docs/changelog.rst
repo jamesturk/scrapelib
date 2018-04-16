@@ -1,6 +1,12 @@
 scrapelib changelog
 ===================
 
+1.1.1
+-----
+**16 April 2018**
+    * small tweak to warning on retry
+    * public email change
+
 1.1.0
 -----
 **6 June 2017**

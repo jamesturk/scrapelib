@@ -41,14 +41,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'scrapelib'
-copyright = u'2015, James Turk'
+copyright = u'2018, James Turk'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = '1.1.0'
+release = '1.1.1'
 # The short X.Y version.
 version = release.rsplit('.', 1)[0]
 
