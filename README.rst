@@ -32,7 +32,7 @@ requests as-is:
 * request throttling
 * configurable retries for non-permanent site failures
 
-Written by James Turk <james.p.turk@gmail.com>, thanks to Michael Stephens for
+Written by James Turk <dev@jamesturk.net>, thanks to Michael Stephens for
 initial urllib2/httplib2 version
 
 See https://github.com/jamesturk/scrapelib/graphs/contributors for contributors.
