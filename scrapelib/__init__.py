@@ -180,8 +180,7 @@ class RetrySession(requests.Session):
         # out of the loop, either an exception was raised or we had a success
         if exception_raised:
             raise exception_raised
-        else:
-            return resp
+        return resp
 
 
 # compose sessions, order matters (cache then throttle then retry)
@@ -205,7 +204,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         subsequent retries will double this wait
     """
     def __init__(self, raise_errors=True, requests_per_minute=60, retry_attempts=0,
-                 retry_wait_seconds=5, header_func=None):
+                 retry_wait_seconds=5, verify=True, header_func=None):
 
         super(Scraper, self).__init__()
         self.mount('ftp://', FTPAdapter())
@@ -230,6 +229,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         # non-parameter options
         self.timeout = None
         self.user_agent = _user_agent
+        self.verify = verify
 
         # statistics structure
         self.reset_stats()
