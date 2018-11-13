@@ -3,8 +3,8 @@ scrapelib changelog
 
 1.2.0
 -----
+**13 November 2018**
     * add verify parameter to optionally disable SSL verification
-
 
 1.1.1
 -----
