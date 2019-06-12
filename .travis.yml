@@ -7,7 +7,7 @@ python:
 install: pip install .[dev]
 script: 
     - py.test --cov scrapelib
-    - flake8
+    - flake8 scrapelib
 after_success:
     - coveralls
 notifications:
