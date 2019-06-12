@@ -6,7 +6,7 @@ from io import BytesIO
 import mock
 import pytest
 import requests
-from .. import Scraper, HTTPError, HTTPMethodUnavailableError, urllib_URLError, FTPError
+from .. import Scraper, HTTPError, HTTPMethodUnavailableError, URLError, FTPError
 from .. import _user_agent as default_user_agent
 from ..cache import MemoryCache
 
@@ -334,7 +334,7 @@ def test_ftp_uses_urllib2():
     s = Scraper(requests_per_minute=0)
     urlopen = mock.Mock(return_value=BytesIO(b"ftp success!"))
 
-    with mock.patch('scrapelib.urllib_urlopen', urlopen):
+    with mock.patch('scrapelib.urlopen', urlopen):
         r = s.get('ftp://dummy/')
         assert r.status_code == 200
         assert r.content == b"ftp success!"
@@ -348,12 +348,12 @@ def test_ftp_retries():
         if count:
             return BytesIO(b"ftp success!")
         count.append(1)
-        raise urllib_URLError('ftp failure!')
+        raise URLError('ftp failure!')
 
     mock_urlopen = mock.Mock(side_effect=side_effect)
 
     # retry on
-    with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
+    with mock.patch('scrapelib.urlopen', mock_urlopen):
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
         r = s.get('ftp://dummy/', retry_on_404=True)
         assert r.content == b"ftp success!"
@@ -362,7 +362,7 @@ def test_ftp_retries():
     # retry off, retry_on_404 on (shouldn't matter)
     count = []
     mock_urlopen.reset_mock()
-    with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
+    with mock.patch('scrapelib.urlopen', mock_urlopen):
         s = Scraper(retry_attempts=0, retry_wait_seconds=0.001)
         pytest.raises(FTPError, s.get, 'ftp://dummy/', retry_on_404=True)
     assert mock_urlopen.call_count == 1
