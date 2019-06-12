@@ -83,11 +83,7 @@ def _test_cache_storage(storage_obj):
     assert storage_obj.get('one') is None
 
     _content_as_bytes = b"here's unicode: \xe2\x98\x83"
-    if sys.version_info[0] < 3:
-        _content_as_unicode = unicode("here's unicode: \u2603",
-                                      'unicode_escape')
-    else:
-        _content_as_unicode = "here's unicode: \u2603"
+    _content_as_unicode = "here's unicode: \u2603"
 
     # set 'one'
     resp = requests.Response()

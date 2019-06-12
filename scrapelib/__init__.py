@@ -3,18 +3,11 @@ import os
 import sys
 import tempfile
 import time
-
+from urllib.request import urlopen
+from urllib.error import URLError
 import requests
 from .cache import CachingSession, FileCache    # noqa
 
-if sys.version_info[0] < 3:         # pragma: no cover
-    from urllib2 import urlopen as urllib_urlopen
-    from urllib2 import URLError as urllib_URLError
-    _str_type = unicode
-else:                               # pragma: no cover
-    from urllib.request import urlopen as urllib_urlopen
-    from urllib.error import URLError as urllib_URLError
-    _str_type = str
 
 __version__ = '1.2.0'
 _user_agent = ' '.join(('scrapelib', __version__, requests.utils.default_user_agent()))
@@ -109,7 +102,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             raise HTTPMethodUnavailableError("FTP requests do not support method '%s'" %
                                              request.method, request.method)
         try:
-            real_resp = urllib_urlopen(request.url, timeout=timeout)
+            real_resp = urlopen(request.url, timeout=timeout)
             # we're going to fake a requests.Response with this
             resp = requests.Response()
             resp.status_code = 200
@@ -118,7 +111,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             resp._content = real_resp.read()
             resp.raw = _dummy
             return resp
-        except urllib_URLError:
+        except URLError:
             raise FTPError(request.url)
 
 
