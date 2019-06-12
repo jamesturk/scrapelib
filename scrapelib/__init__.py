@@ -1,9 +1,8 @@
 import logging
 import os
-import sys
 import tempfile
 import time
-from urllib.request import urlopen
+from urllib.request import urlopen as urllib_urlopen
 from urllib.error import URLError
 import requests
 from .cache import CachingSession, FileCache    # noqa
@@ -90,6 +89,7 @@ class DummyObject(object):
     def get_all(self, name, default):
         return default
 
+
 _dummy = DummyObject()
 _dummy._original_response = DummyObject()
 _dummy._original_response.msg = DummyObject()
@@ -102,7 +102,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             raise HTTPMethodUnavailableError("FTP requests do not support method '%s'" %
                                              request.method, request.method)
         try:
-            real_resp = urlopen(request.url, timeout=timeout)
+            real_resp = urllib_urlopen(request.url, timeout=timeout)
             # we're going to fake a requests.Response with this
             resp = requests.Response()
             resp.status_code = 200
@@ -165,9 +165,10 @@ class RetrySession(requests.Session):
                 wait = (self.retry_wait_seconds * (2 ** (tries - 1)))
                 _log.debug('sleeping for %s seconds before retry' % wait)
                 if exception_raised:
-                    _log.warn('got %s sleeping for %s seconds before retry', exception_raised, wait)
+                    _log.warning('got %s sleeping for %s seconds before retry',
+                                 exception_raised, wait)
                 else:
-                    _log.warn('sleeping for %s seconds before retry', wait)
+                    _log.warning('sleeping for %s seconds before retry', wait)
                 time.sleep(wait)
 
         # out of the loop, either an exception was raised or we had a success

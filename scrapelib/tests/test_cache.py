@@ -1,5 +1,3 @@
-import sys
-
 import requests
 from ..cache import CachingSession, MemoryCache, FileCache, SQLiteCache
 

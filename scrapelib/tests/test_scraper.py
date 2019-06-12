@@ -25,11 +25,13 @@ class FakeResponse(object):
 
 def request_200(method, url, *args, **kwargs):
     return FakeResponse(url, 200, b'ok')
-mock_200 = mock.Mock(wraps=request_200)
 
 
 def request_sslerror(method, url, *args, **kwargs):
     raise requests.exceptions.SSLError('sslfail')
+
+
+mock_200 = mock.Mock(wraps=request_200)
 mock_sslerror = mock.Mock(wraps=request_sslerror)
 
 
@@ -233,7 +235,7 @@ def test_retry_ssl():
     # ensure SSLError is considered fatal even w/ retries
     with mock.patch.object(requests.Session, 'request', mock_sslerror):
         with pytest.raises(requests.exceptions.SSLError):
-            resp = s.get('http://dummy/', retry_on_404=True)
+            s.get('http://dummy/', retry_on_404=True)
     assert mock_sslerror.call_count == 1
 
 
@@ -334,7 +336,7 @@ def test_ftp_uses_urllib2():
     s = Scraper(requests_per_minute=0)
     urlopen = mock.Mock(return_value=BytesIO(b"ftp success!"))
 
-    with mock.patch('scrapelib.urlopen', urlopen):
+    with mock.patch('scrapelib.urllib_urlopen', urlopen):
         r = s.get('ftp://dummy/')
         assert r.status_code == 200
         assert r.content == b"ftp success!"
@@ -353,7 +355,7 @@ def test_ftp_retries():
     mock_urlopen = mock.Mock(side_effect=side_effect)
 
     # retry on
-    with mock.patch('scrapelib.urlopen', mock_urlopen):
+    with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
         r = s.get('ftp://dummy/', retry_on_404=True)
         assert r.content == b"ftp success!"
@@ -362,7 +364,7 @@ def test_ftp_retries():
     # retry off, retry_on_404 on (shouldn't matter)
     count = []
     mock_urlopen.reset_mock()
-    with mock.patch('scrapelib.urlopen', mock_urlopen):
+    with mock.patch('scrapelib.urllib_urlopen', mock_urlopen):
         s = Scraper(retry_attempts=0, retry_wait_seconds=0.001)
         pytest.raises(FTPError, s.get, 'ftp://dummy/', retry_on_404=True)
     assert mock_urlopen.call_count == 1
@@ -373,7 +375,6 @@ def test_ftp_method_restrictions():
 
     # only http(s) supports non-'GET' requests
     pytest.raises(HTTPMethodUnavailableError, s.post, "ftp://dummy/")
-
 
 
 def test_basic_stats():
