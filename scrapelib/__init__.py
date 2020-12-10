@@ -5,14 +5,14 @@ import time
 from urllib.request import urlopen as urllib_urlopen
 from urllib.error import URLError
 import requests
-from .cache import CachingSession, FileCache    # noqa
+from .cache import CachingSession, FileCache  # noqa
 
 
-__version__ = '1.2.0'
-_user_agent = ' '.join(('scrapelib', __version__, requests.utils.default_user_agent()))
+__version__ = "1.2.0"
+_user_agent = " ".join(("scrapelib", __version__, requests.utils.default_user_agent()))
 
 
-_log = logging.getLogger('scrapelib')
+_log = logging.getLogger("scrapelib")
 _log.addHandler(logging.NullHandler())
 
 
@@ -34,7 +34,7 @@ class HTTPError(requests.HTTPError):
     """
 
     def __init__(self, response, body=None):
-        message = '%s while retrieving %s' % (response.status_code, response.url)
+        message = "%s while retrieving %s" % (response.status_code, response.url)
         super(HTTPError, self).__init__(message)
         self.response = response
         self.body = body or self.response.text
@@ -42,7 +42,7 @@ class HTTPError(requests.HTTPError):
 
 class FTPError(requests.HTTPError):
     def __init__(self, url):
-        message = 'error while retrieving %s' % url
+        message = "error while retrieving %s" % url
         super(FTPError, self).__init__(message)
 
 
@@ -84,7 +84,7 @@ class ThrottledSession(requests.Session):
 # resp.raw._original_response.msg.getheaders() and we need to cope with that
 class DummyObject(object):
     def getheaders(self, name):
-        return ''
+        return ""
 
     def get_all(self, name, default):
         return default
@@ -96,11 +96,14 @@ _dummy._original_response.msg = DummyObject()
 
 
 class FTPAdapter(requests.adapters.BaseAdapter):
-
-    def send(self, request, stream=False, timeout=None, verify=False, cert=None, proxies=None):
-        if request.method != 'GET':
-            raise HTTPMethodUnavailableError("FTP requests do not support method '%s'" %
-                                             request.method, request.method)
+    def send(
+        self, request, stream=False, timeout=None, verify=False, cert=None, proxies=None
+    ):
+        if request.method != "GET":
+            raise HTTPMethodUnavailableError(
+                "FTP requests do not support method '%s'" % request.method,
+                request.method,
+            )
         try:
             real_resp = urllib_urlopen(request.url, timeout=timeout)
             # we're going to fake a requests.Response with this
@@ -116,7 +119,6 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
 
 class RetrySession(requests.Session):
-
     def __init__(self):
         super(RetrySession, self).__init__()
         self._retry_attempts = 0
@@ -145,7 +147,9 @@ class RetrySession(requests.Session):
             try:
                 resp = super(RetrySession, self).request(method, url, **kwargs)
                 # break from loop on an accepted response
-                if self.accept_response(resp) or (resp.status_code == 404 and not retry_on_404):
+                if self.accept_response(resp) or (
+                    resp.status_code == 404 and not retry_on_404
+                ):
                     break
 
             # note: This is a pretty broad catch-all, but given the plethora of things that can
@@ -162,13 +166,16 @@ class RetrySession(requests.Session):
             tries += 1
             if tries <= self.retry_attempts:
                 # twice as long each time
-                wait = (self.retry_wait_seconds * (2 ** (tries - 1)))
-                _log.debug('sleeping for %s seconds before retry' % wait)
+                wait = self.retry_wait_seconds * (2 ** (tries - 1))
+                _log.debug("sleeping for %s seconds before retry" % wait)
                 if exception_raised:
-                    _log.warning('got %s sleeping for %s seconds before retry',
-                                 exception_raised, wait)
+                    _log.warning(
+                        "got %s sleeping for %s seconds before retry",
+                        exception_raised,
+                        wait,
+                    )
                 else:
-                    _log.warning('sleeping for %s seconds before retry', wait)
+                    _log.warning("sleeping for %s seconds before retry", wait)
                 time.sleep(wait)
 
         # out of the loop, either an exception was raised or we had a success
@@ -197,11 +204,19 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
     :param retry_wait_seconds: number of seconds to retry after first failure,
         subsequent retries will double this wait
     """
-    def __init__(self, raise_errors=True, requests_per_minute=60, retry_attempts=0,
-                 retry_wait_seconds=5, verify=True, header_func=None):
+
+    def __init__(
+        self,
+        raise_errors=True,
+        requests_per_minute=60,
+        retry_attempts=0,
+        retry_wait_seconds=5,
+        verify=True,
+        header_func=None,
+    ):
 
         super(Scraper, self).__init__()
-        self.mount('ftp://', FTPAdapter())
+        self.mount("ftp://", FTPAdapter())
 
         # added by this class
         self.raise_errors = raise_errors
@@ -230,63 +245,68 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
 
     def reset_stats(self):
         self.stats = {}
-        self.stats['total_requests'] = 0
-        self.stats['total_time'] = 0
-        self.stats['average_time'] = None
+        self.stats["total_requests"] = 0
+        self.stats["total_time"] = 0
+        self.stats["average_time"] = None
 
     @property
     def user_agent(self):
-        return self.headers['User-Agent']
+        return self.headers["User-Agent"]
 
     @user_agent.setter
     def user_agent(self, value):
-        self.headers['User-Agent'] = value
+        self.headers["User-Agent"] = value
 
     @property
     def disable_compression(self):
-        return self.headers['Accept-Encoding'] == 'text/*'
+        return self.headers["Accept-Encoding"] == "text/*"
 
     @disable_compression.setter
     def disable_compression(self, value):
         # disabled: set encoding to text/*
         if value:
-            self.headers['Accept-Encoding'] = 'text/*'
+            self.headers["Accept-Encoding"] = "text/*"
         # enabled: if set to text/* pop, otherwise leave unmodified
-        elif self.headers.get('Accept-Encoding') == 'text/*':
-            self.headers['Accept-Encoding'] = 'gzip, deflate, compress'
+        elif self.headers.get("Accept-Encoding") == "text/*":
+            self.headers["Accept-Encoding"] = "gzip, deflate, compress"
 
     def request(self, method, url, **kwargs):
         _log.info("{0} - {1}".format(method.upper(), url))
 
         # apply global timeout
-        timeout = kwargs.pop('timeout', self.timeout)
+        timeout = kwargs.pop("timeout", self.timeout)
 
         if self._header_func:
             headers = requests.structures.CaseInsensitiveDict(self._header_func(url))
         else:
             headers = {}
 
-        kwarg_headers = kwargs.pop('headers', {})
+        kwarg_headers = kwargs.pop("headers", {})
         headers = requests.sessions.merge_setting(
-            headers, self.headers,
-            dict_class=requests.structures.CaseInsensitiveDict)
+            headers, self.headers, dict_class=requests.structures.CaseInsensitiveDict
+        )
         headers = requests.sessions.merge_setting(
-            kwarg_headers, headers,
-            dict_class=requests.structures.CaseInsensitiveDict)
+            kwarg_headers, headers, dict_class=requests.structures.CaseInsensitiveDict
+        )
 
         _start_time = time.time()
 
-        resp = super(Scraper, self).request(method, url, timeout=timeout, headers=headers,
-                                            **kwargs)
-        self.stats['total_requests'] += 1
-        self.stats['total_time'] += (time.time() - _start_time)
-        self.stats['average_time'] = self.stats['total_time'] / self.stats['total_requests']
+        resp = super(Scraper, self).request(
+            method, url, timeout=timeout, headers=headers, **kwargs
+        )
+        self.stats["total_requests"] += 1
+        self.stats["total_time"] += time.time() - _start_time
+        self.stats["average_time"] = (
+            self.stats["total_time"] / self.stats["total_requests"]
+        )
 
         if self.raise_errors and not self.accept_response(resp):
             raise HTTPError(resp)
         return resp
 
-    def urlretrieve(self, url, filename=None, method='GET', body=None, dir=None, **kwargs):
+    def urlretrieve(
+        self, url, filename=None, method="GET", body=None, dir=None, **kwargs
+    ):
         """
         Save result of a request to a file, similarly to
         :func:`urllib.urlretrieve`.
@@ -313,13 +333,13 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
             response headers.
         """
         result = self.request(method, url, data=body, **kwargs)
-        result.code = result.status_code    # backwards compat
+        result.code = result.status_code  # backwards compat
 
         if not filename:
             fd, filename = tempfile.mkstemp(dir=dir)
-            f = os.fdopen(fd, 'wb')
+            f = os.fdopen(fd, "wb")
         else:
-            f = open(filename, 'wb')
+            f = open(filename, "wb")
 
         f.write(result.content)
         f.close()
@@ -330,5 +350,5 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
 _default_scraper = Scraper(requests_per_minute=0)
 
 
-def urlopen(url, method='GET', body=None, **kwargs):  # pragma: no cover
+def urlopen(url, method="GET", body=None, **kwargs):  # pragma: no cover
     return _default_scraper.urlopen(url, method, body, **kwargs)

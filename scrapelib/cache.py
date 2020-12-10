@@ -27,10 +27,10 @@ class CachingSession(requests.Session):
 
             Can be overriden if caching of non-get requests is desired.
         """
-        if method != 'get':
+        if method != "get":
             return None
 
-        return requests.Request(url=url, params=kwargs.get('params', {})).prepare().url
+        return requests.Request(url=url, params=kwargs.get("params", {})).prepare().url
 
     def should_cache_response(self, response):
         """ Check if a given Response object should be cached.
@@ -74,6 +74,7 @@ class CachingSession(requests.Session):
 
 class MemoryCache(object):
     """In memory cache for request responses."""
+
     def __init__(self):
         self.cache = {}
 
@@ -94,18 +95,19 @@ class FileCache(object):
     :param check_last_modified:  set to True to compare last-modified
         timestamp in cached response with value from HEAD request
     """
+
     # file name escaping inspired by httplib2
-    _prefix = re.compile(r'^\w+://')
-    _illegal = re.compile(r'[?/:|]+')
-    _header_re = re.compile(r'([-\w]+): (.*)')
+    _prefix = re.compile(r"^\w+://")
+    _illegal = re.compile(r"[?/:|]+")
+    _header_re = re.compile(r"([-\w]+): (.*)")
     _maxlen = 200
 
     def _clean_key(self, key):
         # strip scheme
-        md5 = hashlib.md5(key.encode('utf8')).hexdigest()
-        key = self._prefix.sub('', key)
-        key = self._illegal.sub(',', key)
-        return ','.join((key[:self._maxlen], md5))
+        md5 = hashlib.md5(key.encode("utf8")).hexdigest()
+        key = self._prefix.sub("", key)
+        key = self._illegal.sub(",", key)
+        return ",".join((key[: self._maxlen], md5))
 
     def __init__(self, cache_dir, check_last_modified=False):
         # normalize path
@@ -122,19 +124,21 @@ class FileCache(object):
         path = os.path.join(self.cache_dir, key)
 
         try:
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 # read lines one at a time
                 while True:
-                    line = f.readline().decode('utf8').strip('\r\n')
+                    line = f.readline().decode("utf8").strip("\r\n")
                     # set headers
 
-                    if self.check_last_modified and re.search("last-modified", line, flags=re.I):
+                    if self.check_last_modified and re.search(
+                        "last-modified", line, flags=re.I
+                    ):
                         # line contains last modified header
                         head_resp = requests.head(orig_key)
 
                         try:
-                            new_lm = head_resp.headers['last-modified']
-                            old_lm = line[string.find(line, ':') + 1:].strip()
+                            new_lm = head_resp.headers["last-modified"]
+                            old_lm = line[string.find(line, ":") + 1 :].strip()
                             if old_lm != new_lm:
                                 # last modified timestamps don't match, need to download again
                                 return None
@@ -152,9 +156,9 @@ class FileCache(object):
 
             # status & encoding will be in headers, but are faked
             # need to split spaces out of status to get code (e.g. '200 OK')
-            resp.status_code = int(resp.headers.pop('status').split(' ')[0])
-            resp.encoding = resp.headers.pop('encoding')
-            resp.url = resp.headers.get('content-location', orig_key)
+            resp.status_code = int(resp.headers.pop("status").split(" ")[0])
+            resp.encoding = resp.headers.pop("encoding")
+            resp.url = resp.headers.get("content-location", orig_key)
             # TODO: resp.request = request
             return resp
         except IOError:
@@ -165,24 +169,24 @@ class FileCache(object):
         key = self._clean_key(key)
         path = os.path.join(self.cache_dir, key)
 
-        with open(path, 'wb') as f:
-            status_str = 'status: {0}\n'.format(response.status_code)
-            f.write(status_str.encode('utf8'))
-            encoding_str = 'encoding: {0}\n'.format(response.encoding)
-            f.write(encoding_str.encode('utf8'))
+        with open(path, "wb") as f:
+            status_str = "status: {0}\n".format(response.status_code)
+            f.write(status_str.encode("utf8"))
+            encoding_str = "encoding: {0}\n".format(response.encoding)
+            f.write(encoding_str.encode("utf8"))
             for h, v in response.headers.items():
                 # header: value\n
-                f.write(h.encode('utf8'))
-                f.write(b': ')
-                f.write(v.encode('utf8'))
-                f.write(b'\n')
+                f.write(h.encode("utf8"))
+                f.write(b": ")
+                f.write(v.encode("utf8"))
+                f.write(b"\n")
             # one blank line
-            f.write(b'\n')
+            f.write(b"\n")
             f.write(response.content)
 
     def clear(self):
         # only delete things that end w/ a md5, less dangerous this way
-        cache_glob = '*,' + ('[0-9a-f]' * 32)
+        cache_glob = "*," + ("[0-9a-f]" * 32)
         for fname in glob.glob(os.path.join(self.cache_dir, cache_glob)):
             os.remove(fname)
 
@@ -195,7 +199,8 @@ class SQLiteCache(object):
         timestamp in cached response with value from HEAD request
 
     """
-    _columns = ['key', 'status', 'modified', 'encoding', 'data', 'headers']
+
+    _columns = ["key", "status", "modified", "encoding", "data", "headers"]
 
     def __init__(self, cache_path, check_last_modified=False):
         self.cache_path = cache_path
@@ -206,18 +211,26 @@ class SQLiteCache(object):
 
     def _build_table(self):
         """Create table for storing request information and response."""
-        self._conn.execute("""CREATE TABLE IF NOT EXISTS cache
+        self._conn.execute(
+            """CREATE TABLE IF NOT EXISTS cache
                 (key text UNIQUE, status integer, modified text,
-                 encoding text, data blob, headers blob)""")
+                 encoding text, data blob, headers blob)"""
+        )
 
     def set(self, key, response):
         """Set cache entry for key with contents of response."""
-        mod = response.headers.pop('last-modified', None)
+        mod = response.headers.pop("last-modified", None)
         status = int(response.status_code)
-        rec = (key, status, mod, response.encoding, response.content,
-               json.dumps(dict(response.headers)))
+        rec = (
+            key,
+            status,
+            mod,
+            response.encoding,
+            response.content,
+            json.dumps(dict(response.headers)),
+        )
         with self._conn:
-            self._conn.execute("DELETE FROM cache WHERE key=?", (key, ))
+            self._conn.execute("DELETE FROM cache WHERE key=?", (key,))
             self._conn.execute("INSERT INTO cache VALUES (?,?,?,?,?,?)", rec)
 
     def get(self, key):
@@ -229,26 +242,26 @@ class SQLiteCache(object):
         rec = dict(zip(self._columns, rec))
 
         if self.check_last_modified:
-            if rec['modified'] is None:
+            if rec["modified"] is None:
                 return None  # no last modified header present, so redownload
 
             head_resp = requests.head(key)
-            new_lm = head_resp.headers.get('last-modified', None)
-            if rec['modified'] != new_lm:
+            new_lm = head_resp.headers.get("last-modified", None)
+            if rec["modified"] != new_lm:
                 return None
 
         resp = requests.Response()
-        resp._content = rec['data']
-        resp.status_code = rec['status']
-        resp.encoding = rec['encoding']
-        resp.headers = json.loads(rec['headers'])
+        resp._content = rec["data"]
+        resp.status_code = rec["status"]
+        resp.encoding = rec["encoding"]
+        resp.headers = json.loads(rec["headers"])
         resp.url = key
         return resp
 
     def clear(self):
         """Remove all records from cache."""
         with self._conn:
-            self._conn.execute('DELETE FROM cache')
+            self._conn.execute("DELETE FROM cache")
 
     def __del__(self):
         self._conn.close()
