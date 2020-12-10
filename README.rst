@@ -2,8 +2,8 @@
 scrapelib
 =========
 
-.. image:: https://travis-ci.com/jamesturk/scrapelib.svg?branch=master
-    :target: https://travis-ci.com/jamesturk/scrapelib
+.. image:: https://github.com/jamesturk/scrapelib/workflows/Test/badge.svg
+    :target: https://github.com/jamesturk/scrapelib/actions
 
 .. image:: https://coveralls.io/repos/jamesturk/scrapelib/badge.png?branch=master
     :target: https://coveralls.io/r/jamesturk/scrapelib
