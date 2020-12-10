@@ -34,7 +34,7 @@ jobs:
     # - name: set poetry config path
     #   run: poetry config virtualenvs.path ~/.virtualenvs
     - name: install dependencies
-      run: pip install -e .
+      run: pip install -e .[dev]
       # if: steps.cache.outputs.cache-hit != 'true'
      
     # - name: lint with mypy
