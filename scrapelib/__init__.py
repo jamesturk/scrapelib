@@ -22,7 +22,7 @@ class HTTPMethodUnavailableError(requests.RequestException):
     by the HTTP backend.
     """
 
-    def __init__(self, message, method):
+    def __init__(self, message: str, method: str):
         super(HTTPMethodUnavailableError, self).__init__(message)
         self.method = method
 
@@ -33,7 +33,7 @@ class HTTPError(requests.HTTPError):
     raise_errors option is true.
     """
 
-    def __init__(self, response, body=None):
+    def __init__(self, response: requests.models.Response, body=None):
         message = "%s while retrieving %s" % (response.status_code, response.url)
         super(HTTPError, self).__init__(message)
         self.response = response
@@ -47,7 +47,7 @@ class FTPError(requests.HTTPError):
 
 
 class ThrottledSession(requests.Session):
-    def _throttle(self):
+    def _throttle(self) -> None:
         now = time.time()
         diff = self._request_frequency - (now - self._last_request)
         if diff > 0:
@@ -243,18 +243,18 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         # statistics structure
         self.reset_stats()
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         self.stats = {}
         self.stats["total_requests"] = 0
         self.stats["total_time"] = 0
         self.stats["average_time"] = None
 
     @property
-    def user_agent(self):
+    def user_agent(self) -> str:
         return self.headers["User-Agent"]
 
     @user_agent.setter
-    def user_agent(self, value):
+    def user_agent(self, value: str):
         self.headers["User-Agent"] = value
 
     @property
@@ -262,7 +262,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         return self.headers["Accept-Encoding"] == "text/*"
 
     @disable_compression.setter
-    def disable_compression(self, value):
+    def disable_compression(self, value: bool):
         # disabled: set encoding to text/*
         if value:
             self.headers["Accept-Encoding"] = "text/*"
@@ -270,7 +270,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         elif self.headers.get("Accept-Encoding") == "text/*":
             self.headers["Accept-Encoding"] = "gzip, deflate, compress"
 
-    def request(self, method, url, **kwargs):
+    def request(self, method: str, url: str, **kwargs) -> requests.models.Response:
         _log.info("{0} - {1}".format(method.upper(), url))
 
         # apply global timeout
@@ -350,5 +350,5 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
 _default_scraper = Scraper(requests_per_minute=0)
 
 
-def urlopen(url, method="GET", body=None, **kwargs):  # pragma: no cover
+def urlopen(url, method="GET", body=None, **kwargs) -> requests.models.Response:  # pragma: no cover
     return _default_scraper.urlopen(url, method, body, **kwargs)
