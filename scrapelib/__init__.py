@@ -86,6 +86,9 @@ class ThrottledSession(requests.Session):
 # this object exists because Requests assumes it can call
 # resp.raw._original_response.msg.getheaders() and we need to cope with that
 class DummyObject(object):
+    _original_response: "DummyObject"
+    msg: "DummyObject"
+
     def getheaders(self, name: str) -> str:
         return ""
 
@@ -225,7 +228,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         retry_attempts: int = 0,
         retry_wait_seconds: int = 5,
         verify: bool = True,
-        header_func: Optional[Callable[[str], dict]] = None,
+        header_func: Optional[Callable[[Union[bytes, str]], dict]] = None,
     ):
 
         super(Scraper, self).__init__()
@@ -327,7 +330,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         body: dict = None,
         dir: str = None,
         **kwargs
-    ) -> tuple[str, requests.models.Response]:
+    ) -> Tuple[str, requests.models.Response]:
         """
         Save result of a request to a file, similarly to
         :func:`urllib.urlretrieve`.

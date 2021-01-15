@@ -10,22 +10,30 @@ import hashlib
 import requests
 import sqlite3
 import json
-from typing import Optional, Union, Text
+from typing import Optional, Union, Text, Dict
+
+
+class CacheStorageBase:
+    def get(self, key: str) -> Optional[requests.models.Response]:
+        raise NotImplementedError()
+
+    def set(self, key: str, response: requests.models.Response) -> None:
+        raise NotImplementedError()
 
 
 class CachingSession(requests.Session):
-    def __init__(self, cache_storage=None):
+    def __init__(self, cache_storage: Optional[CacheStorageBase] = None) -> None:
         super(CachingSession, self).__init__()
         self.cache_storage = cache_storage
         self.cache_write_only = False
 
-    def key_for_request(self, method: str, url: str, **kwargs) -> Optional[str]:
-        """ Return a cache key from a given set of request parameters.
+    def key_for_request(self, method: str, url: Union[str, bytes], **kwargs: dict) -> Optional[str]:
+        """Return a cache key from a given set of request parameters.
 
-            Default behavior is to return a complete URL for all GET
-            requests, and None otherwise.
+        Default behavior is to return a complete URL for all GET
+        requests, and None otherwise.
 
-            Can be overriden if caching of non-get requests is desired.
+        Can be overriden if caching of non-get requests is desired.
         """
         if method != "get":
             return None
@@ -33,18 +41,20 @@ class CachingSession(requests.Session):
         return requests.Request(url=url, params=kwargs.get("params", {})).prepare().url
 
     def should_cache_response(self, response: requests.models.Response) -> bool:
-        """ Check if a given Response object should be cached.
+        """Check if a given Response object should be cached.
 
-            Default behavior is to only cache responses with a 200
-            status code.
+        Default behavior is to only cache responses with a 200
+        status code.
         """
         return response.status_code == 200
 
-    def request(self, method: str, url: Union[str, bytes, Text], **kwargs) -> requests.models.Response:
-        """ Override, wraps Session.request in caching.
+    def request(
+        self, method: str, url: Union[str, bytes], **kwargs: dict
+    ) -> requests.models.Response:
+        """Override, wraps Session.request in caching.
 
-            Cache is only used if key_for_request returns a valid key
-            and should_cache_response was true as well.
+        Cache is only used if key_for_request returns a valid key
+        and should_cache_response was true as well.
         """
         # short circuit if cache isn't configured
         if not self.cache_storage:
@@ -72,11 +82,11 @@ class CachingSession(requests.Session):
         return resp
 
 
-class MemoryCache(object):
+class MemoryCache(CacheStorageBase):
     """In memory cache for request responses."""
 
     def __init__(self) -> None:
-        self.cache = {}
+        self.cache: Dict[str, requests.models.Response] = {}
 
     def get(self, key: str) -> Optional[requests.models.Response]:
         """Get cache entry for key, or return None."""
@@ -87,7 +97,7 @@ class MemoryCache(object):
         self.cache[key] = response
 
 
-class FileCache(object):
+class FileCache(CacheStorageBase):
     """
     File-based cache for request responses.
 
@@ -192,7 +202,7 @@ class FileCache(object):
             os.remove(fname)
 
 
-class SQLiteCache(object):
+class SQLiteCache(CacheStorageBase):
     """SQLite cache for request responses.
 
     :param cache_path: path for SQLite database file
@@ -203,7 +213,7 @@ class SQLiteCache(object):
 
     _columns = ["key", "status", "modified", "encoding", "data", "headers"]
 
-    def __init__(self, cache_path: str, check_last_modified: bool=False):
+    def __init__(self, cache_path: str, check_last_modified: bool = False):
         self.cache_path = cache_path
         self.check_last_modified = check_last_modified
         self._conn = sqlite3.connect(cache_path)
