@@ -7,44 +7,54 @@ import re
 import os
 import glob
 import hashlib
-import string
 import requests
 import sqlite3
 import json
+from typing import Optional, Union, Dict
+
+
+class CacheStorageBase:
+    def get(self, key: str) -> Optional[requests.models.Response]:
+        raise NotImplementedError()
+
+    def set(self, key: str, response: requests.models.Response) -> None:
+        raise NotImplementedError()
 
 
 class CachingSession(requests.Session):
-    def __init__(self, cache_storage=None):
+    def __init__(self, cache_storage: Optional[CacheStorageBase] = None) -> None:
         super(CachingSession, self).__init__()
         self.cache_storage = cache_storage
         self.cache_write_only = False
 
-    def key_for_request(self, method, url, **kwargs):
-        """ Return a cache key from a given set of request parameters.
+    def key_for_request(self, method: str, url: Union[str, bytes], **kwargs: dict) -> Optional[str]:
+        """Return a cache key from a given set of request parameters.
 
-            Default behavior is to return a complete URL for all GET
-            requests, and None otherwise.
+        Default behavior is to return a complete URL for all GET
+        requests, and None otherwise.
 
-            Can be overriden if caching of non-get requests is desired.
+        Can be overriden if caching of non-get requests is desired.
         """
         if method != "get":
             return None
 
         return requests.Request(url=url, params=kwargs.get("params", {})).prepare().url
 
-    def should_cache_response(self, response):
-        """ Check if a given Response object should be cached.
+    def should_cache_response(self, response: requests.models.Response) -> bool:
+        """Check if a given Response object should be cached.
 
-            Default behavior is to only cache responses with a 200
-            status code.
+        Default behavior is to only cache responses with a 200
+        status code.
         """
         return response.status_code == 200
 
-    def request(self, method, url, **kwargs):
-        """ Override, wraps Session.request in caching.
+    def request(
+        self, method: str, url: Union[str, bytes], **kwargs: dict
+    ) -> requests.models.Response:
+        """Override, wraps Session.request in caching.
 
-            Cache is only used if key_for_request returns a valid key
-            and should_cache_response was true as well.
+        Cache is only used if key_for_request returns a valid key
+        and should_cache_response was true as well.
         """
         # short circuit if cache isn't configured
         if not self.cache_storage:
@@ -72,22 +82,22 @@ class CachingSession(requests.Session):
         return resp
 
 
-class MemoryCache(object):
+class MemoryCache(CacheStorageBase):
     """In memory cache for request responses."""
 
-    def __init__(self):
-        self.cache = {}
+    def __init__(self) -> None:
+        self.cache: Dict[str, requests.models.Response] = {}
 
-    def get(self, key):
+    def get(self, key: str) -> Optional[requests.models.Response]:
         """Get cache entry for key, or return None."""
         return self.cache.get(key, None)
 
-    def set(self, key, response):
+    def set(self, key: str, response: requests.models.Response) -> None:
         """Set cache entry for key with contents of response."""
         self.cache[key] = response
 
 
-class FileCache(object):
+class FileCache(CacheStorageBase):
     """
     File-based cache for request responses.
 
@@ -102,21 +112,22 @@ class FileCache(object):
     _header_re = re.compile(r"([-\w]+): (.*)")
     _maxlen = 200
 
-    def _clean_key(self, key):
+    def _clean_key(self, key: str) -> str:
         # strip scheme
         md5 = hashlib.md5(key.encode("utf8")).hexdigest()
         key = self._prefix.sub("", key)
         key = self._illegal.sub(",", key)
         return ",".join((key[: self._maxlen], md5))
 
-    def __init__(self, cache_dir, check_last_modified=False):
+    def __init__(self, cache_dir: str, check_last_modified: bool = False):
         # normalize path
         self.cache_dir = os.path.join(os.getcwd(), cache_dir)
         self.check_last_modified = check_last_modified
         # create directory
-        os.path.isdir(self.cache_dir) or os.makedirs(self.cache_dir)
+        if not os.path.isdir(self.cache_dir):
+            os.makedirs(self.cache_dir)
 
-    def get(self, orig_key):
+    def get(self, orig_key: str) -> Optional[requests.models.Response]:
         """Get cache entry for key, or return None."""
         resp = requests.Response()
 
@@ -138,7 +149,7 @@ class FileCache(object):
 
                         try:
                             new_lm = head_resp.headers["last-modified"]
-                            old_lm = line[string.find(line, ":") + 1 :].strip()
+                            old_lm = line[line.find(":") + 1 :].strip()
                             if old_lm != new_lm:
                                 # last modified timestamps don't match, need to download again
                                 return None
@@ -164,7 +175,7 @@ class FileCache(object):
         except IOError:
             return None
 
-    def set(self, key, response):
+    def set(self, key: str, response: requests.models.Response) -> None:
         """Set cache entry for key with contents of response."""
         key = self._clean_key(key)
         path = os.path.join(self.cache_dir, key)
@@ -184,14 +195,14 @@ class FileCache(object):
             f.write(b"\n")
             f.write(response.content)
 
-    def clear(self):
+    def clear(self) -> None:
         # only delete things that end w/ a md5, less dangerous this way
         cache_glob = "*," + ("[0-9a-f]" * 32)
         for fname in glob.glob(os.path.join(self.cache_dir, cache_glob)):
             os.remove(fname)
 
 
-class SQLiteCache(object):
+class SQLiteCache(CacheStorageBase):
     """SQLite cache for request responses.
 
     :param cache_path: path for SQLite database file
@@ -202,14 +213,14 @@ class SQLiteCache(object):
 
     _columns = ["key", "status", "modified", "encoding", "data", "headers"]
 
-    def __init__(self, cache_path, check_last_modified=False):
+    def __init__(self, cache_path: str, check_last_modified: bool = False):
         self.cache_path = cache_path
         self.check_last_modified = check_last_modified
         self._conn = sqlite3.connect(cache_path)
         self._conn.text_factory = str
         self._build_table()
 
-    def _build_table(self):
+    def _build_table(self) -> None:
         """Create table for storing request information and response."""
         self._conn.execute(
             """CREATE TABLE IF NOT EXISTS cache
@@ -217,7 +228,7 @@ class SQLiteCache(object):
                  encoding text, data blob, headers blob)"""
         )
 
-    def set(self, key, response):
+    def set(self, key: str, response: requests.models.Response) -> None:
         """Set cache entry for key with contents of response."""
         mod = response.headers.pop("last-modified", None)
         status = int(response.status_code)
@@ -233,7 +244,7 @@ class SQLiteCache(object):
             self._conn.execute("DELETE FROM cache WHERE key=?", (key,))
             self._conn.execute("INSERT INTO cache VALUES (?,?,?,?,?,?)", rec)
 
-    def get(self, key):
+    def get(self, key: str) -> Optional[requests.models.Response]:
         """Get cache entry for key, or return None."""
         query = self._conn.execute("SELECT * FROM cache WHERE key=?", (key,))
         rec = query.fetchone()
@@ -258,10 +269,10 @@ class SQLiteCache(object):
         resp.url = key
         return resp
 
-    def clear(self):
+    def clear(self) -> None:
         """Remove all records from cache."""
         with self._conn:
             self._conn.execute("DELETE FROM cache")
 
-    def __del__(self):
+    def __del__(self) -> None:
         self._conn.close()

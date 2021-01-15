@@ -3,7 +3,7 @@ from . import Scraper, _user_agent
 import argparse
 
 
-def scrapeshell():
+def scrapeshell() -> None:
     # clear argv for IPython
     import sys
 

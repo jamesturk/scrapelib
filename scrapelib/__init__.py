@@ -4,6 +4,7 @@ import tempfile
 import time
 from urllib.request import urlopen as urllib_urlopen
 from urllib.error import URLError
+from typing import Union, Tuple, Optional, Mapping, Container, Text, Callable
 import requests
 from .cache import CachingSession, FileCache  # noqa
 
@@ -22,7 +23,7 @@ class HTTPMethodUnavailableError(requests.RequestException):
     by the HTTP backend.
     """
 
-    def __init__(self, message, method):
+    def __init__(self, message: str, method: str):
         super(HTTPMethodUnavailableError, self).__init__(message)
         self.method = method
 
@@ -33,7 +34,7 @@ class HTTPError(requests.HTTPError):
     raise_errors option is true.
     """
 
-    def __init__(self, response, body=None):
+    def __init__(self, response: requests.models.Response, body: dict = None):
         message = "%s while retrieving %s" % (response.status_code, response.url)
         super(HTTPError, self).__init__(message)
         self.response = response
@@ -41,13 +42,13 @@ class HTTPError(requests.HTTPError):
 
 
 class FTPError(requests.HTTPError):
-    def __init__(self, url):
+    def __init__(self, url: str):
         message = "error while retrieving %s" % url
         super(FTPError, self).__init__(message)
 
 
 class ThrottledSession(requests.Session):
-    def _throttle(self):
+    def _throttle(self) -> None:
         now = time.time()
         diff = self._request_frequency - (now - self._last_request)
         if diff > 0:
@@ -58,11 +59,11 @@ class ThrottledSession(requests.Session):
             self._last_request = now
 
     @property
-    def requests_per_minute(self):
+    def requests_per_minute(self) -> int:
         return self._requests_per_minute
 
     @requests_per_minute.setter
-    def requests_per_minute(self, value):
+    def requests_per_minute(self, value: int) -> None:
         if value > 0:
             self._throttled = True
             self._requests_per_minute = value
@@ -74,7 +75,9 @@ class ThrottledSession(requests.Session):
             self._request_frequency = 0.0
             self._last_request = 0
 
-    def request(self, method, url, **kwargs):
+    def request(
+        self, method: str, url: str, **kwargs: dict
+    ) -> requests.models.Response:
         if self._throttled:
             self._throttle()
         return super(ThrottledSession, self).request(method, url, **kwargs)
@@ -83,10 +86,13 @@ class ThrottledSession(requests.Session):
 # this object exists because Requests assumes it can call
 # resp.raw._original_response.msg.getheaders() and we need to cope with that
 class DummyObject(object):
-    def getheaders(self, name):
+    _original_response: "DummyObject"
+    msg: "DummyObject"
+
+    def getheaders(self, name: str) -> str:
         return ""
 
-    def get_all(self, name, default):
+    def get_all(self, name: str, default: str) -> str:
         return default
 
 
@@ -97,8 +103,14 @@ _dummy._original_response.msg = DummyObject()
 
 class FTPAdapter(requests.adapters.BaseAdapter):
     def send(
-        self, request, stream=False, timeout=None, verify=False, cert=None, proxies=None
-    ):
+        self,
+        request: requests.models.PreparedRequest,
+        stream: bool = False,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        verify: Union[bool, str] = False,
+        cert: Union[None, Union[bytes, Text], Container[Union[bytes, Text]]] = None,
+        proxies: Optional[Mapping[str, str]] = None,
+    ) -> requests.models.Response:
         if request.method != "GET":
             raise HTTPMethodUnavailableError(
                 "FTP requests do not support method '%s'" % request.method,
@@ -119,24 +131,28 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
 
 class RetrySession(requests.Session):
-    def __init__(self):
+    def __init__(self) -> None:
         super(RetrySession, self).__init__()
         self._retry_attempts = 0
         self.retry_wait_seconds = 10
 
     # retry_attempts is a property so that it can't go negative
     @property
-    def retry_attempts(self):
+    def retry_attempts(self) -> int:
         return self._retry_attempts
 
     @retry_attempts.setter
-    def retry_attempts(self, value):
+    def retry_attempts(self, value: int) -> None:
         self._retry_attempts = max(value, 0)
 
-    def accept_response(self, response, **kwargs):
+    def accept_response(
+        self, response: requests.models.Response, **kwargs: dict
+    ) -> bool:
         return response.status_code < 400
 
-    def request(self, method, url, retry_on_404=False, **kwargs):
+    def request(
+        self, method: str, url: str, retry_on_404: bool = False, **kwargs: dict
+    ) -> requests.models.Response:
         # the retry loop
         tries = 0
         exception_raised = None
@@ -207,12 +223,12 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
 
     def __init__(
         self,
-        raise_errors=True,
-        requests_per_minute=60,
-        retry_attempts=0,
-        retry_wait_seconds=5,
-        verify=True,
-        header_func=None,
+        raise_errors: bool = True,
+        requests_per_minute: int = 60,
+        retry_attempts: int = 0,
+        retry_wait_seconds: int = 5,
+        verify: bool = True,
+        header_func: Optional[Callable[[Union[bytes, str]], dict]] = None,
     ):
 
         super(Scraper, self).__init__()
@@ -243,26 +259,26 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         # statistics structure
         self.reset_stats()
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         self.stats = {}
         self.stats["total_requests"] = 0
         self.stats["total_time"] = 0
         self.stats["average_time"] = None
 
     @property
-    def user_agent(self):
+    def user_agent(self) -> str:
         return self.headers["User-Agent"]
 
     @user_agent.setter
-    def user_agent(self, value):
+    def user_agent(self, value: str) -> None:
         self.headers["User-Agent"] = value
 
     @property
-    def disable_compression(self):
+    def disable_compression(self) -> bool:
         return self.headers["Accept-Encoding"] == "text/*"
 
     @disable_compression.setter
-    def disable_compression(self, value):
+    def disable_compression(self, value: bool) -> None:
         # disabled: set encoding to text/*
         if value:
             self.headers["Accept-Encoding"] = "text/*"
@@ -270,8 +286,10 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         elif self.headers.get("Accept-Encoding") == "text/*":
             self.headers["Accept-Encoding"] = "gzip, deflate, compress"
 
-    def request(self, method, url, **kwargs):
-        _log.info("{0} - {1}".format(method.upper(), url))
+    def request(
+        self, method: str, url: Union[str, bytes], **kwargs: dict
+    ) -> requests.models.Response:
+        _log.info("{} - {!r}".format(method.upper(), url))
 
         # apply global timeout
         timeout = kwargs.pop("timeout", self.timeout)
@@ -279,7 +297,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         if self._header_func:
             headers = requests.structures.CaseInsensitiveDict(self._header_func(url))
         else:
-            headers = {}
+            headers = requests.structures.CaseInsensitiveDict()
 
         kwarg_headers = kwargs.pop("headers", {})
         headers = requests.sessions.merge_setting(
@@ -305,8 +323,14 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         return resp
 
     def urlretrieve(
-        self, url, filename=None, method="GET", body=None, dir=None, **kwargs
-    ):
+        self,
+        url: str,
+        filename: str = None,
+        method: str = "GET",
+        body: dict = None,
+        dir: str = None,
+        **kwargs
+    ) -> Tuple[str, requests.models.Response]:
         """
         Save result of a request to a file, similarly to
         :func:`urllib.urlretrieve`.
@@ -348,7 +372,3 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
 
 
 _default_scraper = Scraper(requests_per_minute=0)
-
-
-def urlopen(url, method="GET", body=None, **kwargs):  # pragma: no cover
-    return _default_scraper.urlopen(url, method, body, **kwargs)
