@@ -286,7 +286,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
     def request(
         self, method: str, url: Union[str, bytes], **kwargs: dict
     ) -> requests.models.Response:
-        _log.info("{0} - {1}".format(method.upper(), url))
+        _log.info("{} - {!r}".format(method.upper(), url))
 
         # apply global timeout
         timeout = kwargs.pop("timeout", self.timeout)
