@@ -369,9 +369,3 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
 
 
 _default_scraper = Scraper(requests_per_minute=0)
-
-
-def urlopen(
-    url, method="GET", body=None, **kwargs
-) -> requests.models.Response:  # pragma: no cover
-    return _default_scraper.urlopen(url, method, body, **kwargs)
