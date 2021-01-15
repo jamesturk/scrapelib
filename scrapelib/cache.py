@@ -10,7 +10,7 @@ import hashlib
 import requests
 import sqlite3
 import json
-from typing import Optional, Union, Text, Dict
+from typing import Optional, Union, Dict
 
 
 class CacheStorageBase:
