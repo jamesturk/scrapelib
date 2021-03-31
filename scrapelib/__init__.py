@@ -45,7 +45,7 @@ class HTTPMethodUnavailableError(requests.RequestException):
     """
 
     def __init__(self, message: str, method: str):
-        super(HTTPMethodUnavailableError, self).__init__(message)
+        super().__init__(message)
         self.method = method
 
 
@@ -57,7 +57,7 @@ class HTTPError(requests.HTTPError):
 
     def __init__(self, response: Response, body: dict = None):
         message = "%s while retrieving %s" % (response.status_code, response.url)
-        super(HTTPError, self).__init__(message)
+        super().__init__(message)
         self.response = response
         self.body = body or self.response.text
 
@@ -65,10 +65,113 @@ class HTTPError(requests.HTTPError):
 class FTPError(requests.HTTPError):
     def __init__(self, url: str):
         message = "error while retrieving %s" % url
-        super(FTPError, self).__init__(message)
+        super().__init__(message)
 
 
-class ThrottledSession(requests.Session):
+class RetrySession(requests.Session):
+    def __init__(self) -> None:
+        super().__init__()
+        self._retry_attempts = 0
+        self.retry_wait_seconds = 10
+
+    # retry_attempts is a property so that it can't go negative
+    @property
+    def retry_attempts(self) -> int:
+        return self._retry_attempts
+
+    @retry_attempts.setter
+    def retry_attempts(self, value: int) -> None:
+        self._retry_attempts = max(value, 0)
+
+    def accept_response(self, response: Response, **kwargs: dict) -> bool:
+        return response.status_code < 400
+
+    def request(
+        self,
+        method: str,
+        url: Union[str, bytes, Text],
+        params: Union[None, bytes, MutableMapping[Text, Text]] = None,
+        data: _Data = None,
+        headers: Optional[MutableMapping[Text, Text]] = None,
+        cookies: Union[None, RequestsCookieJar, MutableMapping[Text, Text]] = None,
+        files: Optional[MutableMapping[Text, IO[Any]]] = None,
+        auth: _AuthType = None,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        allow_redirects: Optional[bool] = None,
+        proxies: Optional[MutableMapping[Text, Text]] = None,
+        hooks: Optional[_HooksInput] = None,
+        stream: Optional[bool] = None,
+        verify: Union[None, bool, Text] = None,
+        cert: Union[Text, Tuple[Text, Text], None] = None,
+        json: Optional[Any] = None,
+        retry_on_404: bool = False,
+    ) -> Response:
+        # the retry loop
+        tries = 0
+        exception_raised = None
+
+        while tries <= self.retry_attempts:
+            exception_raised = None
+
+            try:
+                resp = super().request(
+                    method,
+                    url,
+                    params=params,
+                    data=data,
+                    headers=headers,
+                    cookies=cookies,
+                    files=files,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=allow_redirects,
+                    proxies=proxies,
+                    hooks=hooks,
+                    stream=stream,
+                    verify=verify,
+                    cert=cert,
+                    json=json,
+                )
+
+                # break from loop on an accepted response
+                if self.accept_response(resp) or (
+                    resp.status_code == 404 and not retry_on_404
+                ):
+                    break
+
+            # note: This is a pretty broad catch-all, but given the plethora of things that can
+            #       happen during a requests.request it is used to try to be complete &
+            #       future-proof this as much as possible.
+            #       Should it become a problem we could either alter to exclude a few others
+            #       the way we handle SSLError or we could go back to enumeration of all types.
+            except Exception as e:
+                if isinstance(e, requests.exceptions.SSLError):
+                    raise
+                exception_raised = e
+
+            # if we're going to retry, sleep first
+            tries += 1
+            if tries <= self.retry_attempts:
+                # twice as long each time
+                wait = self.retry_wait_seconds * (2 ** (tries - 1))
+                _log.debug("sleeping for %s seconds before retry" % wait)
+                if exception_raised:
+                    _log.warning(
+                        "got %s sleeping for %s seconds before retry",
+                        exception_raised,
+                        wait,
+                    )
+                else:
+                    _log.warning("sleeping for %s seconds before retry", wait)
+                time.sleep(wait)
+
+        # out of the loop, either an exception was raised or we had a success
+        if exception_raised:
+            raise exception_raised
+        return resp
+
+
+class ThrottledSession(RetrySession):
     _last_request: float
     _throttled: bool = False
 
@@ -121,7 +224,7 @@ class ThrottledSession(requests.Session):
     ) -> Response:
         if self._throttled:
             self._throttle()
-        return super(ThrottledSession, self).request(
+        return super().request(
             method,
             url,
             params=params,
@@ -193,117 +296,14 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             raise FTPError(cast(str, request.url))
 
 
-class RetrySession(requests.Session):
-    def __init__(self) -> None:
-        super(RetrySession, self).__init__()
-        self._retry_attempts = 0
-        self.retry_wait_seconds = 10
-
-    # retry_attempts is a property so that it can't go negative
-    @property
-    def retry_attempts(self) -> int:
-        return self._retry_attempts
-
-    @retry_attempts.setter
-    def retry_attempts(self, value: int) -> None:
-        self._retry_attempts = max(value, 0)
-
-    def accept_response(self, response: Response, **kwargs: dict) -> bool:
-        return response.status_code < 400
-
-    def request(
-        self,
-        method: str,
-        url: Union[str, bytes, Text],
-        params: Union[None, bytes, MutableMapping[Text, Text]] = None,
-        data: _Data = None,
-        headers: Optional[MutableMapping[Text, Text]] = None,
-        cookies: Union[None, RequestsCookieJar, MutableMapping[Text, Text]] = None,
-        files: Optional[MutableMapping[Text, IO[Any]]] = None,
-        auth: _AuthType = None,
-        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
-        allow_redirects: Optional[bool] = None,
-        proxies: Optional[MutableMapping[Text, Text]] = None,
-        hooks: Optional[_HooksInput] = None,
-        stream: Optional[bool] = None,
-        verify: Union[None, bool, Text] = None,
-        cert: Union[Text, Tuple[Text, Text], None] = None,
-        json: Optional[Any] = None,
-        retry_on_404: bool = False,
-    ) -> Response:
-        # the retry loop
-        tries = 0
-        exception_raised = None
-
-        while tries <= self.retry_attempts:
-            exception_raised = None
-
-            try:
-                resp = super(RetrySession, self).request(
-                    method,
-                    url,
-                    params=params,
-                    data=data,
-                    headers=headers,
-                    cookies=cookies,
-                    files=files,
-                    auth=auth,
-                    timeout=timeout,
-                    allow_redirects=allow_redirects,
-                    proxies=proxies,
-                    hooks=hooks,
-                    stream=stream,
-                    verify=verify,
-                    cert=cert,
-                    json=json,
-                )
-
-                # break from loop on an accepted response
-                if self.accept_response(resp) or (
-                    resp.status_code == 404 and not retry_on_404
-                ):
-                    break
-
-            # note: This is a pretty broad catch-all, but given the plethora of things that can
-            #       happen during a requests.request it is used to try to be complete &
-            #       future-proof this as much as possible.
-            #       Should it become a problem we could either alter to exclude a few others
-            #       the way we handle SSLError or we could go back to enumeration of all types.
-            except Exception as e:
-                if isinstance(e, requests.exceptions.SSLError):
-                    raise
-                exception_raised = e
-
-            # if we're going to retry, sleep first
-            tries += 1
-            if tries <= self.retry_attempts:
-                # twice as long each time
-                wait = self.retry_wait_seconds * (2 ** (tries - 1))
-                _log.debug("sleeping for %s seconds before retry" % wait)
-                if exception_raised:
-                    _log.warning(
-                        "got %s sleeping for %s seconds before retry",
-                        exception_raised,
-                        wait,
-                    )
-                else:
-                    _log.warning("sleeping for %s seconds before retry", wait)
-                time.sleep(wait)
-
-        # out of the loop, either an exception was raised or we had a success
-        if exception_raised:
-            raise exception_raised
-        return resp
-
-
 class CacheResponse(Response):
     fromcache: bool
 
 
 # compose sessions, order matters (cache then throttle then retry)
-class CachingSession(ThrottledSession, RetrySession):
+class CachingSession(ThrottledSession):
     def __init__(self, cache_storage: Optional[CacheStorageBase] = None) -> None:
-        super(CachingSession, self).__init__()
+        super().__init__()
         self.cache_storage = cache_storage
         self.cache_write_only = False
 
@@ -360,7 +360,7 @@ class CachingSession(ThrottledSession, RetrySession):
         """
         # short circuit if cache isn't configured
         if not self.cache_storage:
-            resp = super(CachingSession, self).request(
+            resp = super().request(
                 method,
                 url,
                 data=data,
@@ -394,7 +394,7 @@ class CachingSession(ThrottledSession, RetrySession):
             resp = cast(CacheResponse, resp_maybe)
             resp.fromcache = True
         else:
-            resp = super(CachingSession, self).request(
+            resp = super().request(
                 method,
                 url,
                 data=data,
@@ -451,7 +451,7 @@ class Scraper(CachingSession):
         header_func: Optional[Callable[[Union[bytes, str]], dict]] = None,
     ):
 
-        super(Scraper, self).__init__()
+        super().__init__()
         self.mount("ftp://", FTPAdapter())
 
         # added by this class
@@ -553,7 +553,7 @@ class Scraper(CachingSession):
 
         _start_time = time.time()
 
-        resp = super(Scraper, self).request(
+        resp = super().request(
             method,
             url,
             timeout=timeout,
