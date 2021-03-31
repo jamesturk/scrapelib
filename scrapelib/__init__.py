@@ -486,7 +486,6 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
             response headers.
         """
         result = self.request(method, url, data=body, **kwargs)
-        result.code = result.status_code  # backwards compat
 
         fhandle: IO  # declare type of file handle as IO so both will work
         if not filename:
