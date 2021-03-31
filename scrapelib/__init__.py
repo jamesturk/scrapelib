@@ -10,7 +10,6 @@ from typing import (
     Container,
     Dict,
     IO,
-    Iterable,
     Mapping,
     MutableMapping,
     Optional,
@@ -21,7 +20,7 @@ from typing import (
 )
 import requests
 from .cache import CachingSession, FileCache  # noqa
-from ._types import _Data, PreparedRequest, RequestsCookieJar, _HooksInput, _AuthType
+from ._types import _Data, PreparedRequest, RequestsCookieJar, _HooksInput, _AuthType, Response
 
 
 __version__ = "1.2.0"
@@ -49,7 +48,7 @@ class HTTPError(requests.HTTPError):
     raise_errors option is true.
     """
 
-    def __init__(self, response: requests.models.Response, body: dict = None):
+    def __init__(self, response: Response, body: dict = None):
         message = "%s while retrieving %s" % (response.status_code, response.url)
         super(HTTPError, self).__init__(message)
         self.response = response
@@ -110,7 +109,7 @@ class ThrottledSession(requests.Session):
         verify: Union[None, bool, Text] = None,
         cert: Union[Text, Tuple[Text, Text], None] = None,
         json: Optional[Any] = None,
-    ) -> requests.models.Response:
+    ) -> Response:
         if self._throttled:
             self._throttle()
         return super(ThrottledSession, self).request(
@@ -160,7 +159,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         verify: Union[bool, str] = False,
         cert: Union[None, Union[bytes, Text], Container[Union[bytes, Text]]] = None,
         proxies: Optional[Mapping[str, str]] = None,
-    ) -> requests.models.Response:
+    ) -> Response:
         if request.method != "GET":
             raise HTTPMethodUnavailableError(
                 "FTP requests do not support method '%s'" % request.method,
@@ -200,7 +199,7 @@ class RetrySession(requests.Session):
         self._retry_attempts = max(value, 0)
 
     def accept_response(
-        self, response: requests.models.Response, **kwargs: dict
+        self, response: Response, **kwargs: dict
     ) -> bool:
         return response.status_code < 400
 
@@ -223,7 +222,7 @@ class RetrySession(requests.Session):
         cert: Union[Text, Tuple[Text, Text], None] = None,
         json: Optional[Any] = None,
         retry_on_404: bool = False,
-    ) -> requests.models.Response:
+    ) -> Response:
         # the retry loop
         tries = 0
         exception_raised = None
@@ -394,7 +393,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         cert: Union[Text, Tuple[Text, Text], None] = None,
         json: Optional[Any] = None,
         retry_on_404: bool = False,
-    ) -> requests.models.Response:
+    ) -> Response:
         _log.info("{} - {!r}".format(method.upper(), url))
 
         # apply global timeout
@@ -455,7 +454,7 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         body: dict = None,
         dir: str = None,
         **kwargs
-    ) -> Tuple[str, requests.models.Response]:
+    ) -> Tuple[str, Response]:
         """
         Save result of a request to a file, similarly to
         :func:`urllib.urlretrieve`.
