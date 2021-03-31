@@ -10,7 +10,8 @@ import hashlib
 import requests
 import sqlite3
 import json
-from typing import Optional, Union, Dict
+from typing import Optional, Union, Dict, Text, MutableMapping, IO, Any, Tuple, Callable
+from ._types import RequestsCookieJar, _Data, _Hooks, Request, _HooksInput, _AuthType
 
 
 class CacheStorageBase:
@@ -27,7 +28,10 @@ class CachingSession(requests.Session):
         self.cache_storage = cache_storage
         self.cache_write_only = False
 
-    def key_for_request(self, method: str, url: Union[str, bytes], **kwargs: dict) -> Optional[str]:
+    def key_for_request(
+        self, method: str, url: Union[str, bytes],
+        params: Union[None, bytes, MutableMapping[Text, Text]] = None,
+    ) -> Optional[str]:
         """Return a cache key from a given set of request parameters.
 
         Default behavior is to return a complete URL for all GET
@@ -38,7 +42,7 @@ class CachingSession(requests.Session):
         if method != "get":
             return None
 
-        return requests.Request(url=url, params=kwargs.get("params", {})).prepare().url
+        return requests.Request(url=url, params=params).prepare().url
 
     def should_cache_response(self, response: requests.models.Response) -> bool:
         """Check if a given Response object should be cached.
@@ -49,7 +53,23 @@ class CachingSession(requests.Session):
         return response.status_code == 200
 
     def request(
-        self, method: str, url: Union[str, bytes], **kwargs: dict
+        self,
+        method: str,
+        url: Union[str, bytes, Text],
+        params: Union[None, bytes, MutableMapping[Text, Text]] = None,
+        data: _Data = None,
+        headers: Optional[MutableMapping[Text, Text]] = None,
+        cookies: Union[None, RequestsCookieJar, MutableMapping[Text, Text]] = None,
+        files: Optional[MutableMapping[Text, IO[Any]]] = None,
+        auth: _AuthType = None,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        allow_redirects: Optional[bool] = None,
+        proxies: Optional[MutableMapping[Text, Text]] = None,
+        hooks: Optional[_HooksInput] = None,
+        stream: Optional[bool] = None,
+        verify: Union[None, bool, Text] = None,
+        cert: Union[Text, Tuple[Text, Text], None] = None,
+        json: Optional[Any] = None,
     ) -> requests.models.Response:
         """Override, wraps Session.request in caching.
 
@@ -58,22 +78,55 @@ class CachingSession(requests.Session):
         """
         # short circuit if cache isn't configured
         if not self.cache_storage:
-            resp = super(CachingSession, self).request(method, url, **kwargs)
+            resp = super(CachingSession, self).request(
+                method,
+                url,
+                data=data,
+                headers=headers,
+                cookies=cookies,
+                files=files,
+                auth=auth,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+                proxies=proxies,
+                hooks=hooks,
+                stream=stream,
+                verify=verify,
+                cert=cert,
+                json=json,
+            )
             resp.fromcache = False
             return resp
 
-        resp = None
         method = method.lower()
 
-        request_key = self.key_for_request(method, url, **kwargs)
+        request_key = self.key_for_request(method, url)
+
+        do_request = True
 
         if request_key and not self.cache_write_only:
             resp = self.cache_storage.get(request_key)
-
-        if resp:
             resp.fromcache = True
-        else:
-            resp = super(CachingSession, self).request(method, url, **kwargs)
+            do_request = False
+
+        if do_request:
+            resp = super(CachingSession, self).request(
+                method,
+                url,
+                data=data,
+                headers=headers,
+                cookies=cookies,
+                files=files,
+                auth=auth,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+                proxies=proxies,
+                hooks=hooks,
+                stream=stream,
+                verify=verify,
+                cert=cert,
+                json=json,
+            )
             # save to cache if request and response meet criteria
             if request_key and self.should_cache_response(resp):
                 self.cache_storage.set(request_key, resp)

@@ -4,9 +4,24 @@ import tempfile
 import time
 from urllib.request import urlopen as urllib_urlopen
 from urllib.error import URLError
-from typing import Union, Tuple, Optional, Mapping, Container, Text, Callable, cast
+from typing import (
+    Any,
+    Callable,
+    Container,
+    Dict,
+    IO,
+    Iterable,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+    cast,
+)
 import requests
 from .cache import CachingSession, FileCache  # noqa
+from ._types import _Data, PreparedRequest, RequestsCookieJar, _HooksInput, _AuthType
 
 
 __version__ = "1.2.0"
@@ -78,11 +93,44 @@ class ThrottledSession(requests.Session):
             self._last_request = 0
 
     def request(
-        self, method: str, url: str, **kwargs: dict
+        self,
+        method: str,
+        url: Union[str, bytes, Text],
+        params: Union[None, bytes, MutableMapping[Text, Text]] = None,
+        data: _Data = None,
+        headers: Optional[MutableMapping[Text, Text]] = None,
+        cookies: Union[None, RequestsCookieJar, MutableMapping[Text, Text]] = None,
+        files: Optional[MutableMapping[Text, IO[Any]]] = None,
+        auth: _AuthType = None,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        allow_redirects: Optional[bool] = None,
+        proxies: Optional[MutableMapping[Text, Text]] = None,
+        hooks: Optional[_HooksInput] = None,
+        stream: Optional[bool] = None,
+        verify: Union[None, bool, Text] = None,
+        cert: Union[Text, Tuple[Text, Text], None] = None,
+        json: Optional[Any] = None,
     ) -> requests.models.Response:
         if self._throttled:
             self._throttle()
-        return super(ThrottledSession, self).request(method, url, **kwargs)
+        return super(ThrottledSession, self).request(
+            method,
+            url,
+            params=params,
+            data=data,
+            headers=headers,
+            cookies=cookies,
+            files=files,
+            auth=auth,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
+            proxies=proxies,
+            hooks=hooks,
+            stream=stream,
+            verify=verify,
+            cert=cert,
+            json=json,
+        )
 
 
 # this object exists because Requests assumes it can call
@@ -106,7 +154,7 @@ _dummy._original_response.msg = DummyObject()
 class FTPAdapter(requests.adapters.BaseAdapter):
     def send(
         self,
-        request: requests.models.PreparedRequest,
+        request: PreparedRequest,
         stream: bool = False,
         timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
         verify: Union[bool, str] = False,
@@ -123,9 +171,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
                 timeout_float = timeout[0]
             else:
                 timeout_float = cast(float, timeout)
-            real_resp = urllib_urlopen(
-                cast(str, request.url), timeout=timeout_float
-            )
+            real_resp = urllib_urlopen(cast(str, request.url), timeout=timeout_float)
             # we're going to fake a requests.Response with this
             resp = requests.Response()
             resp.status_code = 200
@@ -159,7 +205,24 @@ class RetrySession(requests.Session):
         return response.status_code < 400
 
     def request(
-        self, method: str, url: str, retry_on_404: bool = False, **kwargs: dict
+        self,
+        method: str,
+        url: Union[str, bytes, Text],
+        params: Union[None, bytes, MutableMapping[Text, Text]] = None,
+        data: _Data = None,
+        headers: Optional[MutableMapping[Text, Text]] = None,
+        cookies: Union[None, RequestsCookieJar, MutableMapping[Text, Text]] = None,
+        files: Optional[MutableMapping[Text, IO[Any]]] = None,
+        auth: _AuthType = None,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        allow_redirects: Optional[bool] = None,
+        proxies: Optional[MutableMapping[Text, Text]] = None,
+        hooks: Optional[_HooksInput] = None,
+        stream: Optional[bool] = None,
+        verify: Union[None, bool, Text] = None,
+        cert: Union[Text, Tuple[Text, Text], None] = None,
+        json: Optional[Any] = None,
+        retry_on_404: bool = False,
     ) -> requests.models.Response:
         # the retry loop
         tries = 0
@@ -169,7 +232,25 @@ class RetrySession(requests.Session):
             exception_raised = None
 
             try:
-                resp = super(RetrySession, self).request(method, url, **kwargs)
+                resp = super(RetrySession, self).request(
+                    method,
+                    url,
+                    params=params,
+                    data=data,
+                    headers=headers,
+                    cookies=cookies,
+                    files=files,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=allow_redirects,
+                    proxies=proxies,
+                    hooks=hooks,
+                    stream=stream,
+                    verify=verify,
+                    cert=cert,
+                    json=json,
+                )
+
                 # break from loop on an accepted response
                 if self.accept_response(resp) or (
                     resp.status_code == 404 and not retry_on_404
@@ -268,10 +349,10 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         self.reset_stats()
 
     def reset_stats(self) -> None:
-        self.stats = {}
+        self.stats: Dict[str, Union[int, float]] = {}
         self.stats["total_requests"] = 0
         self.stats["total_time"] = 0
-        self.stats["average_time"] = None
+        self.stats["average_time"] = 0
 
     @property
     def user_agent(self) -> str:
@@ -295,30 +376,66 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
             self.headers["Accept-Encoding"] = "gzip, deflate, compress"
 
     def request(
-        self, method: str, url: Union[str, bytes], **kwargs: dict
+        self,
+        method: str,
+        url: Union[str, bytes, Text],
+        params: Union[None, bytes, MutableMapping[Text, Text]] = None,
+        data: _Data = None,
+        headers: Optional[MutableMapping[Text, Text]] = None,
+        cookies: Union[None, RequestsCookieJar, MutableMapping[Text, Text]] = None,
+        files: Optional[MutableMapping[Text, IO[Any]]] = None,
+        auth: _AuthType = None,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        allow_redirects: Optional[bool] = None,
+        proxies: Optional[MutableMapping[Text, Text]] = None,
+        hooks: Optional[_HooksInput] = None,
+        stream: Optional[bool] = None,
+        verify: Union[None, bool, Text] = None,
+        cert: Union[Text, Tuple[Text, Text], None] = None,
+        json: Optional[Any] = None,
+        retry_on_404: bool = False,
     ) -> requests.models.Response:
         _log.info("{} - {!r}".format(method.upper(), url))
 
         # apply global timeout
-        timeout = kwargs.pop("timeout", self.timeout)
+        if not timeout:
+            timeout = self.timeout
 
         if self._header_func:
-            headers = requests.structures.CaseInsensitiveDict(self._header_func(url))
+            actual_headers = requests.structures.CaseInsensitiveDict(
+                self._header_func(url)
+            )
         else:
-            headers = requests.structures.CaseInsensitiveDict()
+            actual_headers = requests.structures.CaseInsensitiveDict()
 
-        kwarg_headers = kwargs.pop("headers", {})
-        headers = requests.sessions.merge_setting(
-            headers, self.headers, dict_class=requests.structures.CaseInsensitiveDict
+        actual_headers = requests.sessions.merge_setting(
+            actual_headers,
+            self.headers,
+            dict_class=requests.structures.CaseInsensitiveDict,
         )
         headers = requests.sessions.merge_setting(
-            kwarg_headers, headers, dict_class=requests.structures.CaseInsensitiveDict
+            headers, headers, dict_class=requests.structures.CaseInsensitiveDict
         )
 
         _start_time = time.time()
 
         resp = super(Scraper, self).request(
-            method, url, timeout=timeout, headers=headers, **kwargs
+            method,
+            url,
+            timeout=timeout,
+            headers=actual_headers,
+            params=params,
+            data=data,
+            cookies=cookies,
+            files=files,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            proxies=proxies,
+            hooks=hooks,
+            stream=stream,
+            verify=verify,
+            cert=cert,
+            json=json,
         )
         self.stats["total_requests"] += 1
         self.stats["total_time"] += time.time() - _start_time
