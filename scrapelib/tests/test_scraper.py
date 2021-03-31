@@ -155,7 +155,7 @@ def test_urlretrieve():
         fname, resp = s.urlretrieve("http://dummy/")
         with open(fname) as f:
             assert f.read() == "ok"
-            assert resp.code == 200
+            assert resp.status_code == 200
         os.remove(fname)
 
         (fh, set_fname) = tempfile.mkstemp()
@@ -163,7 +163,7 @@ def test_urlretrieve():
         assert fname == set_fname
         with open(set_fname) as f:
             assert f.read() == "ok"
-            assert resp.code == 200
+            assert resp.status_code == 200
         os.remove(set_fname)
 
         dirname = os.path.dirname(set_fname)
@@ -171,7 +171,7 @@ def test_urlretrieve():
         assert os.path.dirname(fname) == dirname
         with open(fname) as f:
             assert f.read() == "ok"
-            assert resp.code == 200
+            assert resp.status_code == 200
         os.remove(fname)
 
 
