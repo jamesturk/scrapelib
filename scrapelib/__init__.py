@@ -4,7 +4,7 @@ import tempfile
 import time
 from urllib.request import urlopen as urllib_urlopen
 from urllib.error import URLError
-from typing import Union, Tuple, Optional, Mapping, Container, Text, Callable
+from typing import Union, Tuple, Optional, Mapping, Container, Text, Callable, cast
 import requests
 from .cache import CachingSession, FileCache  # noqa
 
@@ -48,6 +48,8 @@ class FTPError(requests.HTTPError):
 
 
 class ThrottledSession(requests.Session):
+    _last_request: float
+
     def _throttle(self) -> None:
         now = time.time()
         diff = self._request_frequency - (now - self._last_request)
@@ -114,20 +116,26 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         if request.method != "GET":
             raise HTTPMethodUnavailableError(
                 "FTP requests do not support method '%s'" % request.method,
-                request.method,
+                cast(str, request.method),
             )
         try:
-            real_resp = urllib_urlopen(request.url, timeout=timeout)
+            if isinstance(timeout, tuple):
+                timeout_float = timeout[0]
+            else:
+                timeout_float = cast(float, timeout)
+            real_resp = urllib_urlopen(
+                cast(str, request.url), timeout=timeout_float
+            )
             # we're going to fake a requests.Response with this
             resp = requests.Response()
             resp.status_code = 200
-            resp.url = request.url
-            resp.headers = {}
+            resp.url = cast(str, request.url)
+            resp.headers = requests.structures.CaseInsensitiveDict()
             resp._content = real_resp.read()
             resp.raw = _dummy
             return resp
         except URLError:
-            raise FTPError(request.url)
+            raise FTPError(cast(str, request.url))
 
 
 class RetrySession(requests.Session):
