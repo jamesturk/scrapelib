@@ -1,5 +1,6 @@
 import requests
-from ..cache import CachingSession, MemoryCache, FileCache, SQLiteCache
+from .. import CachingSession
+from ..cache import MemoryCache, FileCache, SQLiteCache
 
 DUMMY_URL = "http://dummy/"
 HTTPBIN = "http://httpbin.org/"
