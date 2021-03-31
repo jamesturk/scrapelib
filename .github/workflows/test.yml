@@ -30,6 +30,6 @@ jobs:
     # - name: lint with mypy
     #   run: poetry run mypy --disallow-untyped-defs rrl.py
     - name: lint with flake8
-      run: flake8 --show-source --statistics --ignore=E203,E501,W503 scrapelib
+      run: poetry run flake8 --show-source --statistics --ignore=E203,E501,W503 scrapelib
     - name: pytest
-      run: pytest
+      run: poetry run pytest
