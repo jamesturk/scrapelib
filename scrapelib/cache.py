@@ -124,8 +124,7 @@ class CachingSession(requests.Session):
         method = method.lower()
 
         request_key = self.key_for_request(method, url)
-
-        do_request = True
+        resp_maybe = None
 
         if request_key and not self.cache_write_only:
             resp_maybe = self.cache_storage.get(request_key)
@@ -133,9 +132,7 @@ class CachingSession(requests.Session):
         if resp_maybe:
             resp = cast(CacheResponse, resp_maybe)
             resp.fromcache = True
-            do_request = False
-
-        if do_request:
+        else:
             resp = super(CachingSession, self).request(
                 method,
                 url,
