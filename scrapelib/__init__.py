@@ -20,7 +20,14 @@ from typing import (
 )
 import requests
 from .cache import CachingSession, FileCache  # noqa
-from ._types import _Data, PreparedRequest, RequestsCookieJar, _HooksInput, _AuthType, Response
+from ._types import (
+    _Data,
+    PreparedRequest,
+    RequestsCookieJar,
+    _HooksInput,
+    _AuthType,
+    Response,
+)
 
 
 __version__ = "1.2.0"
@@ -198,9 +205,7 @@ class RetrySession(requests.Session):
     def retry_attempts(self, value: int) -> None:
         self._retry_attempts = max(value, 0)
 
-    def accept_response(
-        self, response: Response, **kwargs: dict
-    ) -> bool:
+    def accept_response(self, response: Response, **kwargs: dict) -> bool:
         return response.status_code < 400
 
     def request(
@@ -483,14 +488,15 @@ class Scraper(CachingSession, ThrottledSession, RetrySession):
         result = self.request(method, url, data=body, **kwargs)
         result.code = result.status_code  # backwards compat
 
+        fhandle: IO  # declare type of file handle as IO so both will work
         if not filename:
             fd, filename = tempfile.mkstemp(dir=dir)
-            f = os.fdopen(fd, "wb")
+            fhandle = os.fdopen(fd, "wb")
         else:
-            f = open(filename, "wb")
+            fhandle = open(filename, "wb")
 
-        f.write(result.content)
-        f.close()
+        fhandle.write(result.content)
+        fhandle.close()
 
         return filename, result
 

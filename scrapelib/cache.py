@@ -30,6 +30,10 @@ from ._types import (
 )
 
 
+class CacheResponse(Response):
+    fromcache: bool
+
+
 class CacheStorageBase:
     def get(self, key: str) -> Optional[Response]:
         raise NotImplementedError()
@@ -113,6 +117,7 @@ class CachingSession(requests.Session):
                 cert=cert,
                 json=json,
             )
+            resp = cast(CacheResponse, resp)
             resp.fromcache = False
             return resp
 
@@ -126,7 +131,7 @@ class CachingSession(requests.Session):
             resp_maybe = self.cache_storage.get(request_key)
 
         if resp_maybe:
-            resp = cast(Response, resp_maybe)
+            resp = cast(CacheResponse, resp_maybe)
             resp.fromcache = True
             do_request = False
 
@@ -151,6 +156,7 @@ class CachingSession(requests.Session):
             # save to cache if request and response meet criteria
             if request_key and self.should_cache_response(resp):
                 self.cache_storage.set(request_key, resp)
+            resp = cast(CacheResponse, resp)
             resp.fromcache = False
 
         return resp
