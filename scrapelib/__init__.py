@@ -532,20 +532,23 @@ class Scraper(CachingSession):
         if not timeout:
             timeout = self.timeout
 
+        # ordering matters here:
+        # func headers are applied on top of class headers
+        # param headers are applied on top of those
         if self._header_func:
-            actual_headers = requests.structures.CaseInsensitiveDict(
+            func_headers = requests.structures.CaseInsensitiveDict(
                 self._header_func(url)
             )
         else:
-            actual_headers = requests.structures.CaseInsensitiveDict()
+            func_headers = requests.structures.CaseInsensitiveDict()
 
-        actual_headers = requests.sessions.merge_setting(
-            actual_headers,
+        final_headers = requests.sessions.merge_setting(
+            func_headers,
             self.headers,
             dict_class=requests.structures.CaseInsensitiveDict,
         )
-        headers = requests.sessions.merge_setting(
-            headers, headers, dict_class=requests.structures.CaseInsensitiveDict
+        final_headers = requests.sessions.merge_setting(
+            headers, final_headers, dict_class=requests.structures.CaseInsensitiveDict
         )
 
         _start_time = time.time()
@@ -554,7 +557,7 @@ class Scraper(CachingSession):
             method,
             url,
             timeout=timeout,
-            headers=actual_headers,
+            headers=final_headers,
             params=params,
             data=data,
             cookies=cookies,
