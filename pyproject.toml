@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "scrapelib"
+version = "1.3.0"
+description = ""
+readme = "README.rst"
+authors = ["James Turk <dev@jamesturk.net>"]
+license = "BSD-2-Clause"
+repository = "https://github.com/jamesturk/scrapelib"
+classifiers=[
+  "Development Status :: 6 - Mature",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: BSD License",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[tool.poetry.scripts]
+scrapeshell = "scrapelib.__main__:scrapeshell"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = {extras = ["security"], version = "^2.25.1"}
+
+[tool.poetry.dev-dependencies]
+mypy = "^0.790"
+flake8 = "^3.9.0"
+mock = "^4.0.3"
+pytest = "^6.2.2"
+pytest-cov = "^2.11.1"
+coveralls = "^3.0.1"
+Sphinx = "^3.5.3"
+sphinx-rtd-theme = "^0.5.1"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
