@@ -6,7 +6,7 @@ DUMMY_URL = "http://dummy/"
 HTTPBIN = "http://httpbin.org/"
 
 
-def test_default_key_for_request():
+def test_default_key_for_request() -> None:
     cs = CachingSession()
 
     # non-get methods
@@ -27,7 +27,7 @@ def test_default_key_for_request():
     )
 
 
-def test_default_should_cache_response():
+def test_default_should_cache_response() -> None:
     cs = CachingSession()
     resp = requests.Response()
     # only 200 should return True
@@ -38,7 +38,7 @@ def test_default_should_cache_response():
         assert cs.should_cache_response(resp) is False
 
 
-def test_no_cache_request():
+def test_no_cache_request() -> None:
     cs = CachingSession()
     # call twice, to prime cache (if it were enabled)
     resp = cs.request("get", HTTPBIN + "status/200")
@@ -47,7 +47,7 @@ def test_no_cache_request():
     assert resp.fromcache is False
 
 
-def test_simple_cache_request():
+def test_simple_cache_request() -> None:
     cs = CachingSession(cache_storage=MemoryCache())
     url = HTTPBIN + "get"
 
@@ -63,7 +63,7 @@ def test_simple_cache_request():
     assert cached_resp.fromcache is True
 
 
-def test_cache_write_only():
+def test_cache_write_only() -> None:
     cs = CachingSession(cache_storage=MemoryCache())
     cs.cache_write_only = True
     url = HTTPBIN + "get"
@@ -103,18 +103,18 @@ def _test_cache_storage(storage_obj):
     assert cached_resp.text == _content_as_unicode
 
 
-def test_memory_cache():
+def test_memory_cache() -> None:
     _test_cache_storage(MemoryCache())
 
 
-def test_file_cache():
+def test_file_cache() -> None:
     fc = FileCache("cache")
     fc.clear()
     _test_cache_storage(fc)
     fc.clear()
 
 
-def test_sqlite_cache():
+def test_sqlite_cache() -> None:
     sc = SQLiteCache("cache.db")
     sc.clear()
     _test_cache_storage(sc)
