@@ -8,7 +8,6 @@ from typing import (
     Any,
     Callable,
     Container,
-    Dict,
     IO,
     Mapping,
     MutableMapping,
@@ -72,7 +71,7 @@ class RetrySession(requests.Session):
     def __init__(self) -> None:
         super().__init__()
         self._retry_attempts = 0
-        self.retry_wait_seconds = 10
+        self.retry_wait_seconds: float = 10
 
     # retry_attempts is a property so that it can't go negative
     @property
@@ -446,7 +445,7 @@ class Scraper(CachingSession):
         raise_errors: bool = True,
         requests_per_minute: int = 60,
         retry_attempts: int = 0,
-        retry_wait_seconds: int = 5,
+        retry_wait_seconds: float = 5,
         verify: bool = True,
         header_func: Optional[Callable[[Union[bytes, str]], dict]] = None,
     ):
@@ -471,7 +470,7 @@ class Scraper(CachingSession):
         self.cache_write_only = True
 
         # non-parameter options
-        self.timeout = None
+        self.timeout: Optional[float] = None
         self.user_agent = _user_agent
 
         # statistics

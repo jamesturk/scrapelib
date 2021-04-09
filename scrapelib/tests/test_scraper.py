@@ -2,6 +2,8 @@ import os
 import glob
 import tempfile
 from io import BytesIO
+from typing import Optional, Dict, Union, Any, List, cast
+from requests.structures import CaseInsensitiveDict
 
 import mock
 import pytest
@@ -14,7 +16,7 @@ HTTPBIN = "http://httpbin.org/"
 
 
 class FakeResponse(object):
-    def __init__(self, url, code, content, encoding="utf-8", headers=None):
+    def __init__(self, url: str, code: int, content: Union[str, bytes], encoding: str="utf-8", headers: Optional[Dict]=None):
         self.url = url
         self.status_code = code
         self.content = content
@@ -23,11 +25,11 @@ class FakeResponse(object):
         self.headers = headers or {}
 
 
-def request_200(method, url, *args, **kwargs):
+def request_200(method: str, url: str, *args: Any, **kwargs: Any) -> FakeResponse:
     return FakeResponse(url, 200, b"ok")
 
 
-def request_sslerror(method, url, *args, **kwargs):
+def request_sslerror(method: str, url: str, *args: Any, **kwargs: Any) -> None:
     raise requests.exceptions.SSLError("sslfail")
 
 
@@ -107,7 +109,7 @@ def test_user_agent() -> None:
 
 def test_user_agent_from_headers() -> None:
     s = Scraper(requests_per_minute=0)
-    s.headers = {"User-Agent": "from headers"}
+    s.headers = cast(CaseInsensitiveDict, {"User-Agent": "from headers"})
     resp = s.get(HTTPBIN + "user-agent")
     ua = resp.json()["user-agent"]
     assert ua == "from headers"
@@ -264,10 +266,10 @@ def test_timeout_arg() -> None:
 
 def test_timeout_retry() -> None:
     # TODO: make this work with the other requests exceptions
-    count = []
+    count: List[int] = []
 
     # On the first call raise timeout
-    def side_effect(*args, **kwargs):
+    def side_effect(*args: Any, **kwargs: Any) -> FakeResponse:
         if count:
             return FakeResponse("http://dummy/", 200, "success!")
         count.append(1)
@@ -332,7 +334,7 @@ def test_callable_headers() -> None:
 
 def test_headers_weirdness() -> None:
     s = Scraper()
-    s.headers = {"accept": "application/json"}
+    s.headers = cast(CaseInsensitiveDict, {"accept": "application/json"})
     data = s.get(HTTPBIN + "headers").json()
     assert data["headers"]["Accept"] == "application/json"
 
@@ -352,10 +354,10 @@ def test_ftp_uses_urllib2() -> None:
 
 
 def test_ftp_retries() -> None:
-    count = []
+    count: List[int] = []
 
     # On the first call raise URLError, then work
-    def side_effect(*args, **kwargs):
+    def side_effect(*args: Any, **kwargs: Any) -> BytesIO:
         if count:
             return BytesIO(b"ftp success!")
         count.append(1)
@@ -393,28 +395,28 @@ def test_basic_stats() -> None:
         s.get("http://example.com")
         s.get("http://example.com")
 
-    assert s.stats["total_requests"] == 3
-    assert s.stats["total_time"] > 0
-    assert s.stats["average_time"] == s.stats["total_time"] / 3
+    assert s._total_requests == 3
+    assert s._total_time > 0
+    assert s.average_request_time == s._total_time / 3
 
-    three_time = s.stats["total_time"]
+    three_time = s._total_time
 
     with mock.patch.object(requests.Session, "request", mock_200):
         s.get("http://example.com")
-        assert s.stats["total_requests"] == 4
-        assert s.stats["total_time"] > three_time
-        assert s.stats["average_time"] == s.stats["total_time"] / 4
+        assert s._total_requests == 4
+        assert s._total_time > three_time
+        assert s.average_request_time == s._total_time / 4
 
 
 def test_reset_stats() -> None:
     s = Scraper()
     with mock.patch.object(requests.Session, "request", mock_200):
         s.get("http://example.com")
-    assert s.stats["total_requests"] == 1
+    assert s._total_requests == 1
 
     s.reset_stats()
-    assert s.stats["total_requests"] == 0
+    assert s._total_requests == 0
 
     with mock.patch.object(requests.Session, "request", mock_200):
         s.get("http://example.com")
-    assert s.stats["total_requests"] == 1
+    assert s._total_requests == 1
