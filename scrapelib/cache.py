@@ -10,89 +10,33 @@ import hashlib
 import requests
 import sqlite3
 import json
-from typing import Optional, Union, Dict
+from typing import Optional, Dict
+from ._types import Response
+
+
+class CacheResponse(Response):
+    fromcache: bool
 
 
 class CacheStorageBase:
-    def get(self, key: str) -> Optional[requests.models.Response]:
+    def get(self, key: str) -> Optional[Response]:
         raise NotImplementedError()
 
-    def set(self, key: str, response: requests.models.Response) -> None:
+    def set(self, key: str, response: Response) -> None:
         raise NotImplementedError()
-
-
-class CachingSession(requests.Session):
-    def __init__(self, cache_storage: Optional[CacheStorageBase] = None) -> None:
-        super(CachingSession, self).__init__()
-        self.cache_storage = cache_storage
-        self.cache_write_only = False
-
-    def key_for_request(self, method: str, url: Union[str, bytes], **kwargs: dict) -> Optional[str]:
-        """Return a cache key from a given set of request parameters.
-
-        Default behavior is to return a complete URL for all GET
-        requests, and None otherwise.
-
-        Can be overriden if caching of non-get requests is desired.
-        """
-        if method != "get":
-            return None
-
-        return requests.Request(url=url, params=kwargs.get("params", {})).prepare().url
-
-    def should_cache_response(self, response: requests.models.Response) -> bool:
-        """Check if a given Response object should be cached.
-
-        Default behavior is to only cache responses with a 200
-        status code.
-        """
-        return response.status_code == 200
-
-    def request(
-        self, method: str, url: Union[str, bytes], **kwargs: dict
-    ) -> requests.models.Response:
-        """Override, wraps Session.request in caching.
-
-        Cache is only used if key_for_request returns a valid key
-        and should_cache_response was true as well.
-        """
-        # short circuit if cache isn't configured
-        if not self.cache_storage:
-            resp = super(CachingSession, self).request(method, url, **kwargs)
-            resp.fromcache = False
-            return resp
-
-        resp = None
-        method = method.lower()
-
-        request_key = self.key_for_request(method, url, **kwargs)
-
-        if request_key and not self.cache_write_only:
-            resp = self.cache_storage.get(request_key)
-
-        if resp:
-            resp.fromcache = True
-        else:
-            resp = super(CachingSession, self).request(method, url, **kwargs)
-            # save to cache if request and response meet criteria
-            if request_key and self.should_cache_response(resp):
-                self.cache_storage.set(request_key, resp)
-            resp.fromcache = False
-
-        return resp
 
 
 class MemoryCache(CacheStorageBase):
     """In memory cache for request responses."""
 
     def __init__(self) -> None:
-        self.cache: Dict[str, requests.models.Response] = {}
+        self.cache: Dict[str, Response] = {}
 
-    def get(self, key: str) -> Optional[requests.models.Response]:
+    def get(self, key: str) -> Optional[Response]:
         """Get cache entry for key, or return None."""
         return self.cache.get(key, None)
 
-    def set(self, key: str, response: requests.models.Response) -> None:
+    def set(self, key: str, response: Response) -> None:
         """Set cache entry for key with contents of response."""
         self.cache[key] = response
 
@@ -127,7 +71,7 @@ class FileCache(CacheStorageBase):
         if not os.path.isdir(self.cache_dir):
             os.makedirs(self.cache_dir)
 
-    def get(self, orig_key: str) -> Optional[requests.models.Response]:
+    def get(self, orig_key: str) -> Optional[Response]:
         """Get cache entry for key, or return None."""
         resp = requests.Response()
 
@@ -149,7 +93,7 @@ class FileCache(CacheStorageBase):
 
                         try:
                             new_lm = head_resp.headers["last-modified"]
-                            old_lm = line[line.find(":") + 1 :].strip()
+                            old_lm = line[line.find(":") + 1:].strip()
                             if old_lm != new_lm:
                                 # last modified timestamps don't match, need to download again
                                 return None
@@ -175,7 +119,7 @@ class FileCache(CacheStorageBase):
         except IOError:
             return None
 
-    def set(self, key: str, response: requests.models.Response) -> None:
+    def set(self, key: str, response: Response) -> None:
         """Set cache entry for key with contents of response."""
         key = self._clean_key(key)
         path = os.path.join(self.cache_dir, key)
@@ -228,7 +172,7 @@ class SQLiteCache(CacheStorageBase):
                  encoding text, data blob, headers blob)"""
         )
 
-    def set(self, key: str, response: requests.models.Response) -> None:
+    def set(self, key: str, response: Response) -> None:
         """Set cache entry for key with contents of response."""
         mod = response.headers.pop("last-modified", None)
         status = int(response.status_code)
@@ -244,7 +188,7 @@ class SQLiteCache(CacheStorageBase):
             self._conn.execute("DELETE FROM cache WHERE key=?", (key,))
             self._conn.execute("INSERT INTO cache VALUES (?,?,?,?,?,?)", rec)
 
-    def get(self, key: str) -> Optional[requests.models.Response]:
+    def get(self, key: str) -> Optional[Response]:
         """Get cache entry for key, or return None."""
         query = self._conn.execute("SELECT * FROM cache WHERE key=?", (key,))
         rec = query.fetchone()
@@ -261,7 +205,7 @@ class SQLiteCache(CacheStorageBase):
             if rec["modified"] != new_lm:
                 return None
 
-        resp = requests.Response()
+        resp = Response()
         resp._content = rec["data"]
         resp.status_code = rec["status"]
         resp.encoding = rec["encoding"]

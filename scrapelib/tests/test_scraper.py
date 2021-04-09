@@ -2,19 +2,28 @@ import os
 import glob
 import tempfile
 from io import BytesIO
+from typing import Optional, Dict, Union, Any, List, cast
+from requests.structures import CaseInsensitiveDict
 
 import mock
-import pytest
+import pytest  # type: ignore
 import requests
 from .. import Scraper, HTTPError, HTTPMethodUnavailableError, URLError, FTPError
 from .. import _user_agent as default_user_agent
-from ..cache import MemoryCache
+from ..cache import MemoryCache, CacheResponse
 
 HTTPBIN = "http://httpbin.org/"
 
 
 class FakeResponse(object):
-    def __init__(self, url, code, content, encoding="utf-8", headers=None):
+    def __init__(
+        self,
+        url: str,
+        code: int,
+        content: Union[str, bytes],
+        encoding: str = "utf-8",
+        headers: Optional[Dict] = None,
+    ):
         self.url = url
         self.status_code = code
         self.content = content
@@ -23,11 +32,11 @@ class FakeResponse(object):
         self.headers = headers or {}
 
 
-def request_200(method, url, *args, **kwargs):
+def request_200(method: str, url: str, *args: Any, **kwargs: Any) -> FakeResponse:
     return FakeResponse(url, 200, b"ok")
 
 
-def request_sslerror(method, url, *args, **kwargs):
+def request_sslerror(method: str, url: str, *args: Any, **kwargs: Any) -> None:
     raise requests.exceptions.SSLError("sslfail")
 
 
@@ -35,7 +44,7 @@ mock_200 = mock.Mock(wraps=request_200)
 mock_sslerror = mock.Mock(wraps=request_sslerror)
 
 
-def test_fields():
+def test_fields() -> None:
     # timeout=0 means None
     s = Scraper(
         requests_per_minute=100,
@@ -49,14 +58,14 @@ def test_fields():
     assert s.retry_wait_seconds == 100
 
 
-def test_get():
+def test_get() -> None:
     s = Scraper(requests_per_minute=0)
     resp = s.get(HTTPBIN + "get?woo=woo")
     assert resp.status_code == 200
     assert resp.json()["args"]["woo"] == "woo"
 
 
-def test_post():
+def test_post() -> None:
     s = Scraper(requests_per_minute=0)
     resp = s.post(HTTPBIN + "post", {"woo": "woo"})
     assert resp.status_code == 200
@@ -65,7 +74,7 @@ def test_post():
     assert resp_json["headers"]["Content-Type"] == "application/x-www-form-urlencoded"
 
 
-def test_request_throttling():
+def test_request_throttling() -> None:
     s = Scraper(requests_per_minute=30)
     assert s.requests_per_minute == 30
 
@@ -93,7 +102,7 @@ def test_request_throttling():
             assert mock_sleep.call_count == 0
 
 
-def test_user_agent():
+def test_user_agent() -> None:
     s = Scraper(requests_per_minute=0)
     resp = s.get(HTTPBIN + "user-agent")
     ua = resp.json()["user-agent"]
@@ -105,15 +114,15 @@ def test_user_agent():
     assert ua == "a different agent"
 
 
-def test_user_agent_from_headers():
+def test_user_agent_from_headers() -> None:
     s = Scraper(requests_per_minute=0)
-    s.headers = {"User-Agent": "from headers"}
+    s.headers = cast(CaseInsensitiveDict, {"User-Agent": "from headers"})
     resp = s.get(HTTPBIN + "user-agent")
     ua = resp.json()["user-agent"]
     assert ua == "from headers"
 
 
-def test_404():
+def test_404() -> None:
     s = Scraper(requests_per_minute=0)
     pytest.raises(HTTPError, s.get, HTTPBIN + "status/404")
 
@@ -122,7 +131,7 @@ def test_404():
     assert resp.status_code == 404
 
 
-def test_500():
+def test_500() -> None:
     s = Scraper(requests_per_minute=0)
 
     pytest.raises(HTTPError, s.get, HTTPBIN + "status/500")
@@ -132,30 +141,30 @@ def test_500():
     assert resp.status_code == 500
 
 
-def test_caching():
+def test_caching() -> None:
     cache_dir = tempfile.mkdtemp()
     s = Scraper(requests_per_minute=0)
     s.cache_storage = MemoryCache()
     s.cache_write_only = False
 
     resp = s.get(HTTPBIN + "status/200")
-    assert not resp.fromcache
+    assert not cast(CacheResponse, resp).fromcache
     resp = s.get(HTTPBIN + "status/200")
-    assert resp.fromcache
+    assert cast(CacheResponse, resp).fromcache
 
     for path in glob.iglob(os.path.join(cache_dir, "*")):
         os.remove(path)
     os.rmdir(cache_dir)
 
 
-def test_urlretrieve():
+def test_urlretrieve() -> None:
     s = Scraper(requests_per_minute=0)
 
     with mock.patch.object(requests.Session, "request", mock_200):
         fname, resp = s.urlretrieve("http://dummy/")
         with open(fname) as f:
             assert f.read() == "ok"
-            assert resp.code == 200
+            assert resp.status_code == 200
         os.remove(fname)
 
         (fh, set_fname) = tempfile.mkstemp()
@@ -163,7 +172,7 @@ def test_urlretrieve():
         assert fname == set_fname
         with open(set_fname) as f:
             assert f.read() == "ok"
-            assert resp.code == 200
+            assert resp.status_code == 200
         os.remove(set_fname)
 
         dirname = os.path.dirname(set_fname)
@@ -171,7 +180,7 @@ def test_urlretrieve():
         assert os.path.dirname(fname) == dirname
         with open(fname) as f:
             assert f.read() == "ok"
-            assert resp.code == 200
+            assert resp.status_code == 200
         os.remove(fname)
 
 
@@ -179,7 +188,7 @@ def test_urlretrieve():
 # 3 times for 500 and once for 404
 
 
-def test_retry():
+def test_retry() -> None:
     s = Scraper(retry_attempts=3, retry_wait_seconds=0.001, raise_errors=False)
 
     # On the first call return a 500, then a 200
@@ -205,7 +214,7 @@ def test_retry():
     assert mock_request.call_count == 4
 
 
-def test_retry_404():
+def test_retry_404() -> None:
     s = Scraper(retry_attempts=3, retry_wait_seconds=0.001, raise_errors=False)
 
     # On the first call return a 404, then a 200
@@ -239,7 +248,7 @@ def test_retry_404():
     assert mock_request.call_count == 5
 
 
-def test_retry_ssl():
+def test_retry_ssl() -> None:
     s = Scraper(retry_attempts=5, retry_wait_seconds=0.001, raise_errors=False)
 
     # ensure SSLError is considered fatal even w/ retries
@@ -249,25 +258,25 @@ def test_retry_ssl():
     assert mock_sslerror.call_count == 1
 
 
-def test_timeout():
+def test_timeout() -> None:
     s = Scraper()
     s.timeout = 0.001
     with pytest.raises(requests.Timeout):
         s.get(HTTPBIN + "delay/1")
 
 
-def test_timeout_arg():
+def test_timeout_arg() -> None:
     s = Scraper()
     with pytest.raises(requests.Timeout):
         s.get(HTTPBIN + "delay/1", timeout=0.001)
 
 
-def test_timeout_retry():
+def test_timeout_retry() -> None:
     # TODO: make this work with the other requests exceptions
-    count = []
+    count: List[int] = []
 
     # On the first call raise timeout
-    def side_effect(*args, **kwargs):
+    def side_effect(*args: Any, **kwargs: Any) -> FakeResponse:
         if count:
             return FakeResponse("http://dummy/", 200, "success!")
         count.append(1)
@@ -294,7 +303,7 @@ def test_timeout_retry():
         assert mock_request.call_count == 2
 
 
-def test_disable_compression():
+def test_disable_compression() -> None:
     s = Scraper()
     s.disable_compression = True
 
@@ -319,7 +328,7 @@ def test_disable_compression():
     assert "xyz" in djson["headers"]["Accept-Encoding"]
 
 
-def test_callable_headers():
+def test_callable_headers() -> None:
     s = Scraper(header_func=lambda url: {"X-Url": url})
 
     data = s.get(HTTPBIN + "headers")
@@ -330,9 +339,9 @@ def test_callable_headers():
     assert data.json()["headers"]["X-Url"] == HTTPBIN + "headers?shh"
 
 
-def test_headers_weirdness():
+def test_headers_weirdness() -> None:
     s = Scraper()
-    s.headers = {"accept": "application/json"}
+    s.headers = cast(CaseInsensitiveDict, {"accept": "application/json"})
     data = s.get(HTTPBIN + "headers").json()
     assert data["headers"]["Accept"] == "application/json"
 
@@ -341,7 +350,7 @@ def test_headers_weirdness():
     assert data["headers"]["Accept"] == "application/xml"
 
 
-def test_ftp_uses_urllib2():
+def test_ftp_uses_urllib2() -> None:
     s = Scraper(requests_per_minute=0)
     urlopen = mock.Mock(return_value=BytesIO(b"ftp success!"))
 
@@ -351,11 +360,11 @@ def test_ftp_uses_urllib2():
         assert r.content == b"ftp success!"
 
 
-def test_ftp_retries():
-    count = []
+def test_ftp_retries() -> None:
+    count: List[int] = []
 
     # On the first call raise URLError, then work
-    def side_effect(*args, **kwargs):
+    def side_effect(*args: Any, **kwargs: Any) -> BytesIO:
         if count:
             return BytesIO(b"ftp success!")
         count.append(1)
@@ -379,42 +388,42 @@ def test_ftp_retries():
     assert mock_urlopen.call_count == 1
 
 
-def test_ftp_method_restrictions():
+def test_ftp_method_restrictions() -> None:
     s = Scraper(requests_per_minute=0)
 
     # only http(s) supports non-'GET' requests
     pytest.raises(HTTPMethodUnavailableError, s.post, "ftp://dummy/")
 
 
-def test_basic_stats():
+def test_basic_stats() -> None:
     s = Scraper()
     with mock.patch.object(requests.Session, "request", mock_200):
         s.get("http://example.com")
         s.get("http://example.com")
         s.get("http://example.com")
 
-    assert s.stats["total_requests"] == 3
-    assert s.stats["total_time"] > 0
-    assert s.stats["average_time"] == s.stats["total_time"] / 3
+    assert s._total_requests == 3
+    assert s._total_time > 0
+    assert s.average_request_time == s._total_time / 3
 
-    three_time = s.stats["total_time"]
+    three_time = s._total_time
 
     with mock.patch.object(requests.Session, "request", mock_200):
         s.get("http://example.com")
-        assert s.stats["total_requests"] == 4
-        assert s.stats["total_time"] > three_time
-        assert s.stats["average_time"] == s.stats["total_time"] / 4
+        assert s._total_requests == 4
+        assert s._total_time > three_time
+        assert s.average_request_time == s._total_time / 4
 
 
-def test_reset_stats():
+def test_reset_stats() -> None:
     s = Scraper()
     with mock.patch.object(requests.Session, "request", mock_200):
         s.get("http://example.com")
-    assert s.stats["total_requests"] == 1
+    assert s._total_requests == 1
 
     s.reset_stats()
-    assert s.stats["total_requests"] == 0
+    assert s._total_requests == 0
 
     with mock.patch.object(requests.Session, "request", mock_200):
         s.get("http://example.com")
-    assert s.stats["total_requests"] == 1
+    assert s._total_requests == 1

@@ -1,22 +1,21 @@
 # pragma: no cover
+import sys
 from . import Scraper, _user_agent
 import argparse
 
 
 def scrapeshell() -> None:
     # clear argv for IPython
-    import sys
-
     orig_argv = sys.argv[1:]
     sys.argv = sys.argv[:1]
 
     try:
-        from IPython import embed
+        from IPython import embed  # type: ignore
     except ImportError:
         print("scrapeshell requires ipython >= 0.11")
         return
     try:
-        import lxml.html
+        import lxml.html  # type: ignore
 
         USE_LXML = True
     except ImportError:
