@@ -456,6 +456,8 @@ class Scraper(CachingSession):
 
         # added by this class
         self.raise_errors = raise_errors
+        self._header_func = header_func
+        self.verify = verify
 
         # added by ThrottledSession
         self.requests_per_minute = requests_per_minute
@@ -464,9 +466,6 @@ class Scraper(CachingSession):
         self.retry_attempts = retry_attempts
         self.retry_wait_seconds = retry_wait_seconds
 
-        # added by this class
-        self._header_func = header_func
-
         # added by CachingSession
         self.cache_storage = None
         self.cache_write_only = True
@@ -474,16 +473,20 @@ class Scraper(CachingSession):
         # non-parameter options
         self.timeout = None
         self.user_agent = _user_agent
-        self.verify = verify
 
-        # statistics structure
+        # statistics
         self.reset_stats()
 
     def reset_stats(self) -> None:
-        self.stats: Dict[str, Union[int, float]] = {}
-        self.stats["total_requests"] = 0
-        self.stats["total_time"] = 0
-        self.stats["average_time"] = 0
+        self._total_requests = 0
+        self._total_time = 0.0
+
+    @property
+    def average_request_time(self) -> float:
+        if self._total_requests:
+            return self._total_time / self._total_requests
+        else:
+            return 0
 
     @property
     def user_agent(self) -> str:
@@ -572,11 +575,8 @@ class Scraper(CachingSession):
             json=json,
             retry_on_404=retry_on_404,
         )
-        self.stats["total_requests"] += 1
-        self.stats["total_time"] += time.time() - _start_time
-        self.stats["average_time"] = (
-            self.stats["total_time"] / self.stats["total_requests"]
-        )
+        self._total_requests += 1
+        self._total_time += time.time() - _start_time
 
         if self.raise_errors and not self.accept_response(resp):
             raise HTTPError(resp)
@@ -589,7 +589,7 @@ class Scraper(CachingSession):
         method: str = "GET",
         body: dict = None,
         dir: str = None,
-        **kwargs
+        **kwargs: Any,
     ) -> Tuple[str, Response]:
         """
         Save result of a request to a file, similarly to
