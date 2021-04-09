@@ -40,8 +40,8 @@ See https://github.com/jamesturk/scrapelib/graphs/contributors for contributors.
 Requirements
 ============
 
-* python 2.7, >=3.3
-* requests >= 2.0 (earlier versions may work but aren't tested)
+* python >=3.7
+* requests >= 2.0
 
 
 Example Usage
