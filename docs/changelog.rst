@@ -3,7 +3,11 @@ scrapelib changelog
 
 1.3.0
 -----
+**9 April 2021**
     * removed response.code backwards-compatibility shim
+    * dropped Python 2 shims
+    * removed/refactored some internal interfaces
+    * added first pass at (experimental for now) mypy typing
 
 1.2.0
 -----
