@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scrapelib"
-version = "2.0.1"
+version = "2.0.2"
 description = ""
 readme = "README.rst"
 authors = ["James Turk <dev@jamesturk.net>"]
