@@ -1,7 +1,7 @@
 scrapelib changelog
 ===================
 
-1.3.0
+2.0.0
 -----
 **9 April 2021**
     * removed response.code backwards-compatibility shim
