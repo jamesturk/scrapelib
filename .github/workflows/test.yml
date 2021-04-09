@@ -27,8 +27,8 @@ jobs:
       run: poetry config virtualenvs.path ~/.virtualenvs
     - name: install dependencies
       run: poetry install
-    # - name: lint with mypy
-    #   run: poetry run mypy --disallow-untyped-defs rrl.py
+    - name: lint with mypy
+      run: poetry run mypy --disallow-untyped-defs scrapelib/
     - name: lint with flake8
       run: poetry run flake8 --show-source --statistics --ignore=E203,E501,W503 scrapelib
     - name: pytest
