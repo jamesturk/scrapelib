@@ -1,6 +1,12 @@
 scrapelib changelog
 ===================
 
+2.0.1
+-----
+**9 April 2021**
+    * Python 3.7 installation fix
+    * fixed docker image
+
 2.0.0
 -----
 **9 April 2021**
