@@ -26,7 +26,7 @@ python = "^3.8"
 requests = {extras = ["security"], version = "^2.25.1"}
 
 [tool.poetry.dev-dependencies]
-mypy = "^0.790"
+mypy = "^0.812"
 flake8 = "^3.9.0"
 mock = "^4.0.3"
 pytest = "^6.2.3"
