@@ -22,7 +22,7 @@ classifiers=[
 scrapeshell = "scrapelib.__main__:scrapeshell"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 requests = {extras = ["security"], version = "^2.25.1"}
 
 [tool.poetry.dev-dependencies]
