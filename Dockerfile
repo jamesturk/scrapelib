@@ -4,5 +4,7 @@ WORKDIR /opt/scrapeshell
 RUN pip install readline ipython lxml cssselect
 
 COPY . /opt/scrapeshell
-RUN python setup.py install
+RUN pip install poetry
+
+RUN poetry install
 ENTRYPOINT ["scrapeshell"]
