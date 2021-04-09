@@ -18,7 +18,7 @@ from typing import (
     cast,
 )
 import requests
-from .cache import CacheStorageBase, FileCache  # noqa
+from .cache import CacheStorageBase, FileCache, CacheResponse  # noqa
 from ._types import (
     _Data,
     PreparedRequest,
@@ -295,10 +295,6 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             raise FTPError(cast(str, request.url))
 
 
-class CacheResponse(Response):
-    fromcache: bool
-
-
 # compose sessions, order matters (cache then throttle then retry)
 class CachingSession(ThrottledSession):
     def __init__(self, cache_storage: Optional[CacheStorageBase] = None) -> None:
@@ -351,7 +347,7 @@ class CachingSession(ThrottledSession):
         cert: Union[Text, Tuple[Text, Text], None] = None,
         json: Optional[Any] = None,
         retry_on_404: bool = False,
-    ) -> Response:
+    ) -> CacheResponse:
         """Override, wraps Session.request in caching.
 
         Cache is only used if key_for_request returns a valid key
@@ -527,7 +523,7 @@ class Scraper(CachingSession):
         cert: Union[Text, Tuple[Text, Text], None] = None,
         json: Optional[Any] = None,
         retry_on_404: bool = False,
-    ) -> Response:
+    ) -> CacheResponse:
         _log.info("{} - {!r}".format(method.upper(), url))
 
         # apply global timeout

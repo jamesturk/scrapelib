@@ -1,6 +1,7 @@
+from typing import cast
 import requests
 from .. import CachingSession
-from ..cache import MemoryCache, FileCache, SQLiteCache
+from ..cache import MemoryCache, FileCache, SQLiteCache, CacheStorageBase
 
 DUMMY_URL = "http://dummy/"
 HTTPBIN = "http://httpbin.org/"
@@ -55,7 +56,7 @@ def test_simple_cache_request() -> None:
     resp = cs.request("get", url)
     assert resp.fromcache is False
 
-    assert url in cs.cache_storage.cache
+    assert url in cast(MemoryCache, cs.cache_storage).cache
 
     # second response comes from cache
     cached_resp = cs.request("get", url)
@@ -73,7 +74,7 @@ def test_cache_write_only() -> None:
     assert resp.fromcache is False
 
     # response was written to cache
-    assert url in cs.cache_storage.cache
+    assert url in cast(MemoryCache, cs.cache_storage).cache
 
     # but second response doesn't come from cache
     cached_resp = cs.request("get", url)
@@ -83,7 +84,7 @@ def test_cache_write_only() -> None:
 # test storages #####
 
 
-def _test_cache_storage(storage_obj):
+def _test_cache_storage(storage_obj: CacheStorageBase) -> None:
     # unknown key returns None
     assert storage_obj.get("one") is None
 
@@ -97,10 +98,12 @@ def _test_cache_storage(storage_obj):
     resp._content = _content_as_bytes
     storage_obj.set("one", resp)
     cached_resp = storage_obj.get("one")
-    assert cached_resp.headers == {"x-num": "one"}
-    assert cached_resp.status_code == 200
-    cached_resp.encoding = "utf8"
-    assert cached_resp.text == _content_as_unicode
+    assert cached_resp is not None
+    if cached_resp is not None:
+        assert cached_resp.headers == {"x-num": "one"}
+        assert cached_resp.status_code == 200
+        cached_resp.encoding = "utf8"
+        assert cached_resp.text == _content_as_unicode
 
 
 def test_memory_cache() -> None:

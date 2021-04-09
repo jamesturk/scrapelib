@@ -6,17 +6,24 @@ from typing import Optional, Dict, Union, Any, List, cast
 from requests.structures import CaseInsensitiveDict
 
 import mock
-import pytest
+import pytest  # type: ignore
 import requests
 from .. import Scraper, HTTPError, HTTPMethodUnavailableError, URLError, FTPError
 from .. import _user_agent as default_user_agent
-from ..cache import MemoryCache
+from ..cache import MemoryCache, CacheResponse
 
 HTTPBIN = "http://httpbin.org/"
 
 
 class FakeResponse(object):
-    def __init__(self, url: str, code: int, content: Union[str, bytes], encoding: str="utf-8", headers: Optional[Dict]=None):
+    def __init__(
+        self,
+        url: str,
+        code: int,
+        content: Union[str, bytes],
+        encoding: str = "utf-8",
+        headers: Optional[Dict] = None,
+    ):
         self.url = url
         self.status_code = code
         self.content = content
@@ -141,9 +148,9 @@ def test_caching() -> None:
     s.cache_write_only = False
 
     resp = s.get(HTTPBIN + "status/200")
-    assert not resp.fromcache
+    assert not cast(CacheResponse, resp).fromcache
     resp = s.get(HTTPBIN + "status/200")
-    assert resp.fromcache
+    assert cast(CacheResponse, resp).fromcache
 
     for path in glob.iglob(os.path.join(cache_dir, "*")):
         os.remove(path)

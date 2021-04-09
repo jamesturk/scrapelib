@@ -14,6 +14,10 @@ from typing import Optional, Dict
 from ._types import Response
 
 
+class CacheResponse(Response):
+    fromcache: bool
+
+
 class CacheStorageBase:
     def get(self, key: str) -> Optional[Response]:
         raise NotImplementedError()
@@ -201,7 +205,7 @@ class SQLiteCache(CacheStorageBase):
             if rec["modified"] != new_lm:
                 return None
 
-        resp = requests.Response()
+        resp = Response()
         resp._content = rec["data"]
         resp.status_code = rec["status"]
         resp.encoding = rec["encoding"]
