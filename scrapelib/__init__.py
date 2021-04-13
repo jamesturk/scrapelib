@@ -394,6 +394,7 @@ class CachingSession(ThrottledSession):
                 method,
                 url,
                 data=data,
+                params=params,
                 headers=headers,
                 cookies=cookies,
                 files=files,

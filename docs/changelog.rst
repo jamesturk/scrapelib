@@ -1,7 +1,8 @@
 scrapelib changelog
 ===================
 
-2.0.3
+2.0.4
+-----
 **13 April 2021**
     * bugfix: params was not carried through properly
 
