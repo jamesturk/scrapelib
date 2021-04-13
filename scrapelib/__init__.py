@@ -29,7 +29,7 @@ from ._types import (
 )
 
 
-__version__ = "1.2.0"
+__version__ = "2.0.3"
 _user_agent = " ".join(("scrapelib", __version__, requests.utils.default_user_agent()))
 
 
@@ -358,6 +358,7 @@ class CachingSession(ThrottledSession):
             resp = super().request(
                 method,
                 url,
+                params=params,
                 data=data,
                 headers=headers,
                 cookies=cookies,
