@@ -74,6 +74,39 @@ def test_post() -> None:
     assert resp_json["headers"]["Content-Type"] == "application/x-www-form-urlencoded"
 
 
+def test_all_parameters_to_requests() -> None:
+    s = Scraper(requests_per_minute=0)
+
+    with mock.patch.object(requests.Session, "request", mock_200) as mocker:
+        all_params = {
+            "params": {"params": 1},
+            "data": "data",
+            "cookies": "cookies",
+            "files": "files",
+            "auth": "auth",
+            "timeout": 100,
+            "allow_redirects": False,
+            "proxies": "Proxies",
+            "hooks": "hooks",
+            "stream": "stream",
+            "verify": False,
+            "cert": "cert",
+            "json": "{}",
+        }
+        s.get("https://example.com", **all_params)
+        mocker.assert_called_with(
+            "GET",
+            "https://example.com",
+            headers={
+                "User-Agent": default_user_agent,
+                "Accept-Encoding": "gzip, deflate",
+                "Accept": "*/*",
+                "Connection": "keep-alive",
+            },
+            **all_params,
+        )
+
+
 def test_request_throttling() -> None:
     s = Scraper(requests_per_minute=30)
     assert s.requests_per_minute == 30
