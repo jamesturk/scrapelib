@@ -18,7 +18,13 @@ from typing import (
     cast,
 )
 import requests
-from .cache import CacheStorageBase, FileCache, CacheResponse  # noqa
+from .cache import (  # noqa
+    CacheStorageBase,
+    FileCache,
+    SQLiteCache,
+    MemoryCache,
+    CacheResponse,
+)
 from ._types import (
     _Data,
     PreparedRequest,
@@ -29,7 +35,7 @@ from ._types import (
 )
 
 
-__version__ = "2.0.3"
+__version__ = "2.0.5"
 _user_agent = " ".join(("scrapelib", __version__, requests.utils.default_user_agent()))
 
 

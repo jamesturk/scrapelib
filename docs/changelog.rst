@@ -1,6 +1,11 @@
 scrapelib changelog
 ===================
 
+2.0.5
+-----
+**15 June 2021**
+    * allow importing SQLiteCache and MemoryCache from scrapelib
+
 2.0.4
 -----
 **13 April 2021**
