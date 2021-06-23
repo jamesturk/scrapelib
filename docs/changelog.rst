@@ -1,6 +1,12 @@
 scrapelib changelog
 ===================
 
+2.0.6
+-----
+**23 June 2021**
+    * set default values for verify & allow_redirects to True
+      (matching requests & expected behavior)
+
 2.0.5
 -----
 **15 June 2021**
