@@ -11,3 +11,4 @@ htmlcov/
 .ropeproject
 cache.db
 _build
+site/
