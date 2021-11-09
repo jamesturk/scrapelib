@@ -1,0 +1,1277 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A library for making requests to unreliable sites.">
+      
+      
+      
+        <meta name="author" content="James Turk">
+      
+      
+        <link rel="canonical" href="https://jamesturk.github.io/scrapelib/changelog/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.6">
+    
+    
+      
+        <title>Changelog - scrapelib</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.a57b2b03.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.3f5d1f46.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+      <script>var palette=__get("__palette");if(null!==palette&&"object"==typeof palette.color)for(var key in palette.color)document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="scrapelib" class="md-header__button md-logo" aria-label="scrapelib" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            scrapelib
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/jamesturk/scrapelib/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jamesturk/scrapelib
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="scrapelib" class="md-nav__button md-logo" aria-label="scrapelib" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    scrapelib
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/jamesturk/scrapelib/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jamesturk/scrapelib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        API Reference
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scrapeshell/" class="md-nav__link">
+        scrapeshell
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Changelog
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Changelog
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#206" class="md-nav__link">
+    2.0.6
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#205" class="md-nav__link">
+    2.0.5
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#204" class="md-nav__link">
+    2.0.4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#202" class="md-nav__link">
+    2.0.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#201" class="md-nav__link">
+    2.0.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#200" class="md-nav__link">
+    2.0.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#120" class="md-nav__link">
+    1.2.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#111" class="md-nav__link">
+    1.1.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#110" class="md-nav__link">
+    1.1.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#102" class="md-nav__link">
+    1.0.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#101" class="md-nav__link">
+    1.0.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#100" class="md-nav__link">
+    1.0.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0101" class="md-nav__link">
+    0.10.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0100" class="md-nav__link">
+    0.10.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#091" class="md-nav__link">
+    0.9.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#090" class="md-nav__link">
+    0.9.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080" class="md-nav__link">
+    0.8.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#074" class="md-nav__link">
+    0.7.4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#073" class="md-nav__link">
+    0.7.3
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#072" class="md-nav__link">
+    0.7.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#071" class="md-nav__link">
+    0.7.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#070" class="md-nav__link">
+    0.7.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#062" class="md-nav__link">
+    0.6.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#061" class="md-nav__link">
+    0.6.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#060" class="md-nav__link">
+    0.6.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#058" class="md-nav__link">
+    0.5.8
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#057" class="md-nav__link">
+    0.5.7
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#056" class="md-nav__link">
+    0.5.6
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#055" class="md-nav__link">
+    0.5.5
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#054" class="md-nav__link">
+    0.5.4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#053" class="md-nav__link">
+    0.5.3
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#052" class="md-nav__link">
+    0.5.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#051" class="md-nav__link">
+    0.5.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#050" class="md-nav__link">
+    0.5.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#043" class="md-nav__link">
+    0.4.3
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#042" class="md-nav__link">
+    0.4.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#041" class="md-nav__link">
+    0.4.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#040" class="md-nav__link">
+    0.4.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030" class="md-nav__link">
+    0.3.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020" class="md-nav__link">
+    0.2.0
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#206" class="md-nav__link">
+    2.0.6
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#205" class="md-nav__link">
+    2.0.5
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#204" class="md-nav__link">
+    2.0.4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#202" class="md-nav__link">
+    2.0.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#201" class="md-nav__link">
+    2.0.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#200" class="md-nav__link">
+    2.0.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#120" class="md-nav__link">
+    1.2.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#111" class="md-nav__link">
+    1.1.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#110" class="md-nav__link">
+    1.1.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#102" class="md-nav__link">
+    1.0.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#101" class="md-nav__link">
+    1.0.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#100" class="md-nav__link">
+    1.0.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0101" class="md-nav__link">
+    0.10.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0100" class="md-nav__link">
+    0.10.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#091" class="md-nav__link">
+    0.9.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#090" class="md-nav__link">
+    0.9.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080" class="md-nav__link">
+    0.8.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#074" class="md-nav__link">
+    0.7.4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#073" class="md-nav__link">
+    0.7.3
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#072" class="md-nav__link">
+    0.7.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#071" class="md-nav__link">
+    0.7.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#070" class="md-nav__link">
+    0.7.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#062" class="md-nav__link">
+    0.6.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#061" class="md-nav__link">
+    0.6.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#060" class="md-nav__link">
+    0.6.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#058" class="md-nav__link">
+    0.5.8
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#057" class="md-nav__link">
+    0.5.7
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#056" class="md-nav__link">
+    0.5.6
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#055" class="md-nav__link">
+    0.5.5
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#054" class="md-nav__link">
+    0.5.4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#053" class="md-nav__link">
+    0.5.3
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#052" class="md-nav__link">
+    0.5.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#051" class="md-nav__link">
+    0.5.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#050" class="md-nav__link">
+    0.5.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#043" class="md-nav__link">
+    0.4.3
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#042" class="md-nav__link">
+    0.4.2
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#041" class="md-nav__link">
+    0.4.1
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#040" class="md-nav__link">
+    0.4.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030" class="md-nav__link">
+    0.3.0
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020" class="md-nav__link">
+    0.2.0
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/jamesturk/scrapelib/edit/main/docs/changelog.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="206">2.0.6<a class="headerlink" href="#206" title="Permanent link">&para;</a></h2>
+<p><strong>23 June 2021</strong></p>
+<ul>
+<li>set default values for verify &amp; allow_redirects to True (matching requests &amp; expected behavior)</li>
+</ul>
+<h2 id="205">2.0.5<a class="headerlink" href="#205" title="Permanent link">&para;</a></h2>
+<p><strong>15 June 2021</strong></p>
+<ul>
+<li>allow importing SQLiteCache and MemoryCache from scrapelib</li>
+</ul>
+<h2 id="204">2.0.4<a class="headerlink" href="#204" title="Permanent link">&para;</a></h2>
+<p><strong>13 April 2021</strong></p>
+<ul>
+<li>bugfix: params was not carried through properly</li>
+</ul>
+<h2 id="202">2.0.2<a class="headerlink" href="#202" title="Permanent link">&para;</a></h2>
+<p><strong>9 April 2021</strong></p>
+<ul>
+<li>added py.typed</li>
+</ul>
+<h2 id="201">2.0.1<a class="headerlink" href="#201" title="Permanent link">&para;</a></h2>
+<p><strong>9 April 2021</strong></p>
+<ul>
+<li>Python 3.7 installation fix</li>
+<li>fixed docker image</li>
+</ul>
+<h2 id="200">2.0.0<a class="headerlink" href="#200" title="Permanent link">&para;</a></h2>
+<p><strong>9 April 2021</strong></p>
+<ul>
+<li>removed response.code backwards-compatibility shim</li>
+<li>dropped Python 2 shims</li>
+<li>removed/refactored some internal interfaces</li>
+<li>added first pass at (experimental for now) mypy typing</li>
+</ul>
+<h2 id="120">1.2.0<a class="headerlink" href="#120" title="Permanent link">&para;</a></h2>
+<p><strong>13 November 2018</strong></p>
+<ul>
+<li>add verify parameter to optionally disable SSL verification</li>
+</ul>
+<h2 id="111">1.1.1<a class="headerlink" href="#111" title="Permanent link">&para;</a></h2>
+<p><strong>16 April 2018</strong></p>
+<ul>
+<li>small tweak to warning on retry</li>
+<li>public email change</li>
+</ul>
+<h2 id="110">1.1.0<a class="headerlink" href="#110" title="Permanent link">&para;</a></h2>
+<p><strong>6 June 2017</strong></p>
+<ul>
+<li>added more resilient retry logic that retries when any type of exception occurs during a request</li>
+</ul>
+<h2 id="102">1.0.2<a class="headerlink" href="#102" title="Permanent link">&para;</a></h2>
+<p><strong>16 April 2017</strong></p>
+<ul>
+<li>add retry on ChunkedEncodingError</li>
+<li>depend on requests[security] for better SSL handling</li>
+</ul>
+<h2 id="101">1.0.1<a class="headerlink" href="#101" title="Permanent link">&para;</a></h2>
+<p><strong>16 April 2017</strong></p>
+<ul>
+<li>broken release</li>
+</ul>
+<h2 id="100">1.0.0<a class="headerlink" href="#100" title="Permanent link">&para;</a></h2>
+<p><strong>20 March 2015</strong></p>
+<ul>
+<li>drop deprecated urlopen interface</li>
+<li>documentation thanks to poliquin sqlite cache thanks to poliquin</li>
+<li>fix for SSLError retries pointed out by Eric Mill</li>
+</ul>
+<h2 id="0101">0.10.1<a class="headerlink" href="#0101" title="Permanent link">&para;</a></h2>
+<p><strong>22 January 2015</strong></p>
+<ul>
+<li>SQLite cache backend (thanks Chris Poliquin!)</li>
+<li>test and fix for header merging bug</li>
+</ul>
+<h2 id="0100">0.10.0<a class="headerlink" href="#0100" title="Permanent link">&para;</a></h2>
+<p><strong>15 July 2014</strong></p>
+<ul>
+<li>added kwarg to use last modified headers when using caching, thanks to Kaitlin Devine</li>
+<li>fix for chardet bug when opening large PDFs (&amp; other binary files) with urlretrieve - thanks to Katilin Devine</li>
+<li>deprecation of urlopen in favor of Requests\'s request(), get(), post(), etc.</li>
+<li>removal of robots.txt code</li>
+<li>switch tests to py.test</li>
+<li>addition of wheel for release</li>
+</ul>
+<h2 id="091">0.9.1<a class="headerlink" href="#091" title="Permanent link">&para;</a></h2>
+<p><strong>28 March 2014</strong></p>
+<ul>
+<li>support kwargs in request paths -thanks to Drew Vogel</li>
+<li>allow_cookies removal and documentation fix -thanks to Joe Germuska</li>
+<li>add dir param to urlretrieve -thanks to Alison Rowland</li>
+</ul>
+<h2 id="090">0.9.0<a class="headerlink" href="#090" title="Permanent link">&para;</a></h2>
+<p><strong>22 May 2013</strong></p>
+<ul>
+<li>replace FTPSession with FTPAdapter</li>
+<li>fixes for latest requests</li>
+</ul>
+<h2 id="080">0.8.0<a class="headerlink" href="#080" title="Permanent link">&para;</a></h2>
+<p><strong>18 March 2013</strong></p>
+<ul>
+<li>requests 1.0 compatibility</li>
+<li>removal of requests pass-throughs</li>
+<li>deprecation of setting parameters via constructor</li>
+</ul>
+<h2 id="074">0.7.4<a class="headerlink" href="#074" title="Permanent link">&para;</a></h2>
+<p><strong>20 December 2012</strong></p>
+<ul>
+<li>bugfix for status_code coming from a cache</li>
+<li>bugfix for setting user-agent from headers</li>
+<li>fix requests version at &lt;1.0</li>
+</ul>
+<h2 id="073">0.7.3<a class="headerlink" href="#073" title="Permanent link">&para;</a></h2>
+<p><strong>21 June 2012</strong></p>
+<ul>
+<li>fix for combination of FTP and caching</li>
+<li>drop unnecessary ScrapelibSession</li>
+<li>bytes fix for scrapeshell</li>
+<li>use UTF8 if encoding guess fails</li>
+</ul>
+<h2 id="072">0.7.2<a class="headerlink" href="#072" title="Permanent link">&para;</a></h2>
+<p><strong>9 May 2012</strong></p>
+<ul>
+<li>bugfix for user-agent check</li>
+<li>bugfix for cached content with r characters</li>
+<li>bugfix for requests >= 0.12</li>
+<li>cache_dir deprecation is total</li>
+</ul>
+<h2 id="071">0.7.1<a class="headerlink" href="#071" title="Permanent link">&para;</a></h2>
+<p><strong>27 April 2012</strong></p>
+<ul>
+<li>breaking change: no longer accept URLs without a scheme</li>
+<li>deprecation of error_dir &amp; context-manager mode</li>
+<li>addition of overridable accept_response hook</li>
+<li>bugfix: retry on more requests errors</li>
+<li>bugfix: unicode cached content no longer incorrectly encoded</li>
+<li>implement various requests enhancements separately for ease of reuse</li>
+<li>convert more Scraper parameters to properties</li>
+</ul>
+<h2 id="070">0.7.0<a class="headerlink" href="#070" title="Permanent link">&para;</a></h2>
+<p><strong>23 April 2012</strong></p>
+<ul>
+<li>rewritten internals to use requests, dropping httplib2</li>
+<li>as a result of rewrite, caching behavior no longer attempts to
+  be compliant with the HTTP specification but is much more
+  configurable</li>
+<li>added cache_write_only option</li>
+<li>deprecation of accept_cookies, use_cache_first, cache_dir
+  parameter</li>
+<li>improved tests</li>
+<li>improved Python 3 support</li>
+</ul>
+<h2 id="062">0.6.2<a class="headerlink" href="#062" title="Permanent link">&para;</a></h2>
+<p><strong>20 April 2012</strong></p>
+<ul>
+<li>bugfix for POST-redirects</li>
+<li>drastically improved test coverage</li>
+<li>add encoding to ResultStr</li>
+</ul>
+<h2 id="061">0.6.1<a class="headerlink" href="#061" title="Permanent link">&para;</a></h2>
+<p><strong>19 April 2012</strong></p>
+<ul>
+<li>add .bytes attribute to ResultStr</li>
+<li>bugfix related to bytes in urlretrieve</li>
+</ul>
+<h2 id="060">0.6.0<a class="headerlink" href="#060" title="Permanent link">&para;</a></h2>
+<p><strong>19 April 2012</strong></p>
+<ul>
+<li>remove urllib2 fallback for HTTP</li>
+<li>rework entire test suite to not rely on Flask</li>
+<li>Unicode &amp; Str unification</li>
+<li>experimental Python 3.2 support</li>
+</ul>
+<h2 id="058">0.5.8<a class="headerlink" href="#058" title="Permanent link">&para;</a></h2>
+<p><strong>15 February 2012</strong></p>
+<ul>
+<li>fix to test suite from Alex Chiang</li>
+</ul>
+<h2 id="057">0.5.7<a class="headerlink" href="#057" title="Permanent link">&para;</a></h2>
+<p><strong>2 February 2012</strong></p>
+<ul>
+<li>-p, --postdata parameter</li>
+<li>argv fix for IPython \&lt;= 0.10 from Joe Germuska</li>
+<li>treat FTP 550 errors as HTTP 404s</li>
+<li>use_cache_first improvements</li>
+</ul>
+<h2 id="056">0.5.6<a class="headerlink" href="#056" title="Permanent link">&para;</a></h2>
+<p><strong>9 November 2011</strong></p>
+<ul>
+<li>scrapeshell fix for IPython >= 0.11</li>
+<li>scrapelib.urlopen can take method/body params too</li>
+</ul>
+<h2 id="055">0.5.5<a class="headerlink" href="#055" title="Permanent link">&para;</a></h2>
+<p><strong>27 September 2011</strong></p>
+<ul>
+<li>use None for no timeout, never create non-blocking socket</li>
+<li>documentation and owernship changes</li>
+</ul>
+<h2 id="054">0.5.4<a class="headerlink" href="#054" title="Permanent link">&para;</a></h2>
+<p><strong>7 June 2011</strong></p>
+<ul>
+<li>actually fix reinstantiation of Http object</li>
+</ul>
+<h2 id="053">0.5.3<a class="headerlink" href="#053" title="Permanent link">&para;</a></h2>
+<p><strong>7 June 2011</strong></p>
+<ul>
+<li>bugfix for reinstantiation of Http object</li>
+</ul>
+<h2 id="052">0.5.2<a class="headerlink" href="#052" title="Permanent link">&para;</a></h2>
+<p><strong>16 May 2011</strong></p>
+<ul>
+<li>support timeout for urllib2 requests</li>
+</ul>
+<h2 id="051">0.5.1<a class="headerlink" href="#051" title="Permanent link">&para;</a></h2>
+<p><strong>6 April 2011</strong></p>
+<ul>
+<li>bugfix for exception handling on retry</li>
+<li>fix a deprecation warning for Python 2.6+</li>
+</ul>
+<h2 id="050">0.5.0<a class="headerlink" href="#050" title="Permanent link">&para;</a></h2>
+<p><strong>18 March 2011</strong></p>
+<ul>
+<li>sphinx documentation</li>
+<li>addition of scrapeshell</li>
+<li>addition of retry_on_404 parameter to urlopen</li>
+<li>bugfix to exception handling scope issue</li>
+<li>bugfix within tests to avoid false negative</li>
+</ul>
+<h2 id="043">0.4.3<a class="headerlink" href="#043" title="Permanent link">&para;</a></h2>
+<p><strong>11 February 2011</strong></p>
+<ul>
+<li>fix retry on certain httplib2 errors</li>
+<li>add a top-level urlopen function</li>
+</ul>
+<h2 id="042">0.4.2<a class="headerlink" href="#042" title="Permanent link">&para;</a></h2>
+<p><strong>8 February 2011</strong></p>
+<ul>
+<li>fix retry on socket errors</li>
+<li>close temporary file handle</li>
+</ul>
+<h2 id="041">0.4.1<a class="headerlink" href="#041" title="Permanent link">&para;</a></h2>
+<p><strong>7 December 2010</strong></p>
+<ul>
+<li>support retry of requests that produce socket timeouts</li>
+<li>increased test coverage</li>
+</ul>
+<h2 id="040">0.4.0<a class="headerlink" href="#040" title="Permanent link">&para;</a></h2>
+<p><strong>8 November 2010</strong></p>
+<ul>
+<li>bugfix: tests require unittest2 or python 2.7</li>
+<li>configurable retry handling for random failures</li>
+</ul>
+<h2 id="030">0.3.0<a class="headerlink" href="#030" title="Permanent link">&para;</a></h2>
+<p><strong>5 October 2010</strong></p>
+<ul>
+<li>bugfixes for cookie handling</li>
+<li>better test suite</li>
+<li>follow redirects even after a POST</li>
+<li>change several configuration variables into properties</li>
+<li>request timeout argument</li>
+</ul>
+<h2 id="020">0.2.0<a class="headerlink" href="#020" title="Permanent link">&para;</a></h2>
+<p><strong>9 July 2010</strong></p>
+<ul>
+<li>use_cache_first option to avoid extra HTTP HEAD requests</li>
+<li>raise_errors option to treat HTTP errors as exceptions</li>
+<li>addition of urlretrieve</li>
+</ul>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../scrapeshell/" class="md-footer__link md-footer__link--prev" aria-label="Previous: scrapeshell" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              scrapeshell
+            </div>
+          </div>
+        </a>
+      
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Copyright &copy; 2021 James Turk
+          </div>
+        
+        
+          Made with
+          <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+            Material for MkDocs
+          </a>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.top", "content.tabs.link"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.fcfe8b6d.min.js", "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.b1047164.min.js"></script>
+      
+    
+  </body>
+</html>
