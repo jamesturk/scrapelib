@@ -430,11 +430,10 @@ class Scraper(CachingSession):
     the only one to be instantiated directly).  It provides a large number
     of options allowing for customization.
 
-    Usage is generally just creating an instance with the desired options and
-    then using the :meth:`urlopen` & :meth:`urlretrieve` methods of that
-    instance.
+    It wraps `requests.Session` and has the same attributes & methods
+    available.
 
-    :param raise_errors: set to True to raise a :class:`HTTPError`
+    :param raise_errors: set to True to raise a `HTTPError`
         on 4xx or 5xx response
     :param requests_per_minute: maximum requests per minute (0 for
         unlimited, defaults to 60)
@@ -442,6 +441,7 @@ class Scraper(CachingSession):
         page returns a (non-404) error
     :param retry_wait_seconds: number of seconds to retry after first failure,
         subsequent retries will double this wait
+    :param verify: set to `False` to disable HTTPS verification.
     """
 
     def __init__(
@@ -616,7 +616,7 @@ class Scraper(CachingSession):
         :returns filename, response: tuple with filename for saved
             response (will be same as given filename if one was given,
             otherwise will be a temp file in the OS temp directory) and
-            a :class:`Response` object that can be used to inspect the
+            a `Response` object that can be used to inspect the
             response headers.
         """
         result = self.request(method, url, data=body, **kwargs)
