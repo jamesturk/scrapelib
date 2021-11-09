@@ -1,0 +1,60 @@
+site_name: scrapelib
+site_url: https://jamesturk.github.io/scrapelib/
+site_author: James Turk
+site_description: A library for making requests to unreliable sites.
+copyright: Copyright &copy; 2021 James Turk
+repo_url: https://github.com/jamesturk/scrapelib
+repo_name: jamesturk/scrapelib
+edit_uri: edit/main/docs/
+
+theme:
+  # logo: assets/white-spatula.svg
+  name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+  features:
+    #- navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+markdown_extensions:
+  - admonition
+  - def_list
+  # - pymdownx.highlight
+  # - pymdownx.tabbed
+  # - pymdownx.superfences
+  - toc:
+      permalink: true
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        selection:
+          docstring_style: restructured-text
+        rendering:
+          show_source: false
+          show_root_full_path: false
+          show_root_toc_entry: false
+
+    watch:
+      - scrapelib
+extra_css:
+  - assets/extra.css
+nav:
+  - 'index.md'
+  - 'changelog.md'
