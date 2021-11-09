@@ -8,7 +8,6 @@ repo_name: jamesturk/scrapelib
 edit_uri: edit/main/docs/
 
 theme:
-  # logo: assets/white-spatula.svg
   name: material
   palette:
     - scheme: default
@@ -34,9 +33,7 @@ theme:
 markdown_extensions:
   - admonition
   - def_list
-  # - pymdownx.highlight
-  # - pymdownx.tabbed
-  # - pymdownx.superfences
+  - pymdownx.highlight
   - toc:
       permalink: true
 plugins:

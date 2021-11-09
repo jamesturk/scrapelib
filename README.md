@@ -1,5 +1,3 @@
-# Overview
-
 **scrapelib** is a library for making requests for less-than-reliable websites.
 
 Source: [https://github.com/jamesturk/scrapelib](https://github.com/jamesturk/scrapelib)
