@@ -263,7 +263,7 @@ mkdocs = ">=1.1,<2.0"
 
 [[package]]
 name = "mkdocs-material"
-version = "7.3.6"
+version = "8.0.1"
 description = "A Material Design theme for MkDocs"
 category = "dev"
 optional = false
@@ -589,7 +589,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "e790be8a4eff61b0f9577509a9d088a4139711ee39e41bb5902a63c65e076af3"
+content-hash = "7111d63e48ae6498e753bf21e70be4bf751d18c338d41327d7ce4a0795634ded"
 
 [metadata.files]
 astunparse = [
@@ -795,8 +795,8 @@ mkdocs-autorefs = [
     {file = "mkdocs_autorefs-0.3.0-py3-none-any.whl", hash = "sha256:261875003e49b5d708993fd2792a69d624cbc8cf7de49e96c81d3d9825977ca4"},
 ]
 mkdocs-material = [
-    {file = "mkdocs-material-7.3.6.tar.gz", hash = "sha256:1b1dbd8ef2508b358d93af55a5c5db3f141c95667fad802301ec621c40c7c217"},
-    {file = "mkdocs_material-7.3.6-py2.py3-none-any.whl", hash = "sha256:1b6b3e9e09f922c2d7f1160fe15c8f43d4adc0d6fb81aa6ff0cbc7ef5b78ec75"},
+    {file = "mkdocs-material-8.0.1.tar.gz", hash = "sha256:3772c854dada5ba996448ca4b56c513d2a6f074815374349fb9597f869a3aa1e"},
+    {file = "mkdocs_material-8.0.1-py2.py3-none-any.whl", hash = "sha256:66d310f6cd9919cb8621322359f30dfd901d2d3372432281e5461bacc4e680cb"},
 ]
 mkdocs-material-extensions = [
     {file = "mkdocs-material-extensions-1.0.3.tar.gz", hash = "sha256:bfd24dfdef7b41c312ede42648f9eb83476ea168ec163b613f9abd12bbfddba2"},
