@@ -30,7 +30,7 @@ requests = {extras = ["security"], version = "^2.25.1"}
 mypy = "^0.812"
 flake8 = "^3.9.0"
 mock = "^4.0.3"
-pytest = "^6.2.3"
+pytest = "^7.0.0"
 pytest-cov = "^2.11.1"
 coveralls = "^3.0.1"
 mkdocs-material = "^7.3.6"
