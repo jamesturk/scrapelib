@@ -531,6 +531,7 @@ class Scraper(CachingSession):
         cert: Union[Text, Tuple[Text, Text], None] = None,
         json: Optional[Any] = None,
         retry_on_404: bool = False,
+        ciphers_list_addition: Union[Text, None] = None,
     ) -> CacheResponse:
         _log.info("{} - {!r}".format(method.upper(), url))
 
