@@ -93,7 +93,7 @@ def test_all_parameters_to_requests() -> None:
             "cert": "cert",
             "json": "{}",
         }
-        s.get("https://example.com", **all_params)
+        s.get("https://example.com", **all_params)  # type: ignore
         mocker.assert_called_with(
             "GET",
             "https://example.com",
@@ -259,7 +259,7 @@ def test_retry_404() -> None:
     )
 
     with mock.patch.object(requests.Session, "request", mock_request):
-        resp = s.get("http://dummy/", retry_on_404=True)
+        resp = s.request(method="GET", url="http://dummy/", retry_on_404=True)
     assert mock_request.call_count == 2
     assert resp.status_code == 200
 
@@ -270,13 +270,13 @@ def test_retry_404() -> None:
 
     # retry on 404 true, 4 tries
     with mock.patch.object(requests.Session, "request", mock_request):
-        resp = s.get("http://dummy/", retry_on_404=True)
+        resp = s.request(method="GET", url="http://dummy/", retry_on_404=True)
     assert resp.status_code == 404
     assert mock_request.call_count == 4
 
     # retry on 404 false, just one more try
     with mock.patch.object(requests.Session, "request", mock_request):
-        resp = s.get("http://dummy/", retry_on_404=False)
+        resp = s.request(method="GET", url="http://dummy/")
     assert resp.status_code == 404
     assert mock_request.call_count == 5
 
@@ -287,7 +287,7 @@ def test_retry_ssl() -> None:
     # ensure SSLError is considered fatal even w/ retries
     with mock.patch.object(requests.Session, "request", mock_sslerror):
         with pytest.raises(requests.exceptions.SSLError):
-            s.get("http://dummy/", retry_on_404=True)
+            s.get("http://dummy/")
     assert mock_sslerror.call_count == 1
 
 
@@ -408,7 +408,7 @@ def test_ftp_retries() -> None:
     # retry on
     with mock.patch("scrapelib.urllib_urlopen", mock_urlopen):
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
-        r = s.get("ftp://dummy/", retry_on_404=True)
+        r = s.get("ftp://dummy/")
         assert r.content == b"ftp success!"
     assert mock_urlopen.call_count == 2
 

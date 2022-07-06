@@ -91,7 +91,7 @@ class RetrySession(requests.Session):
     def accept_response(self, response: Response, **kwargs: dict) -> bool:
         return response.status_code < 400
 
-    def request(
+    def request(  # type: ignore
         self,
         method: str,
         url: Union[str, bytes, Text],
@@ -127,9 +127,9 @@ class RetrySession(requests.Session):
                     headers=headers,
                     cookies=cookies,
                     files=files,
-                    auth=auth,
+                    auth=auth,  # type: ignore
                     timeout=timeout,
-                    allow_redirects=allow_redirects,
+                    allow_redirects=allow_redirects,  # type: ignore
                     proxies=proxies,
                     hooks=hooks,
                     stream=stream,
@@ -207,7 +207,7 @@ class ThrottledSession(RetrySession):
             self._request_frequency = 0.0
             self._last_request = 0
 
-    def request(
+    def request(  # type: ignore
         self,
         method: str,
         url: Union[str, bytes, Text],
@@ -334,7 +334,7 @@ class CachingSession(ThrottledSession):
         """
         return response.status_code == 200
 
-    def request(
+    def request(  # type: ignore
         self,
         method: str,
         url: Union[str, bytes, Text],
@@ -493,7 +493,7 @@ class Scraper(CachingSession):
 
     @property
     def user_agent(self) -> str:
-        return self.headers["User-Agent"]
+        return str(self.headers["User-Agent"])
 
     @user_agent.setter
     def user_agent(self, value: str) -> None:
@@ -512,7 +512,7 @@ class Scraper(CachingSession):
         elif self.headers.get("Accept-Encoding") == "text/*":
             self.headers["Accept-Encoding"] = "gzip, deflate, compress"
 
-    def request(
+    def request(  # type: ignore
         self,
         method: str,
         url: Union[str, bytes, Text],
