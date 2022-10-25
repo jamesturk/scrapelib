@@ -287,7 +287,7 @@ def test_retry_ssl() -> None:
     # ensure SSLError is considered fatal even w/ retries
     with mock.patch.object(requests.Session, "request", mock_sslerror):
         with pytest.raises(requests.exceptions.SSLError):
-            s.get("http://dummy/")
+            s.get("http://dummy/", retry_on_404=True)
     assert mock_sslerror.call_count == 1
 
 
@@ -408,7 +408,7 @@ def test_ftp_retries() -> None:
     # retry on
     with mock.patch("scrapelib.urllib_urlopen", mock_urlopen):
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
-        r = s.get("ftp://dummy/")
+        r = s.get("ftp://dummy/", retry_on_404=True)
         assert r.content == b"ftp success!"
     assert mock_urlopen.call_count == 2
 
