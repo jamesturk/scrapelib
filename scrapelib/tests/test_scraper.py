@@ -259,7 +259,7 @@ def test_retry_404() -> None:
     )
 
     with mock.patch.object(requests.Session, "request", mock_request):
-        resp = s.request(method="GET", url="http://dummy/", retry_on_404=True)
+        resp = s.get("http://dummy/", retry_on_404=True)
     assert mock_request.call_count == 2
     assert resp.status_code == 200
 
@@ -270,13 +270,13 @@ def test_retry_404() -> None:
 
     # retry on 404 true, 4 tries
     with mock.patch.object(requests.Session, "request", mock_request):
-        resp = s.request(method="GET", url="http://dummy/", retry_on_404=True)
+        resp = s.get("http://dummy/", retry_on_404=True)
     assert resp.status_code == 404
     assert mock_request.call_count == 4
 
     # retry on 404 false, just one more try
     with mock.patch.object(requests.Session, "request", mock_request):
-        resp = s.request(method="GET", url="http://dummy/")
+        resp = s.get("http://dummy/", retry_on_404=False)
     assert resp.status_code == 404
     assert mock_request.call_count == 5
 
