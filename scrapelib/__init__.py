@@ -35,7 +35,7 @@ from ._types import (
 )
 
 
-__version__ = "2.0.6"
+__version__ = "2.1.0"
 _user_agent = " ".join(("scrapelib", __version__, requests.utils.default_user_agent()))
 
 
