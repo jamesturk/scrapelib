@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.0
+
+**6 November 2021**
+
+- bugfix: use parameters in caching (https://github.com/jamesturk/scrapelib/issues/110)
+
+## 2.0.7
+
+**6 July 2022**
+
+- bump Cipherlist dependency
+
 ## 2.0.6
 
 **23 June 2021**
