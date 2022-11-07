@@ -93,7 +93,7 @@ class FileCache(CacheStorageBase):
 
                         try:
                             new_lm = head_resp.headers["last-modified"]
-                            old_lm = line[line.find(":") + 1:].strip()
+                            old_lm = line[line.find(":") + 1 :].strip()
                             if old_lm != new_lm:
                                 # last modified timestamps don't match, need to download again
                                 return None

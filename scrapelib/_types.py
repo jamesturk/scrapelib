@@ -7,11 +7,9 @@ from typing import (
     Text,
     Callable,
     List,
-    Protocol,
     MutableMapping,
     Iterable,
     Any,
-    IO,
 )
 
 _Data = Optional[
@@ -19,7 +17,7 @@ _Data = Optional[
         Iterable[bytes],
         str,
         bytes,
-#        SupportsRead[Union[str, bytes]],
+        #        SupportsRead[Union[str, bytes]],
         List[Tuple[Any, Any]],
         Tuple[Tuple[Any, Any], ...],
         Mapping[Any, Any],

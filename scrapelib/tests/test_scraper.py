@@ -408,7 +408,7 @@ def test_ftp_retries() -> None:
     # retry on
     with mock.patch("scrapelib.urllib_urlopen", mock_urlopen):
         s = Scraper(retry_attempts=2, retry_wait_seconds=0.001)
-        r = s.get("ftp://dummy/", retry_on_404=True) # type: ignore
+        r = s.get("ftp://dummy/", retry_on_404=True)  # type: ignore
         assert r.content == b"ftp success!"
     assert mock_urlopen.call_count == 2
 
