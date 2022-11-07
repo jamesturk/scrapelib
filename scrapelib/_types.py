@@ -7,20 +7,23 @@ from typing import (
     Text,
     Callable,
     List,
+    Protocol,
     MutableMapping,
     Iterable,
     Any,
     IO,
 )
 
-_Data = Union[
-    None,
-    Text,
-    bytes,
-    Mapping[str, Any],
-    Mapping[Text, Any],
-    Iterable[Tuple[Text, Optional[Text]]],
-    IO,
+_Data = Optional[
+    Union[
+        Iterable[bytes],
+        str,
+        bytes,
+#        SupportsRead[Union[str, bytes]],
+        List[Tuple[Any, Any]],
+        Tuple[Tuple[Any, Any], ...],
+        Mapping[Any, Any],
+    ]
 ]
 
 
