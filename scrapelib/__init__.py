@@ -299,10 +299,10 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             return resp
         except URLError:
             raise FTPError(cast(str, request.url))
-    
-    def close(self):
+
+    def close(self) -> None:
         # needed to use session as context manager
-        pass
+        ...
 
 
 # compose sessions, order matters (cache then throttle then retry)
