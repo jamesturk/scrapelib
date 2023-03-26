@@ -300,6 +300,10 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         except URLError:
             raise FTPError(cast(str, request.url))
 
+    def close(self) -> None:
+        # needed to use session as context manager
+        ...
+
 
 # compose sessions, order matters (cache then throttle then retry)
 class CachingSession(ThrottledSession):
