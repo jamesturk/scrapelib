@@ -25,6 +25,7 @@ scrapeshell = "scrapelib.__main__:scrapeshell"
 [tool.poetry.dependencies]
 python = "^3.7"
 requests = {extras = ["security"], version = "^2.28.1"}
+urllib3 = "^1.26"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.961"
