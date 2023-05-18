@@ -18,6 +18,7 @@ from typing import (
     cast,
 )
 import requests
+import urllib3
 from .cache import (  # noqa
     CacheStorageBase,
     FileCache,
@@ -543,9 +544,9 @@ class Scraper(CachingSession):
         # for example 'HIGH:!DH:!aNULL' to bypass "dh key too small" error
         # https://stackoverflow.com/questions/38015537/python-requests-exceptions-sslerror-dh-key-too-small
         if ciphers_list_addition:
-            requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += ciphers_list_addition  # type: ignore
+            urllib3.util.ssl_.DEFAULT_CIPHERS += ciphers_list_addition  # type: ignore
             try:
-                requests.packages.urllib3.contrib.pyopenssl.DEFAULT_SSL_CIPHER_LIST += ciphers_list_addition  # type: ignore
+                urllib3.contrib.pyopenssl.DEFAULT_SSL_CIPHER_LIST += ciphers_list_addition  # type: ignore  # pylint: disable=no-member
             except AttributeError:
                 # no pyopenssl support used / needed / available
                 pass

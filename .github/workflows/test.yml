@@ -31,5 +31,7 @@ jobs:
       run: poetry run mypy --disallow-untyped-defs scrapelib/
     - name: lint with flake8
       run: poetry run flake8 --show-source --statistics --ignore=E203,E501,W503 scrapelib
+    - name: lint with pylint
+      run: poetry run pylint -E scrapelib
     - name: pytest
       run: poetry run pytest
