@@ -390,7 +390,7 @@ class CachingSession(ThrottledSession):
 
         method = method.lower()
 
-        request_key = self.key_for_request(method, url, params)
+        request_key = self.key_for_request(method, url, params=params)
         resp_maybe = None
 
         if request_key and not self.cache_write_only:
