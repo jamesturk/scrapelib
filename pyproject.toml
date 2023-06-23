@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scrapelib"
-version = "2.1.0"
+version = "2.2.0"
 description = ""
 readme = "README.md"
 authors = ["James Turk <dev@jamesturk.net>"]
@@ -16,6 +16,7 @@ classifiers=[
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
@@ -25,6 +26,7 @@ scrapeshell = "scrapelib.__main__:scrapeshell"
 [tool.poetry.dependencies]
 python = "^3.7"
 requests = {extras = ["security"], version = "^2.28.1"}
+urllib3 = "^1.26"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.961"

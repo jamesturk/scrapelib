@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.0
+
+**18 May 2023**
+
+- allow using `Scraper` as a context manager, thanks to Forest Gregg
+- pin urllib3 to avoid version issues, thanks to Hannah Cushman Garland
+- fix `mypy` issues, thanks to John Seekins
+
 ## 2.1.0
 
 **6 November 2021**
