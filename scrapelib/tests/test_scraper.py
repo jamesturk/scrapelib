@@ -58,7 +58,6 @@ def test_fields() -> None:
 
 
 def test_get(httpbin: Server) -> None:
-    breakpoint()
     s = Scraper(requests_per_minute=0)
     resp = s.get(httpbin.url + "/get?woo=woo")
     assert resp.status_code == 200
