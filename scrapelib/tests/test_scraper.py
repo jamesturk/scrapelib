@@ -8,6 +8,7 @@ from requests.structures import CaseInsensitiveDict
 import mock
 import pytest  # type: ignore
 import requests
+from pytest_httpbin.serve import Server  # type: ignore
 from .. import Scraper, HTTPError, HTTPMethodUnavailableError, URLError, FTPError
 from .. import _user_agent as default_user_agent
 from ..cache import MemoryCache, CacheResponse
@@ -56,14 +57,15 @@ def test_fields() -> None:
     assert s.retry_wait_seconds == 100
 
 
-def test_get(httpbin) -> None:
+def test_get(httpbin: Server) -> None:
+    breakpoint()
     s = Scraper(requests_per_minute=0)
     resp = s.get(httpbin.url + "/get?woo=woo")
     assert resp.status_code == 200
     assert resp.json()["args"]["woo"] == "woo"
 
 
-def test_post(httpbin) -> None:
+def test_post(httpbin: Server) -> None:
     s = Scraper(requests_per_minute=0)
     resp = s.post(httpbin.url + "/post", {"woo": "woo"})
     assert resp.status_code == 200
@@ -133,7 +135,7 @@ def test_request_throttling() -> None:
             assert mock_sleep.call_count == 0
 
 
-def test_user_agent(httpbin) -> None:
+def test_user_agent(httpbin: Server) -> None:
     s = Scraper(requests_per_minute=0)
     resp = s.get(httpbin.url + "/user-agent")
     ua = resp.json()["user-agent"]
@@ -145,7 +147,7 @@ def test_user_agent(httpbin) -> None:
     assert ua == "a different agent"
 
 
-def test_user_agent_from_headers(httpbin) -> None:
+def test_user_agent_from_headers(httpbin: Server) -> None:
     s = Scraper(requests_per_minute=0)
     s.headers = cast(CaseInsensitiveDict, {"User-Agent": "from headers"})
     resp = s.get(httpbin.url + "/user-agent")
@@ -153,7 +155,7 @@ def test_user_agent_from_headers(httpbin) -> None:
     assert ua == "from headers"
 
 
-def test_404(httpbin) -> None:
+def test_404(httpbin: Server) -> None:
     s = Scraper(requests_per_minute=0)
     pytest.raises(HTTPError, s.get, httpbin.url + "/status/404")
 
@@ -162,7 +164,7 @@ def test_404(httpbin) -> None:
     assert resp.status_code == 404
 
 
-def test_500(httpbin) -> None:
+def test_500(httpbin: Server) -> None:
     s = Scraper(requests_per_minute=0)
 
     pytest.raises(HTTPError, s.get, httpbin.url + "/status/500")
@@ -172,7 +174,7 @@ def test_500(httpbin) -> None:
     assert resp.status_code == 500
 
 
-def test_caching(httpbin) -> None:
+def test_caching(httpbin: Server) -> None:
     cache_dir = tempfile.mkdtemp()
     s = Scraper(requests_per_minute=0)
     s.cache_storage = MemoryCache()
@@ -289,14 +291,14 @@ def test_retry_ssl() -> None:
     assert mock_sslerror.call_count == 1
 
 
-def test_timeout(httpbin) -> None:
+def test_timeout(httpbin: Server) -> None:
     s = Scraper()
     s.timeout = 0.001
     with pytest.raises(requests.Timeout):
         s.get(httpbin.url + "/delay/1")
 
 
-def test_timeout_arg(httpbin) -> None:
+def test_timeout_arg(httpbin: Server) -> None:
     s = Scraper()
     with pytest.raises(requests.Timeout):
         s.get(httpbin.url + "/delay/1", timeout=0.001)
@@ -334,7 +336,7 @@ def test_timeout_retry() -> None:
         assert mock_request.call_count == 2
 
 
-def test_disable_compression(httpbin) -> None:
+def test_disable_compression(httpbin: Server) -> None:
     s = Scraper()
     s.disable_compression = True
 
@@ -359,7 +361,7 @@ def test_disable_compression(httpbin) -> None:
     assert "xyz" in djson["headers"]["Accept-Encoding"]
 
 
-def test_callable_headers(httpbin) -> None:
+def test_callable_headers(httpbin: Server) -> None:
     s = Scraper(header_func=lambda url: {"X-Url": url})
 
     data = s.get(httpbin.url + "/headers")
@@ -370,7 +372,7 @@ def test_callable_headers(httpbin) -> None:
     assert data.json()["headers"]["X-Url"] == httpbin.url + "/headers?shh"
 
 
-def test_headers_weirdness(httpbin) -> None:
+def test_headers_weirdness(httpbin: Server) -> None:
     s = Scraper()
     s.headers = cast(CaseInsensitiveDict, {"accept": "application/json"})
     data = s.get(httpbin.url + "/headers").json()

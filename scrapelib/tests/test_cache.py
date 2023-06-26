@@ -1,5 +1,6 @@
 from typing import cast
 import requests
+from pytest_httpbin.serve import Server  # type: ignore
 from .. import CachingSession
 from ..cache import MemoryCache, FileCache, SQLiteCache, CacheStorageBase
 
@@ -38,7 +39,7 @@ def test_default_should_cache_response() -> None:
         assert cs.should_cache_response(resp) is False
 
 
-def test_no_cache_request(httpbin) -> None:
+def test_no_cache_request(httpbin: Server) -> None:
     cs = CachingSession()
     # call twice, to prime cache (if it were enabled)
     resp = cs.request("get", httpbin.url + "/status/200")
@@ -47,7 +48,7 @@ def test_no_cache_request(httpbin) -> None:
     assert resp.fromcache is False
 
 
-def test_simple_cache_request(httpbin) -> None:
+def test_simple_cache_request(httpbin: Server) -> None:
     cs = CachingSession(cache_storage=MemoryCache())
     url = httpbin.url + "/get"
 
@@ -63,7 +64,7 @@ def test_simple_cache_request(httpbin) -> None:
     assert cached_resp.fromcache is True
 
 
-def test_cache_write_only(httpbin) -> None:
+def test_cache_write_only(httpbin: Server) -> None:
     cs = CachingSession(cache_storage=MemoryCache())
     cs.cache_write_only = True
     url = httpbin.url + "/get"
