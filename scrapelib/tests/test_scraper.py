@@ -13,7 +13,6 @@ from .. import _user_agent as default_user_agent
 from ..cache import MemoryCache, CacheResponse
 
 
-
 class FakeResponse(object):
     def __init__(
         self,
