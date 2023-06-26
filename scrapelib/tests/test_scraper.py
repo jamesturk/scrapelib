@@ -99,7 +99,7 @@ def test_all_parameters_to_requests() -> None:
             "https://example.com",
             headers={
                 "User-Agent": default_user_agent,
-                "Accept-Encoding": "gzip, deflate",
+                "Accept-Encoding": "gzip, deflate, br",
                 "Accept": "*/*",
                 "Connection": "keep-alive",
             },
