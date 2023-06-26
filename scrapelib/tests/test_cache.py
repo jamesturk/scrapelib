@@ -4,7 +4,6 @@ from .. import CachingSession
 from ..cache import MemoryCache, FileCache, SQLiteCache, CacheStorageBase
 
 DUMMY_URL = "http://dummy/"
-HTTPBIN = "http://httpbin.org/"
 
 
 def test_default_key_for_request() -> None:
@@ -39,18 +38,18 @@ def test_default_should_cache_response() -> None:
         assert cs.should_cache_response(resp) is False
 
 
-def test_no_cache_request() -> None:
+def test_no_cache_request(httpbin) -> None:
     cs = CachingSession()
     # call twice, to prime cache (if it were enabled)
-    resp = cs.request("get", HTTPBIN + "status/200")
-    resp = cs.request("get", HTTPBIN + "status/200")
+    resp = cs.request("get", httpbin.url + "/status/200")
+    resp = cs.request("get", httpbin.url + "/status/200")
     assert resp.status_code == 200
     assert resp.fromcache is False
 
 
-def test_simple_cache_request() -> None:
+def test_simple_cache_request(httpbin) -> None:
     cs = CachingSession(cache_storage=MemoryCache())
-    url = HTTPBIN + "get"
+    url = httpbin.url + "/get"
 
     # first response not from cache
     resp = cs.request("get", url)
@@ -64,10 +63,10 @@ def test_simple_cache_request() -> None:
     assert cached_resp.fromcache is True
 
 
-def test_cache_write_only() -> None:
+def test_cache_write_only(httpbin) -> None:
     cs = CachingSession(cache_storage=MemoryCache())
     cs.cache_write_only = True
-    url = HTTPBIN + "get"
+    url = httpbin.url + "/get"
 
     # first response not from cache
     resp = cs.request("get", url)

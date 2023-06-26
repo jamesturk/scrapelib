@@ -12,7 +12,6 @@ from .. import Scraper, HTTPError, HTTPMethodUnavailableError, URLError, FTPErro
 from .. import _user_agent as default_user_agent
 from ..cache import MemoryCache, CacheResponse
 
-HTTPBIN = "http://httpbin.org/"
 
 
 class FakeResponse(object):
@@ -58,16 +57,16 @@ def test_fields() -> None:
     assert s.retry_wait_seconds == 100
 
 
-def test_get() -> None:
+def test_get(httpbin) -> None:
     s = Scraper(requests_per_minute=0)
-    resp = s.get(HTTPBIN + "get?woo=woo")
+    resp = s.get(httpbin.url + "/get?woo=woo")
     assert resp.status_code == 200
     assert resp.json()["args"]["woo"] == "woo"
 
 
-def test_post() -> None:
+def test_post(httpbin) -> None:
     s = Scraper(requests_per_minute=0)
-    resp = s.post(HTTPBIN + "post", {"woo": "woo"})
+    resp = s.post(httpbin.url + "/post", {"woo": "woo"})
     assert resp.status_code == 200
     resp_json = resp.json()
     assert resp_json["form"]["woo"] == "woo"
@@ -135,54 +134,54 @@ def test_request_throttling() -> None:
             assert mock_sleep.call_count == 0
 
 
-def test_user_agent() -> None:
+def test_user_agent(httpbin) -> None:
     s = Scraper(requests_per_minute=0)
-    resp = s.get(HTTPBIN + "user-agent")
+    resp = s.get(httpbin.url + "/user-agent")
     ua = resp.json()["user-agent"]
     assert ua == default_user_agent
 
     s.user_agent = "a different agent"
-    resp = s.get(HTTPBIN + "user-agent")
+    resp = s.get(httpbin.url + "/user-agent")
     ua = resp.json()["user-agent"]
     assert ua == "a different agent"
 
 
-def test_user_agent_from_headers() -> None:
+def test_user_agent_from_headers(httpbin) -> None:
     s = Scraper(requests_per_minute=0)
     s.headers = cast(CaseInsensitiveDict, {"User-Agent": "from headers"})
-    resp = s.get(HTTPBIN + "user-agent")
+    resp = s.get(httpbin.url + "/user-agent")
     ua = resp.json()["user-agent"]
     assert ua == "from headers"
 
 
-def test_404() -> None:
+def test_404(httpbin) -> None:
     s = Scraper(requests_per_minute=0)
-    pytest.raises(HTTPError, s.get, HTTPBIN + "status/404")
+    pytest.raises(HTTPError, s.get, httpbin.url + "/status/404")
 
     s.raise_errors = False
-    resp = s.get(HTTPBIN + "status/404")
+    resp = s.get(httpbin.url + "/status/404")
     assert resp.status_code == 404
 
 
-def test_500() -> None:
+def test_500(httpbin) -> None:
     s = Scraper(requests_per_minute=0)
 
-    pytest.raises(HTTPError, s.get, HTTPBIN + "status/500")
+    pytest.raises(HTTPError, s.get, httpbin.url + "/status/500")
 
     s.raise_errors = False
-    resp = s.get(HTTPBIN + "status/500")
+    resp = s.get(httpbin.url + "/status/500")
     assert resp.status_code == 500
 
 
-def test_caching() -> None:
+def test_caching(httpbin) -> None:
     cache_dir = tempfile.mkdtemp()
     s = Scraper(requests_per_minute=0)
     s.cache_storage = MemoryCache()
     s.cache_write_only = False
 
-    resp = s.get(HTTPBIN + "status/200")
+    resp = s.get(httpbin.url + "/status/200")
     assert not cast(CacheResponse, resp).fromcache
-    resp = s.get(HTTPBIN + "status/200")
+    resp = s.get(httpbin.url + "/status/200")
     assert cast(CacheResponse, resp).fromcache
 
     for path in glob.iglob(os.path.join(cache_dir, "*")):
@@ -291,17 +290,17 @@ def test_retry_ssl() -> None:
     assert mock_sslerror.call_count == 1
 
 
-def test_timeout() -> None:
+def test_timeout(httpbin) -> None:
     s = Scraper()
     s.timeout = 0.001
     with pytest.raises(requests.Timeout):
-        s.get(HTTPBIN + "delay/1")
+        s.get(httpbin.url + "/delay/1")
 
 
-def test_timeout_arg() -> None:
+def test_timeout_arg(httpbin) -> None:
     s = Scraper()
     with pytest.raises(requests.Timeout):
-        s.get(HTTPBIN + "delay/1", timeout=0.001)
+        s.get(httpbin.url + "/delay/1", timeout=0.001)
 
 
 def test_timeout_retry() -> None:
@@ -336,19 +335,19 @@ def test_timeout_retry() -> None:
         assert mock_request.call_count == 2
 
 
-def test_disable_compression() -> None:
+def test_disable_compression(httpbin) -> None:
     s = Scraper()
     s.disable_compression = True
 
     # compression disabled
-    data = s.get(HTTPBIN + "headers")
+    data = s.get(httpbin.url + "/headers")
     djson = data.json()
     assert "compress" not in djson["headers"]["Accept-Encoding"]
     assert "gzip" not in djson["headers"]["Accept-Encoding"]
 
     # default is restored
     s.disable_compression = False
-    data = s.get(HTTPBIN + "headers")
+    data = s.get(httpbin.url + "/headers")
     djson = data.json()
     assert "compress" in djson["headers"]["Accept-Encoding"]
     assert "gzip" in djson["headers"]["Accept-Encoding"]
@@ -356,30 +355,30 @@ def test_disable_compression() -> None:
     # A supplied Accept-Encoding headers overrides the
     # disable_compression option
     s.headers["Accept-Encoding"] = "xyz"
-    data = s.get(HTTPBIN + "headers")
+    data = s.get(httpbin.url + "/headers")
     djson = data.json()
     assert "xyz" in djson["headers"]["Accept-Encoding"]
 
 
-def test_callable_headers() -> None:
+def test_callable_headers(httpbin) -> None:
     s = Scraper(header_func=lambda url: {"X-Url": url})
 
-    data = s.get(HTTPBIN + "headers")
-    assert data.json()["headers"]["X-Url"] == HTTPBIN + "headers"
+    data = s.get(httpbin.url + "/headers")
+    assert data.json()["headers"]["X-Url"] == httpbin.url + "/headers"
 
     # Make sure it gets called freshly each time
-    data = s.get(HTTPBIN + "headers?shh")
-    assert data.json()["headers"]["X-Url"] == HTTPBIN + "headers?shh"
+    data = s.get(httpbin.url + "/headers?shh")
+    assert data.json()["headers"]["X-Url"] == httpbin.url + "/headers?shh"
 
 
-def test_headers_weirdness() -> None:
+def test_headers_weirdness(httpbin) -> None:
     s = Scraper()
     s.headers = cast(CaseInsensitiveDict, {"accept": "application/json"})
-    data = s.get(HTTPBIN + "headers").json()
+    data = s.get(httpbin.url + "/headers").json()
     assert data["headers"]["Accept"] == "application/json"
 
     s = Scraper()
-    data = s.get(HTTPBIN + "headers", headers={"accept": "application/xml"}).json()
+    data = s.get(httpbin.url + "/headers", headers={"accept": "application/xml"}).json()
     assert data["headers"]["Accept"] == "application/xml"
 
 
