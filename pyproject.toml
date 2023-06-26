@@ -42,6 +42,7 @@ types-mock = "^4.0.15"
 importlib-metadata = "<5.0"
 pytest-httpbin = "^2.0.0"
 Flask = "2.1.0"
+Werkzeug = "2.0.3"
 
 [build-system]
 requires = ["poetry>=0.12"]
