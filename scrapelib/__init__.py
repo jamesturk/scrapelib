@@ -317,6 +317,7 @@ class CachingSession(ThrottledSession):
         method: str,
         url: Union[str, bytes],
         params: Union[None, bytes, MutableMapping[Text, Text]] = None,
+        data: _Data = None,
     ) -> Optional[str]:
         """Return a cache key from a given set of request parameters.
 
@@ -390,7 +391,7 @@ class CachingSession(ThrottledSession):
 
         method = method.lower()
 
-        request_key = self.key_for_request(method, url, params)
+        request_key = self.key_for_request(method, url, params, data)
         resp_maybe = None
 
         if request_key and not self.cache_write_only:
