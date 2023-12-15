@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.0
+
+**15 December 2023**
+
+- add `data` to key_for_request allowing caching of POSTs if desired, thanks for Forest Gregg
+- improve tests/packaging issues, thanks to Forest Gregg
+
 ## 2.2.0
 
 **18 May 2023**
