@@ -152,7 +152,12 @@ class RetrySession(requests.Session):
             except Exception as e:
                 if isinstance(e, requests.exceptions.SSLError):
                     raise
+
                 exception_raised = e
+
+                if exception_response := getattr(e, "response", None):
+                    if self.accept_response(exception_response):
+                        break
 
             # if we're going to retry, sleep first
             tries += 1
