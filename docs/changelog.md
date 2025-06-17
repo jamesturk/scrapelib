@@ -19,7 +19,7 @@
 
 **6 November 2021**
 
-- bugfix: use parameters in caching (https://github.com/jamesturk/scrapelib/issues/110)
+- bugfix: use parameters in caching (https://codeberg.org/jpt/scrapelib/issues/110)
 
 ## 2.0.7
 

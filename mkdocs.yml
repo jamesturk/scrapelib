@@ -3,7 +3,7 @@ site_url: https://jamesturk.github.io/scrapelib/
 site_author: James Turk
 site_description: A library for making requests to unreliable sites.
 copyright: Copyright &copy; 2021 James Turk
-repo_url: https://github.com/jamesturk/scrapelib
+repo_url: https://codeberg.org/jpt/scrapelib
 repo_name: jamesturk/scrapelib
 edit_uri: edit/main/docs/
 

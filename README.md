@@ -1,10 +1,12 @@
 **scrapelib** is a library for making requests to less-than-reliable websites.
 
-Source: [https://github.com/jamesturk/scrapelib](https://github.com/jamesturk/scrapelib)
+**This repository has moved to Codeberg, GitHub will remain as a read-only mirror.**
+
+Source: [https://codeberg.org/jpt/scrapelib](https://codeberg.org/jpt/scrapelib)
 
 Documentation: [https://jamesturk.github.io/scrapelib/](https://jamesturk.github.io/scrapelib/)
 
-Issues: [https://github.com/jamesturk/scrapelib/issues](https://github.com/jamesturk/scrapelib/issues)
+Issues: [https://codeberg.org/jpt/scrapelib/issues](https://codeberg.org/jpt/scrapelib/issues)
 
 [![PyPI badge](https://badge.fury.io/py/scrapelib.svg)](https://badge.fury.io/py/scrapelib)
 [![Test badge](https://github.com/jamesturk/scrapelib/workflows/Test/badge.svg)](https://github.com/jamesturk/scrapelib/actions?query=workflow%3ATest)
