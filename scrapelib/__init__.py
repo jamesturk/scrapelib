@@ -1,5 +1,6 @@
 import logging
 import os
+import ssl
 import tempfile
 import time
 from urllib.request import urlopen as urllib_urlopen
@@ -33,6 +34,7 @@ from ._types import (
     _AuthType,
     Response,
 )
+from requests.adapters import HTTPAdapter
 
 
 __version__ = "2.2.0"
@@ -434,6 +436,21 @@ class CachingSession(ThrottledSession):
         return resp
 
 
+# https://stackoverflow.com/questions/76966914/how-to-set-default-ciphers-for-python-requests-library-when-using-urllib3-ver
+class CustomSSLAdapter(HTTPAdapter):
+    """HTTPAdapter that allows custom SSL cipher configuration."""
+    def __init__(self, *args, ciphers: Optional[str] = None, **kwargs: Any):
+        self.ciphers = ciphers
+        super().__init__(*args, **kwargs)
+
+    def init_poolmanager(self, *args: Any, **kwargs: Any) -> None:
+        if self.ciphers:
+            context = ssl.create_default_context()
+            context.set_ciphers(f"DEFAULT{self.ciphers}")
+            kwargs["ssl_context"] = context
+        return super().init_poolmanager(*args, **kwargs)
+
+
 class Scraper(CachingSession):
     """
     Scraper is the most important class provided by scrapelib (and generally
@@ -549,12 +566,7 @@ class Scraper(CachingSession):
         # for example 'HIGH:!DH:!aNULL' to bypass "dh key too small" error
         # https://stackoverflow.com/questions/38015537/python-requests-exceptions-sslerror-dh-key-too-small
         if ciphers_list_addition:
-            requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += ciphers_list_addition  # type: ignore
-            try:
-                requests.packages.urllib3.contrib.pyopenssl.DEFAULT_SSL_CIPHER_LIST += ciphers_list_addition  # type: ignore
-            except AttributeError:
-                # no pyopenssl support used / needed / available
-                pass
+            self.mount('https://', CustomSSLAdapter(ciphers=ciphers_list_addition))
 
         # apply global timeout
         if not timeout:
