@@ -1,3 +1,6 @@
+[project]
+name = "scrapelib"
+
 [tool.poetry]
 name = "scrapelib"
 version = "2.3.0"
