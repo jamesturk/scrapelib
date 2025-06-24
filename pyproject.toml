@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/jamesturk/scrapelib"
+Repository = "https://codeberg.org/jpt/scrapelib"
 
 [project.scripts]
 scrapeshell = "scrapelib.__main__:scrapeshell"
