@@ -26,7 +26,7 @@ jobs:
       with:
         version: "0.7.14"
     - name: install dependencies
-      run: uv install
+      run: uv sync
     - name: lint with mypy
       run: uv run mypy --disallow-untyped-defs scrapelib/
     - name: lint with flake8
