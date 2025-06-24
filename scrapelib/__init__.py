@@ -439,7 +439,7 @@ class CachingSession(ThrottledSession):
 # https://stackoverflow.com/questions/76966914/how-to-set-default-ciphers-for-python-requests-library-when-using-urllib3-ver
 class CustomSSLAdapter(HTTPAdapter):
     """HTTPAdapter that allows custom SSL cipher configuration."""
-    def __init__(self, *args, ciphers: Optional[str] = None, **kwargs: Any):
+    def __init__(self, *args: Any, ciphers: Optional[str] = None, **kwargs: Any):
         self.ciphers = ciphers
         super().__init__(*args, **kwargs)
 
