@@ -29,13 +29,7 @@ Advantages of using scrapelib over using requests as-is:
 
 ## Installation
 
-*scrapelib* is on [PyPI](https://pypi.org/project/scrapelib/), and can be installed via any standard package management tool:
-
-    poetry add scrapelib
-
-or:
-
-    pip install scrapelib
+*scrapelib* is on [PyPI](https://pypi.org/project/scrapelib/), and can be installed via any standard package management tool.
 
 
 ## Example Usage
