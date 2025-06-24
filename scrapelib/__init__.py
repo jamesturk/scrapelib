@@ -62,9 +62,9 @@ class HTTPError(requests.HTTPError):
     raise_errors option is true.
     """
 
-    def __init__(self, response: Response, body: dict = None):
+    def __init__(self, response: Response, body: dict | None = None):
         message = "%s while retrieving %s" % (response.status_code, response.url)
-        super().__init__(message)
+        super().__init__(message, response=response)
         self.response = response
         self.body = body or self.response.text
 
@@ -72,7 +72,7 @@ class HTTPError(requests.HTTPError):
 class FTPError(requests.HTTPError):
     def __init__(self, url: str):
         message = "error while retrieving %s" % url
-        super().__init__(message)
+        super().__init__(message, response=None)  # type: ignore
 
 
 class RetrySession(requests.Session):
@@ -480,7 +480,6 @@ class Scraper(CachingSession):
         verify: bool = True,
         header_func: Optional[Callable[[Union[bytes, str]], dict]] = None,
     ):
-
         super().__init__()
         self.mount("ftp://", FTPAdapter())
 
@@ -622,10 +621,10 @@ class Scraper(CachingSession):
     def urlretrieve(
         self,
         url: str,
-        filename: str = None,
+        filename: str | None = None,
         method: str = "GET",
-        body: dict = None,
-        dir: str = None,
+        body: dict | None = None,
+        dir: str | None = None,
         **kwargs: Any,
     ) -> Tuple[str, Response]:
         """
