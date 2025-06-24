@@ -550,7 +550,7 @@ class Scraper(CachingSession):
         if ciphers_list_addition:
             requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += ciphers_list_addition  # type: ignore
             try:
-                requests.packages.urllib3.contrib.pyopenssl.DEFAULT_SSL_CIPHER_LIST += ( # type: ignore
+                requests.packages.urllib3.contrib.pyopenssl.DEFAULT_SSL_CIPHER_LIST += (  # type: ignore
                     ciphers_list_addition  # type: ignore
                 )
             except AttributeError:
