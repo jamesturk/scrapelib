@@ -62,7 +62,7 @@ class HTTPError(requests.HTTPError):
     raise_errors option is true.
     """
 
-    def __init__(self, response: Response, body: dict | None = None):
+    def __init__(self, response: Response, body: Optional[dict] = None):
         message = "%s while retrieving %s" % (response.status_code, response.url)
         super().__init__(message, response=response)
         self.response = response
@@ -439,6 +439,7 @@ class CachingSession(ThrottledSession):
 # https://stackoverflow.com/questions/76966914/how-to-set-default-ciphers-for-python-requests-library-when-using-urllib3-ver
 class CustomSSLAdapter(HTTPAdapter):
     """HTTPAdapter that allows custom SSL cipher configuration."""
+
     def __init__(self, *args: Any, ciphers: Optional[str] = None, **kwargs: Any):
         self.ciphers = ciphers
         super().__init__(*args, **kwargs)
@@ -565,7 +566,7 @@ class Scraper(CachingSession):
         # for example 'HIGH:!DH:!aNULL' to bypass "dh key too small" error
         # https://stackoverflow.com/questions/38015537/python-requests-exceptions-sslerror-dh-key-too-small
         if ciphers_list_addition:
-            self.mount('https://', CustomSSLAdapter(ciphers=ciphers_list_addition))
+            self.mount("https://", CustomSSLAdapter(ciphers=ciphers_list_addition))
 
         # apply global timeout
         if not timeout:
@@ -621,10 +622,10 @@ class Scraper(CachingSession):
     def urlretrieve(
         self,
         url: str,
-        filename: str | None = None,
+        filename: Optional[str] = None,
         method: str = "GET",
-        body: dict | None = None,
-        dir: str | None = None,
+        body: Optional[dict] = None,
+        dir: Optional[str] = None,
         **kwargs: Any,
     ) -> Tuple[str, Response]:
         """
