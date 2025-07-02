@@ -1,10 +1,24 @@
 # Changelog
 
+## 2.4.1
+
+**1 July 2025**
+
+- restore Python 3.9 support
+
+## 2.4.0
+
+**20 June 2025**
+
+- support for Python 3.13
+- fix pinned dependency on urllib3 to allow latest
+- short circuit retries if exception request is accepted, thanks to Hannah Cushman Garland
+
 ## 2.3.0
 
 **15 December 2023**
 
-- add `data` to key_for_request allowing caching of POSTs if desired, thanks for Forest Gregg
+- add `data` to key_for_request allowing caching of POSTs if desired, thanks to Forest Gregg
 - improve tests/packaging issues, thanks to Forest Gregg
 
 ## 2.2.0
