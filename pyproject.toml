@@ -39,7 +39,7 @@ dev = [
     "mock>=4.0.3",
     "pytest>=7.1.2",
     "pytest-cov>=2.11.1",
-    "coveralls>=3.3.1",
+    "coveralls>=4.0.1",
     "mkdocs-material>=9.2.7",
     "mkdocstrings==0.19.0",
     "types-requests>=2.28.11",
