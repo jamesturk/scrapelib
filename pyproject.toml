@@ -34,7 +34,7 @@ scrapeshell = "scrapelib.__main__:scrapeshell"
 
 [project.optional-dependencies]
 dev = [
-    "mypy>=0.961",
+    "mypy>=2.2.0",
     "flake8>=3.9.0",
     "mock>=4.0.3",
     "pytest>=7.1.2",
